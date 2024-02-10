@@ -1,7 +1,7 @@
 <script>
   import "../app.pcss";
 
-  import card from "$lib/assets/card.jpeg";
+  import card from "$lib/assets/card.jpg";
 </script>
 
 <svelte:head>
