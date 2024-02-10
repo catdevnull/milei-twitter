@@ -65,15 +65,13 @@
   }
 </script>
 
-<div class="h-[300px] w-full bg-neutral-100 dark:invert">
-  <ChartJs
-    type="bar"
-    data={{ datasets }}
-    options={{
-      responsive: true,
-      scales: {
-        x: { type: "time" },
-      },
-    }}
-  />
-</div>
+<ChartJs
+  type="bar"
+  data={{ datasets }}
+  options={{
+    responsive: true,
+    scales: {
+      x: { type: "time" },
+    },
+  }}
+/>
