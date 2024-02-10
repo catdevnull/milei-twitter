@@ -4,6 +4,7 @@ import cookies from "./cookie.js";
 import { type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema.js";
 import { db } from "$lib/db.js";
+import { dev } from "$app/environment";
 
 type Db = BetterSQLite3Database<typeof schema>;
 class Scraper {
@@ -101,7 +102,7 @@ class Scraper {
 
   async buildBrowser() {
     const browser = await puppeteer.launch({
-      headless: false,
+      // headless: false,
     });
     const page = await browser.newPage();
 
@@ -116,4 +117,4 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-new Scraper(db).cron();
+if (!dev) new Scraper(db).cron();
