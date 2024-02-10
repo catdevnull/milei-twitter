@@ -1,5 +1,8 @@
 <script lang="ts">
-  import dayjs from "dayjs";
+  import dayjs, { type Dayjs } from "dayjs";
+  import { formatDuration, intervalToDuration } from "date-fns";
+  import { es } from "date-fns/locale";
+
   import type { PageData } from "./$types";
   import Chart from "./Chart.svelte";
   import type { LikedTweet } from "../schema";
@@ -11,11 +14,90 @@
       ...t,
       firstSeenAt: dayjs(t.firstSeenAt),
     }))
-    .filter((t) => t.firstSeenAt.isAfter(dayjs().startOf("day")));
+    .filter((t) => t.firstSeenAt.isAfter(dayjs().subtract(24, "hour")))
+    .map((t) => ({
+      ...t,
+      firstSeenAt: t.firstSeenAt.toDate(),
+    }));
 
   // $: lali = data.tweets.filter(
   //   (t) => t.text && (/lali|Lali/.test(t.text) || /cosquin/i.test(t.text)),
   // );
+
+  type Duration = { start: Dayjs; end: Dayjs };
+  function calculateScreenTime(tweets: LikedTweet[]): Duration[] {
+    const n = 3;
+    const durations = tweets
+      .map((t) => dayjs(t.firstSeenAt))
+      .map((d) => ({ start: d, end: d.add(n, "minute") }));
+
+    type StartEnd = {
+      type: "start" | "end";
+      date: Dayjs;
+    };
+    const startEnds: Array<StartEnd> = durations
+      .flatMap<StartEnd>(({ start, end }) => [
+        { type: "start", date: start },
+        { type: "end", date: end },
+      ])
+      .sort(({ date: a }, { date: b }) => a.diff(b));
+
+    // console.debug(startEnds.map((x) => [x.type, x.date.toDate()]));
+
+    let finalStartEnds: Array<StartEnd> = [];
+
+    // https://stackoverflow.com/questions/45109429/merge-sets-of-overlapping-time-periods-into-new-one
+    let i = 0;
+    for (const startEnd of startEnds) {
+      if (startEnd.type === "start") {
+        i++;
+        if (i === 1) finalStartEnds.push(startEnd);
+      } else {
+        if (i === 1) finalStartEnds.push(startEnd);
+        i--;
+      }
+    }
+    console.debug(finalStartEnds.map((x) => [x.type, x.date.toDate()]));
+
+    let finalDurations: Array<Duration> = [];
+
+    while (finalStartEnds.length > 0) {
+      const [start, end] = finalStartEnds.splice(0, 2);
+      if (start.type !== "start") throw new Error("expected start");
+      if (end.type !== "end") throw new Error("expected end");
+      finalDurations.push({
+        start: start.date,
+        end: end.date.subtract(n, "minute").add(2, "minute"),
+      });
+    }
+    return finalDurations;
+  }
+
+  /**
+   * @returns number - en milisegundos
+   */
+  function totalFromDurations(durations: Duration[]): number {
+    let total = 0;
+    for (const duration of durations) {
+      const time = duration.end.diff(duration.start);
+      total += time;
+    }
+    return total;
+  }
+
+  // https://stackoverflow.com/a/65711327
+  function formatDurationFromMs(ms: number) {
+    const duration = intervalToDuration({ start: 0, end: ms });
+    return formatDuration(duration, { locale: es, delimiter: ", " });
+  }
+
+  $: ranges = calculateScreenTime(
+    today,
+    // .filter((t) =>
+    //   dayjs(t.firstSeenAt).isAfter(dayjs().subtract(8, "hour")),
+    // ),
+  );
+  $: totalTime = totalFromDurations(ranges);
 
   function sortMost(tweets: LikedTweet[]) {
     const map = new Map<string, number>();
@@ -31,34 +113,60 @@
       .slice(0, 10);
   }
 
-  $: masLikeados = sortMost(data.tweets);
+  $: masLikeados = sortMost(today);
+
+  const timeFormatter = Intl.DateTimeFormat("es-AR", {
+    timeStyle: "medium",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
 </script>
 
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
   <div class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
-      ¿Cuántos tweets likeó nuestro Presidente hoy?
+      ¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas?
     </h1>
     <h2 class="text-9xl font-black">{today.length}</h2>
   </div>
 
   <div class="mx-auto w-full max-w-2xl">
-    <Chart tweets={data.tweets} />
+    <Chart tweets={today} />
   </div>
 
-  <div class="mx-auto">
-    <h2 class="text-2xl font-bold">Mas likeados</h2>
-    <ol class="list-decimal">
-      {#each masLikeados as [persona, n]}
-        <li>
-          <a
-            class="text-medium underline"
-            href={`https://twitter.com/${persona}`}
-            rel="noreferrer">@{persona}</a
-          >: {n}
-        </li>
-      {/each}
-    </ol>
+  <div class="mx-auto flex gap-16">
+    <div>
+      <h2 class="text-2xl font-bold">Mas likeados</h2>
+      <ol class="list-decimal pl-8">
+        {#each masLikeados as [persona, n]}
+          <li>
+            <a
+              class="text-medium underline"
+              href={`https://twitter.com/${persona}`}
+              rel="noreferrer">@{persona}</a
+            >: {n}
+          </li>
+        {/each}
+      </ol>
+    </div>
+    <div class="max-w-[400px]">
+      <h2 class="text-2xl font-bold">Tiempo en Twitter</h2>
+      <p>Esto es una <em>estimación</em> basada en cuando likea.</p>
+      <p class="text-4xl font-black">
+        {formatDurationFromMs(totalTime)}
+      </p>
+      <details>
+        <summary>Rangos de tiempo estimados</summary>
+        <ol class="list-decimal pl-8">
+          {#each ranges as { start, end }}
+            <li>
+              {timeFormatter.format(start.toDate())} - {timeFormatter.format(
+                end.toDate(),
+              )}
+            </li>
+          {/each}
+        </ol>
+      </details>
+    </div>
   </div>
 
   <footer class="text-center">
