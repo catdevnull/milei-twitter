@@ -15,6 +15,13 @@
       "when": 1707597080058,
       "tag": "0001_modern_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1707599288765,
+      "tag": "0002_magenta_bedlam",
+      "breakpoints": true
     }
   ]
 }

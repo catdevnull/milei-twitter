@@ -34,7 +34,7 @@ class Scraper {
     }
   }
 
-  async saveLikedTweets() {
+  async saveLikedTweets(scrapId: number) {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
@@ -58,7 +58,7 @@ class Scraper {
     for (const { href, text } of got) {
       let q = this.db
         .insert(schema.likedTweets)
-        .values({ url: href, text, firstSeenAt: new Date() });
+        .values({ url: href, text, firstSeenAt: new Date(), scrapId });
       if (text)
         q = q.onConflictDoUpdate({
           target: schema.likedTweets.url,
@@ -76,11 +76,16 @@ class Scraper {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
+    const scrap = await this.db
+      .insert(schema.scraps)
+      .values({ at: new Date() })
+      .returning();
+
     for (let i = 0; i < n; i++) {
       const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
 
       // scrapear tweets y guardarlos
-      await this.saveLikedTweets();
+      await this.saveLikedTweets(scrap[0].id);
 
       // scrollear al final para permitir que mas se cargenrfdo
       const els = await page.$$(sel);
