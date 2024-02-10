@@ -15,16 +15,22 @@ class Scraper {
     this.db = db;
   }
 
-  async oneoff() {
-    await this.goToLikes();
-    await this.scrapLikedTweets();
-    await this.puppeteer?.browser.close();
-    this.puppeteer = null;
+  async oneoff(n: number | undefined = undefined) {
+    try {
+      await this.goToLikes();
+      await this.scrapLikedTweets(n);
+    } catch (error) {
+      console.error("oneoff:", error);
+    } finally {
+      await this.puppeteer?.browser.close();
+      this.puppeteer = null;
+    }
   }
 
   async cron() {
+    await this.oneoff(50);
     while (true) {
-      await this.oneoff();
+      await this.oneoff(10);
       await wait(50 * 1000 + Math.random() * 15 * 1000);
     }
   }
@@ -33,41 +39,51 @@ class Scraper {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
-    const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
+    const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] [data-testid=tweet]`;
     await page.waitForSelector(sel);
     const got = await page.evaluate(
       (sel: string) =>
-        Array.from(
-          document.querySelectorAll(sel),
-          (x) => (x.parentElement as HTMLAnchorElement).href,
-        ),
+        Array.from(document.querySelectorAll(sel), (x) => {
+          const href = (
+            x.querySelector("time")?.parentElement as HTMLAnchorElement
+          ).href;
+          const text = x.querySelector("[data-testid=tweetText]")?.textContent;
+
+          return { href, text };
+        }),
       sel,
     );
 
     console.debug(got);
 
-    for (const link of got) {
-      await this.db
+    for (const { href, text } of got) {
+      let q = this.db
         .insert(schema.likedTweets)
-        .values({ url: link, firstSeenAt: new Date() })
-        .onConflictDoNothing();
+        .values({ url: href, text, firstSeenAt: new Date() });
+      if (text)
+        q = q.onConflictDoUpdate({
+          target: schema.likedTweets.url,
+          set: { text },
+        });
+      else q = q.onConflictDoNothing();
+      await q;
     }
   }
 
   /**
    * scrollea varias veces y guarda los tweets likeados que encuentra
    */
-  async scrapLikedTweets() {
+  async scrapLikedTweets(n: number = 10) {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < n; i++) {
       const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
 
       // scrapear tweets y guardarlos
       await this.saveLikedTweets();
 
-      // scrollear al final para permitir que mas se cargen
+      // scrollear al final para permitir que mas se cargenrfdo
       const els = await page.$$(sel);
       await els[els.length - 1].scrollIntoView();
 
@@ -124,4 +140,4 @@ function wait(ms: number) {
 }
 
 if (!dev) new Scraper(db).cron();
-else new Scraper(db).oneoff();
+else new Scraper(db).oneoff(50);

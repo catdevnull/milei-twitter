@@ -8,6 +8,13 @@
       "when": 1707536835075,
       "tag": "0000_free_the_captain",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1707597080058,
+      "tag": "0001_modern_thanos",
+      "breakpoints": true
     }
   ]
 }
