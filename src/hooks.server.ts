@@ -17,7 +17,7 @@ class Scraper {
     await this.goToLikes();
     while (true) {
       await this.scrapLikedTweets();
-      await wait(10 * 1000 + Math.random() * 15 * 1000);
+      await wait(50 * 1000 + Math.random() * 15 * 1000);
       const { page } =
         this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
