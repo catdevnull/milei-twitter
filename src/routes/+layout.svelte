@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>¿Cuantos tweets likeo nuestro Presidente hoy?</title>
+  <title>¿Cuántos tweets likeó nuestro Presidente hoy?</title>
   <meta
     name="description"
     content="Mira cuanto usa Twitter el Presidente Javier Milei"
@@ -14,7 +14,7 @@
   <meta property="og:type" content="website" />
   <meta
     property="og:title"
-    content="¿Cuantos tweets likeo nuestro Presidente hoy?"
+    content="¿Cuántos tweets likeó nuestro Presidente hoy?"
   />
   <meta
     property="og:description"
@@ -27,7 +27,7 @@
   <meta name="twitter:site" content="@esoesnulo" />
   <meta
     name="twitter:title"
-    content="¿Cuantos tweets likeo nuestro Presidente hoy?"
+    content="¿Cuántos tweets likeó nuestro Presidente hoy?"
   />
   <meta
     name="twitter:description"

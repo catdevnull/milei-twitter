@@ -37,7 +37,7 @@
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
   <div class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
-      ¿Cuantos tweets likeo nuestro Presidente hoy?
+      ¿Cuántos tweets likeó nuestro Presidente hoy?
     </h1>
     <h2 class="text-9xl font-black">{today.length}</h2>
   </div>
