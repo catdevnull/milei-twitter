@@ -133,21 +133,7 @@
     <Chart tweets={today} />
   </div>
 
-  <div class="mx-auto flex gap-16">
-    <div>
-      <h2 class="text-2xl font-bold">Mas likeados</h2>
-      <ol class="list-decimal pl-8">
-        {#each masLikeados as [persona, n]}
-          <li>
-            <a
-              class="text-medium underline"
-              href={`https://twitter.com/${persona}`}
-              rel="noreferrer">@{persona}</a
-            >: {n}
-          </li>
-        {/each}
-      </ol>
-    </div>
+  <div class="mx-auto flex flex-col items-center gap-16 px-8 md:flex-row">
     <div class="max-w-[400px]">
       <h2 class="text-2xl font-bold">Tiempo en Twitter</h2>
       <p>Esto es una <em>estimación</em> basada en cuando likea.</p>
@@ -166,6 +152,20 @@
           {/each}
         </ol>
       </details>
+    </div>
+    <div>
+      <h2 class="text-2xl font-bold">Mas likeados</h2>
+      <ol class="list-decimal pl-8">
+        {#each masLikeados as [persona, n]}
+          <li>
+            <a
+              class="text-medium underline"
+              href={`https://twitter.com/${persona}`}
+              rel="noreferrer">@{persona}</a
+            >: {n}
+          </li>
+        {/each}
+      </ol>
     </div>
   </div>
 
