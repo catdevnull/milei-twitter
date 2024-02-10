@@ -14,15 +14,70 @@ class Scraper {
   }
 
   async cron() {
+    await this.goToLikes();
     while (true) {
-      await this.scrap();
-      await wait(30 * 60 * 1000 + Math.random() * 15 * 60 * 1000);
+      await this.scrapLikedTweets();
+      await wait(10 * 1000 + Math.random() * 15 * 1000);
+      const { page } =
+        this.puppeteer || (this.puppeteer = await this.buildBrowser());
+
+      // guardar tweets otra vez por si cargaron unos nuevos
+      await this.saveLikedTweets();
+
+      // recargar tweets para asegurarse de tener tweets nuevos
+      await page.reload();
     }
   }
 
-  // TODO: simplemente dejar una página abierta y escuchar por tweets nuevos cuando twitter los strimee
-  async scrap() {
-    const { browser, page } =
+  async saveLikedTweets() {
+    const { page } =
+      this.puppeteer || (this.puppeteer = await this.buildBrowser());
+
+    const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
+    await page.waitForSelector(sel);
+    const got = await page.evaluate(
+      (sel: string) =>
+        Array.from(
+          document.querySelectorAll(sel),
+          (x) => (x.parentElement as HTMLAnchorElement).href,
+        ),
+      sel,
+    );
+
+    console.debug(got);
+
+    for (const link of got) {
+      await this.db
+        .insert(schema.likedTweets)
+        .values({ url: link, firstSeenAt: new Date() })
+        .onConflictDoNothing();
+    }
+  }
+
+  /**
+   * scrollea varias veces y guarda los tweets likeados que encuentra
+   */
+  async scrapLikedTweets() {
+    const { page } =
+      this.puppeteer || (this.puppeteer = await this.buildBrowser());
+
+    for (let i = 0; i < 10; i++) {
+      const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
+
+      // scrapear tweets y guardarlos
+      await this.saveLikedTweets();
+
+      // scrollear al final para permitir que mas se cargen
+      const els = await page.$$(sel);
+      await els[els.length - 1].scrollIntoView();
+
+      // esperar para cargar tweets
+      await wait(1500);
+    }
+  }
+
+  async goToLikes() {
+    const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
     await page.goto("https://twitter.com");
@@ -41,39 +96,6 @@ class Scraper {
       const likesLinkSelector = `a[href="/JMilei/likes"]`;
       await page.waitForSelector(likesLinkSelector);
       await page.click(likesLinkSelector);
-    }
-
-    let links = new Set<string>();
-
-    async function getLinksAndScroll() {
-      const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
-      await page.waitForSelector(sel);
-      const got = await page.evaluate(
-        (sel: string) =>
-          Array.from(
-            document.querySelectorAll(sel),
-            (x) => (x.parentElement as HTMLAnchorElement).href,
-          ),
-        sel,
-      );
-
-      for (const link of got) links.add(link);
-      console.debug(links);
-
-      const els = await page.$$(sel);
-      await els[els.length - 1].scrollIntoView();
-    }
-
-    for (let i = 0; i < 10; i++) {
-      await getLinksAndScroll();
-      await wait(1500);
-    }
-
-    for (const link of links) {
-      await this.db
-        .insert(schema.likedTweets)
-        .values({ url: link, firstSeenAt: new Date() })
-        .onConflictDoNothing();
     }
   }
 
