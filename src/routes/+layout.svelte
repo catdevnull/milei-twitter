@@ -4,29 +4,37 @@
   import card from "$lib/assets/card.jpeg";
 </script>
 
-<meta property="og:type" content="website" />
-<meta
-  property="og:title"
-  content="¿Cuantos tweets likeo nuestro Presidente hoy?"
-/>
-<meta
-  property="og:description"
-  content="Mira cuanto usa Twitter el Presidente Javier Milei"
-/>
-<meta property="og:url" content="https://milei.nulo.ar" />
-<meta property="og:image" content={card} />
+<svelte:head>
+  <title>¿Cuantos tweets likeo nuestro Presidente hoy?</title>
+  <meta
+    name="description"
+    content="Mira cuanto usa Twitter el Presidente Javier Milei"
+  />
 
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@esoesnulo" />
-<meta
-  name="twitter:title"
-  content="¿Cuantos tweets likeo nuestro Presidente hoy?"
-/>
-<meta
-  name="twitter:description"
-  content="Mira cuanto usa Twitter el Presidente Javier Milei"
-/>
-<meta name="twitter:image" content={card} />
+  <meta property="og:type" content="website" />
+  <meta
+    property="og:title"
+    content="¿Cuantos tweets likeo nuestro Presidente hoy?"
+  />
+  <meta
+    property="og:description"
+    content="Mira cuanto usa Twitter el Presidente Javier Milei"
+  />
+  <meta property="og:url" content="https://milei.nulo.ar" />
+  <meta property="og:image" content={card} />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@esoesnulo" />
+  <meta
+    name="twitter:title"
+    content="¿Cuantos tweets likeo nuestro Presidente hoy?"
+  />
+  <meta
+    name="twitter:description"
+    content="Mira cuanto usa Twitter el Presidente Javier Milei"
+  />
+  <meta name="twitter:image" content={card} />
+</svelte:head>
 
 <!-- toca poncho? ( ͡° ͜ʖ ͡°) -->
 <!-- <link
