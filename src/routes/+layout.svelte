@@ -33,7 +33,8 @@
     name="twitter:description"
     content="Mira cuanto usa Twitter el Presidente Javier Milei"
   />
-  <meta name="twitter:image" content={card} />
+  <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
+  <meta name="twitter:image" content={"https://milei.nulo.ar" + card} />
 </svelte:head>
 
 <!-- toca poncho? ( ͡° ͜ʖ ͡°) -->
