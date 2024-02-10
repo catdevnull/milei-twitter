@@ -8,6 +8,13 @@
       "when": 1707520692945,
       "tag": "0000_far_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1707536492221,
+      "tag": "0001_fluffy_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

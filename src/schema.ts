@@ -2,5 +2,5 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const likedTweets = sqliteTable("db_liked_tweets", {
   url: text("url").primaryKey(),
-  firstSeenAt: integer("first_seen_at", { mode: "timestamp" }),
+  firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
 });
