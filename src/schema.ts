@@ -4,3 +4,5 @@ export const likedTweets = sqliteTable("db_liked_tweets", {
   url: text("url").primaryKey(),
   firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
 });
+
+export type LikedTweet = typeof likedTweets.$inferInsert;
