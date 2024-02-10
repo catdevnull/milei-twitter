@@ -1,0 +1,29 @@
+FROM cgr.dev/chainguard/wolfi-base AS base
+WORKDIR /usr/src/app
+
+FROM base as build
+RUN apk add --no-cache nodejs npm
+RUN npm install --global pnpm
+COPY package.json package.json
+COPY pnpm-lock.yaml .
+RUN pnpm install
+COPY . .
+RUN pnpm install && \
+    pnpm build
+
+FROM base
+ENV NODE_ENV=production
+RUN apk add --no-cache nodejs npm jq sqlite
+# glib libnss dbus-libs libatk-1.0 libatk-bridge-2.0 cups-libs libdrm libxkbcommon libxcomposite libxdamage libxrandr mesa-gbm pango alsa-lib freetype harfbuzz ca-certificates
+
+# Sitio
+COPY --from=build /usr/src/app/build .
+COPY --from=build /usr/src/app/package.json package.real.json
+COPY --from=build /usr/src/app/drizzle drizzle
+RUN sh -c 'echo {\"name\":\"sitio\",\"type\":\"module\",\"dependencies\":$(jq .dependencies < package.real.json)} > package.json'
+RUN npm install
+
+ENV DB_PATH=/db/db.db
+EXPOSE 3000
+
+CMD ["node", "."]
