@@ -15,19 +15,17 @@ class Scraper {
     this.db = db;
   }
 
-  async cron() {
+  async oneoff() {
     await this.goToLikes();
+    await this.scrapLikedTweets();
+    await this.puppeteer?.browser.close();
+    this.puppeteer = null;
+  }
+
+  async cron() {
     while (true) {
-      await this.scrapLikedTweets();
+      await this.oneoff();
       await wait(50 * 1000 + Math.random() * 15 * 1000);
-      const { page } =
-        this.puppeteer || (this.puppeteer = await this.buildBrowser());
-
-      // guardar tweets otra vez por si cargaron unos nuevos
-      await this.saveLikedTweets();
-
-      // recargar tweets para asegurarse de tener tweets nuevos
-      await page.reload();
     }
   }
 
@@ -126,3 +124,4 @@ function wait(ms: number) {
 }
 
 if (!dev) new Scraper(db).cron();
+else new Scraper(db).oneoff();
