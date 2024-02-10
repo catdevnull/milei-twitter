@@ -35,6 +35,12 @@
   />
   <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
   <meta name="twitter:image" content={"https://milei.nulo.ar" + card} />
+
+  <script
+    async
+    src="https://umami.experimentos.nulo.ar/script.js"
+    data-website-id="3728adc2-6131-4895-9b0c-98f3038d9126"
+  ></script>
 </svelte:head>
 
 <!-- toca poncho? ( ͡° ͜ʖ ͡°) -->
