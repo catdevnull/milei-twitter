@@ -28,9 +28,8 @@ class Scraper {
   }
 
   async cron() {
-    await this.oneoff(50);
     while (true) {
-      await this.oneoff(10);
+      await this.oneoff();
       await wait(50 * 1000 + Math.random() * 15 * 1000);
     }
   }
