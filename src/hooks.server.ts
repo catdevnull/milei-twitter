@@ -5,6 +5,7 @@ import { type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema.js";
 import { db } from "$lib/db.js";
 import { dev } from "$app/environment";
+import { env } from "$env/dynamic/private";
 
 type Db = BetterSQLite3Database<typeof schema>;
 class Scraper {
@@ -101,9 +102,16 @@ class Scraper {
   }
 
   async buildBrowser() {
-    const browser = await puppeteer.launch({
-      // headless: false,
-    });
+    let browser;
+    if (env.BROWSER_WS_ENDPOINT) {
+      browser = await puppeteer.connect({
+        browserWSEndpoint: env.BROWSER_WS_ENDPOINT,
+      });
+    } else {
+      browser = await puppeteer.launch({
+        // headless: false,
+      });
+    }
     const page = await browser.newPage();
 
     await page.setCookie(...cookies);
