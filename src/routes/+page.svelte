@@ -1,2 +1,19 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+
+  const formatter = Intl.DateTimeFormat("es-AR", {
+    timeStyle: "short",
+    dateStyle: "medium",
+  });
+</script>
+
+<ul>
+  {#each data.tweets as tweet}
+    <li>
+      {tweet.url}
+      <small>(registrado {formatter.format(tweet.firstSeenAt)})</small>
+    </li>
+  {/each}
+</ul>
