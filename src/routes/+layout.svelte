@@ -34,7 +34,7 @@
     content="Mira cuanto usa Twitter el Presidente Javier Milei"
   />
   <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
-  <meta property="twitter:image:src" content={"https://milei.nulo.ar" + card} />
+  <meta name="twitter:image" content={"https://milei.nulo.ar" + card} />
 
   <script
     async
