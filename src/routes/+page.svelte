@@ -34,7 +34,7 @@
   $: masLikeados = sortMost(data.tweets);
 </script>
 
-<div class="flex min-h-screen flex-col justify-center gap-12 px-2">
+<div class="flex min-h-screen flex-col justify-center gap-12 p-2">
   <div class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
       ¿Cuantos tweets likeo nuestro Presidente hoy?
@@ -53,7 +53,7 @@
         <li>
           <a
             class="text-medium underline"
-            href={`https://twitter.com/{persona}`}
+            href={`https://twitter.com/${persona}`}
             rel="noreferrer">@{persona}</a
           >: {n}
         </li>
