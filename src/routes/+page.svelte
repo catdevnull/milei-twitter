@@ -57,7 +57,7 @@
         i--;
       }
     }
-    console.debug(finalStartEnds.map((x) => [x.type, x.date.toDate()]));
+    // console.debug(finalStartEnds.map((x) => [x.type, x.date.toDate()]));
 
     let finalDurations: Array<Duration> = [];
 
