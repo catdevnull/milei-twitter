@@ -41,13 +41,18 @@ class Scraper {
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
     const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] [data-testid=tweet]`;
-    await page.waitForSelector(sel);
+    await page.waitForSelector(`${sel} a[href] time`);
+    await wait(500);
     const got = await page.evaluate(
       (sel: string) =>
-        Array.from(document.querySelectorAll(sel), (x) => {
-          const href = (
-            x.querySelector("time")?.parentElement as HTMLAnchorElement
-          ).href;
+        Array.from(document.querySelectorAll(sel)).filter(x => {
+          // a veces aparecen publicidades que no tienen <time> y tampoco queremos guardar
+          return x.querySelector('time')
+        }).map((x) => {
+          const linkEl =
+            x.querySelector("time")?.parentElement
+          if (!(linkEl instanceof HTMLAnchorElement)) throw new Error('no es un link')
+          const href = linkEl?.href;
           const text = x.querySelector("[data-testid=tweetText]")?.textContent;
 
           return { href, text };
@@ -102,7 +107,8 @@ class Scraper {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
-    await page.goto("https://twitter.com");
+    // empezar en cuenta random así no consume de la cuota de tuits leyendo de la home
+    await page.goto("https://twitter.com/profile");
     {
       const searchBoxEl = `[data-testid="SearchBox_Search_Input"]`;
       await page.waitForSelector(searchBoxEl);
@@ -111,7 +117,7 @@ class Scraper {
     {
       const jmileiSelector = `[data-testid="sidebarColumn"] >>> ::-p-text(@JMilei)`;
       await page.waitForSelector(jmileiSelector);
-      await wait(500);
+      await wait(1500);
       await page.click(jmileiSelector);
     }
     {
