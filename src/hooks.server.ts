@@ -22,8 +22,10 @@ class Scraper {
     } catch (error) {
       console.error("oneoff:", error);
     } finally {
-      await this.puppeteer?.browser.close();
-      this.puppeteer = null;
+      if (!dev) {
+        await this.puppeteer?.browser.close();
+        this.puppeteer = null;
+      }
     }
   }
 
