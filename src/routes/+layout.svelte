@@ -2,6 +2,7 @@
   import "../app.pcss";
 
   import card from "$lib/assets/card.jpg";
+  import { dev } from "$app/environment";
 </script>
 
 <svelte:head>
@@ -36,11 +37,13 @@
   <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
   <meta name="twitter:image" content={"https://milei.nulo.ar" + card} />
 
-  <script
-    async
-    src="https://umami.experimentos.nulo.ar/script.js"
-    data-website-id="3728adc2-6131-4895-9b0c-98f3038d9126"
-  ></script>
+  {#if !dev}
+    <script
+      async
+      src="https://umami.experimentos.nulo.ar/script.js"
+      data-website-id="3728adc2-6131-4895-9b0c-98f3038d9126"
+    ></script>
+  {/if}
 </svelte:head>
 
 <!-- toca poncho? ( ͡° ͜ʖ ͡°) -->
