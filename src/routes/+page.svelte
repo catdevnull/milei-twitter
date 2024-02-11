@@ -133,7 +133,9 @@
     </h1>
     <h2 class="text-9xl font-black">{today.length}</h2>
     <small
-      >última vez actualizado {dateFormatter.format(data.lastUpdated.at)}</small
+      >última vez actualizado {dateFormatter.format(
+        data.lastUpdated?.firstSeenAt,
+      )}</small
     >
   </div>
 

@@ -7,8 +7,8 @@ export const load: PageServerLoad = async ({ params }) => {
   const tweets = await db.query.likedTweets.findMany({
     orderBy: desc(likedTweets.firstSeenAt),
   });
-  const lastUpdated = await db.query.scraps.findFirst({
-    orderBy: desc(scraps.at),
+  const lastUpdated = await db.query.likedTweets.findFirst({
+    orderBy: desc(likedTweets.firstSeenAt),
   });
   return { tweets, lastUpdated };
 };
