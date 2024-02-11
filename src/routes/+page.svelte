@@ -119,6 +119,11 @@
     timeStyle: "medium",
     timeZone: "America/Argentina/Buenos_Aires",
   });
+
+  const dateFormatter = Intl.DateTimeFormat("es-AR", {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
 </script>
 
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
@@ -127,6 +132,9 @@
       ¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas?
     </h1>
     <h2 class="text-9xl font-black">{today.length}</h2>
+    <small
+      >última vez actualizado {dateFormatter.format(data.lastUpdated.at)}</small
+    >
   </div>
 
   <div class="mx-auto w-full max-w-2xl">
