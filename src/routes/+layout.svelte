@@ -2,6 +2,7 @@
   import "../app.pcss";
 
   import card from "$lib/assets/card.jpg";
+  import favicon from "$lib/assets/favicon.jpg";
   import { dev } from "$app/environment";
 </script>
 
@@ -11,6 +12,7 @@
     name="description"
     content="Mira cuanto usa Twitter el Presidente Javier Milei"
   />
+  <link rel="icon" href={favicon} />
 
   <meta property="og:type" content="website" />
   <meta
