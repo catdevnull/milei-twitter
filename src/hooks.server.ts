@@ -1,11 +1,11 @@
-import puppeteer, { Browser, Page } from "puppeteer";
-import cookies from "./cookie.js";
+import puppeteer, { Browser, Page, type CookieParam } from "puppeteer";
 
 import { type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema.js";
 import { db } from "$lib/db.js";
 import { dev } from "$app/environment";
 import { env } from "$env/dynamic/private";
+import { sql } from "drizzle-orm";
 
 type Db = BetterSQLite3Database<typeof schema>;
 class Scraper {
@@ -15,12 +15,51 @@ class Scraper {
     this.db = db;
   }
 
-  async oneoff(n: number | undefined = undefined) {
+  async scrap(n: number | undefined = undefined) {
+    const cuenta = await this.db.query.cuentas.findFirst({
+      orderBy: sql`random()`,
+    });
     try {
+      if (!cuenta) throw new Error("no tengo cuentas para scrapear");
+      if (!cuenta.accountDataJson) throw new Error("falta token");
+      const scrap = await this.db
+        .insert(schema.scraps)
+        .values({ at: new Date(), cuentaId: cuenta.id })
+        .returning();
+      const scrapId = scrap[0].id;
+
+      const tokens = schema.zTokenAccountData.parse(
+        JSON.parse(cuenta.accountDataJson),
+      );
+      const cookies: Array<CookieParam> = [
+        {
+          name: "auth_token",
+          value: tokens.auth_token,
+          domain: ".twitter.com",
+          path: "/",
+          secure: true,
+          httpOnly: true,
+          sameSite: "None",
+        },
+        {
+          name: "ct0",
+          value: tokens.ct0,
+          domain: ".twitter.com",
+          path: "/",
+          secure: true,
+          httpOnly: false,
+          sameSite: "Lax",
+        },
+      ];
+
+      const { page } =
+        this.puppeteer || (this.puppeteer = await this.buildBrowser());
+      await page.setCookie(...cookies);
+
       await this.goToLikes();
-      await this.scrapLikedTweets(n);
+      await this.scrapLikedTweets(n, scrapId);
     } catch (error) {
-      console.error("oneoff:", error);
+      console.error(`oneoff[${cuenta?.id}]:`, error);
     } finally {
       if (!dev) {
         await this.puppeteer?.browser.close();
@@ -31,7 +70,7 @@ class Scraper {
 
   async cron() {
     while (true) {
-      await this.oneoff();
+      await this.scrap();
       await wait(50 * 1000 + Math.random() * 15 * 1000);
     }
   }
@@ -45,18 +84,22 @@ class Scraper {
     await wait(500);
     const got = await page.evaluate(
       (sel: string) =>
-        Array.from(document.querySelectorAll(sel)).filter(x => {
-          // a veces aparecen publicidades que no tienen <time> y tampoco queremos guardar
-          return x.querySelector('time')
-        }).map((x) => {
-          const linkEl =
-            x.querySelector("time")?.parentElement
-          if (!(linkEl instanceof HTMLAnchorElement)) throw new Error('no es un link')
-          const href = linkEl?.href;
-          const text = x.querySelector("[data-testid=tweetText]")?.textContent;
+        Array.from(document.querySelectorAll(sel))
+          .filter((x) => {
+            // a veces aparecen publicidades que no tienen <time> y tampoco queremos guardar
+            return x.querySelector("time");
+          })
+          .map((x) => {
+            const linkEl = x.querySelector("time")?.parentElement;
+            if (!(linkEl instanceof HTMLAnchorElement))
+              throw new Error("no es un link");
+            const href = linkEl?.href;
+            const text = x.querySelector(
+              "[data-testid=tweetText]",
+            )?.textContent;
 
-          return { href, text };
-        }),
+            return { href, text };
+          }),
       sel,
     );
 
@@ -79,20 +122,15 @@ class Scraper {
   /**
    * scrollea varias veces y guarda los tweets likeados que encuentra
    */
-  async scrapLikedTweets(n: number = 10) {
+  async scrapLikedTweets(n: number = 10, scrapId: number) {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
-
-    const scrap = await this.db
-      .insert(schema.scraps)
-      .values({ at: new Date() })
-      .returning();
 
     for (let i = 0; i < n; i++) {
       const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
 
       // scrapear tweets y guardarlos
-      await this.saveLikedTweets(scrap[0].id);
+      await this.saveLikedTweets(scrapId);
 
       // scrollear al final para permitir que mas se cargenrfdo
       const els = await page.$$(sel);
@@ -140,7 +178,6 @@ class Scraper {
     }
     const page = await browser.newPage();
 
-    await page.setCookie(...cookies);
     await page.setViewport({ width: 1080, height: 1024 });
 
     return { browser, page };
@@ -152,4 +189,4 @@ function wait(ms: number) {
 }
 
 if (!dev) new Scraper(db).cron();
-else new Scraper(db).oneoff(50);
+else new Scraper(db).scrap(50);

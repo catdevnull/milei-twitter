@@ -22,6 +22,20 @@
       "when": 1707599288765,
       "tag": "0002_magenta_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1707678175677,
+      "tag": "0003_brief_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1707678219583,
+      "tag": "0004_clammy_alex_wilder",
+      "breakpoints": true
     }
   ]
 }

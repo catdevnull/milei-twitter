@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import z from "zod";
 
 export const likedTweets = sqliteTable("db_liked_tweets", {
   url: text("url").primaryKey(),
@@ -22,4 +23,20 @@ export type LikedTweet = typeof likedTweets.$inferInsert;
 export const scraps = sqliteTable("db_scraps", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   at: integer("at", { mode: "timestamp" }).notNull(),
+  cuentaId: text("cuenta_id"),
 });
+export const scrapsRelations = relations(scraps, ({ many }) => ({
+  likedTweets: many(likedTweets),
+}));
+
+export const cuentas = sqliteTable("db_cuentas", {
+  id: text("id").primaryKey(),
+  accountDataJson: text("account_data_json"),
+});
+
+export const zTokenAccountData = z.object({
+  ct0: z.string(),
+  auth_token: z.string(),
+});
+
+export type TokenAccountData = z.infer<typeof zTokenAccountData>;
