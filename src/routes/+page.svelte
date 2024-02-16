@@ -1,5 +1,9 @@
 <script lang="ts">
   import dayjs, { type Dayjs } from "dayjs";
+  import Utc from "dayjs/plugin/utc";
+  import Tz from "dayjs/plugin/timezone";
+  dayjs.extend(Utc);
+  dayjs.extend(Tz);
   import { formatDuration, intervalToDuration, lastDayOfWeek } from "date-fns";
   import { es } from "date-fns/locale";
 
@@ -131,7 +135,9 @@
   $: masLikeados = sortMost(today);
 
   function lastWeek(allTweets: LikedTweet[]) {
-    const today = dayjs().startOf("day");
+    const today = dayjs
+      .tz(undefined, "America/Argentina/Buenos_Aires")
+      .startOf("day");
 
     const days = [
       today.subtract(6, "day"),
@@ -171,6 +177,7 @@
   const weekDayFormatter = Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     weekday: "short",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 </script>
 
