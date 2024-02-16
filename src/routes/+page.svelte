@@ -179,11 +179,21 @@
     </div>
   </div>
 
-  <footer class="text-center">
-    hecho por <a
-      class="text-blue-600 underline dark:text-blue-300"
-      href="https://twitter.com/esoesnulo"
-      rel="noreferrer">@esoesnulo</a
-    >
+  <footer class="flex flex-col gap-4 text-center">
+    <div>
+      Compartir por
+      <a
+        class="rounded bg-green-500 px-3 py-2 text-white"
+        href={`https://api.whatsapp.com/send?text=${encodeURIComponent("¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas? https://milei.nulo.in/?ref=wsp-link")}`}
+        >WhatsApp</a
+      >
+    </div>
+    <div>
+      hecho por <a
+        class="text-blue-600 underline dark:text-blue-300"
+        href="https://twitter.com/esoesnulo"
+        rel="noreferrer">@esoesnulo</a
+      >
+    </div>
   </footer>
 </div>
