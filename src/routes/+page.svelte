@@ -172,6 +172,7 @@
   const dateFormatter = Intl.DateTimeFormat("es-AR", {
     dateStyle: "medium",
     timeStyle: "medium",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 
   const weekDayFormatter = Intl.DateTimeFormat("es-AR", {

@@ -13,6 +13,7 @@
     month: "2-digit",
     year: "2-digit",
     hour: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 
   function byHour(tweets: LikedTweet[]) {
