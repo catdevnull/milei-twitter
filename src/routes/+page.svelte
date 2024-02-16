@@ -190,9 +190,14 @@
   <section class="mx-auto flex flex-col items-center gap-16 px-8 md:flex-row">
     <div class="max-w-[400px]">
       <h2 class="text-2xl font-bold">Tiempo en Twitter</h2>
-      <p>Esto es una <em>estimación</em> basada en cuando likea.</p>
+      <p>Esto es una <em>estimación*</em> basada en cuando likea.</p>
       <p class="text-4xl font-black">
         {formatDurationFromMs(totalTime)}
+      </p>
+      <p class="my-1 text-sm leading-tight">
+        * Esto es un experimento que automáticamente revisa los momentos en
+        donde Milei le da "me gusta" a cosas y genera un estimado de cuanto
+        tiempo estuvo usando Twitter.
       </p>
       <details>
         <summary>Rangos de tiempo estimados</summary>
