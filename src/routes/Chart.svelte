@@ -9,9 +9,6 @@
   export let tweets: LikedTweet[];
 
   const hourFormatter = Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "2-digit",
-    year: "2-digit",
     hour: "2-digit",
     timeZone: "America/Argentina/Buenos_Aires",
   });
@@ -55,7 +52,7 @@
     {
       label: "Tweets likeados por @JMilei",
       data: Array.from(byHour(tweets)).map(([time, tweets]) => {
-        return { x: time, y: tweets.length };
+        return { x: hourFormatter.format(time) + "hs", y: tweets.length };
       }),
       backgroundColor: "#ffd801",
     },
@@ -73,7 +70,12 @@
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-      x: { type: "time" },
+      x: {
+        type: "category",
+        ticks: {
+          autoSkip: true,
+        },
+      },
     },
   }}
 />

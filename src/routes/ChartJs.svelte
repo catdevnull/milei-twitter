@@ -15,7 +15,6 @@
     BarElement,
   } from "chart.js";
   import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
-  import { char } from "drizzle-orm/mysql-core";
   import { afterUpdate, onMount } from "svelte";
 
   Chart.register(
@@ -31,11 +30,12 @@
   );
 
   export let type: ChartType;
-  export let data: ChartData<typeof type, { x: number; y: number }[]>;
+  type DataPoint = { x: string | number; y: number };
+  export let data: ChartData<typeof type, Array<DataPoint>>;
   export let options: ChartOptions<typeof type> = {};
 
   let canvasEl: HTMLCanvasElement;
-  let chart: Chart;
+  let chart: Chart<typeof type, Array<DataPoint>>;
 
   onMount(() => {
     chart = new Chart(canvasEl, {
