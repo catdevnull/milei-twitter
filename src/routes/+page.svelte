@@ -238,7 +238,8 @@
             <a
               class="text-medium underline"
               href={`https://twitter.com/${persona}`}
-              rel="noreferrer">@{persona}</a
+              rel="noopener noreferrer"
+              target="_blank">@{persona}</a
             >: {n}
           </li>
         {/each}
