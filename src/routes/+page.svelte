@@ -2,8 +2,10 @@
   import dayjs, { type Dayjs } from "dayjs";
   import Utc from "dayjs/plugin/utc";
   import Tz from "dayjs/plugin/timezone";
+  import CustomParseFormat from "dayjs/plugin/customParseFormat";
   dayjs.extend(Utc);
   dayjs.extend(Tz);
+  dayjs.extend(CustomParseFormat);
   import { formatDuration, intervalToDuration, lastDayOfWeek } from "date-fns";
   import { es } from "date-fns/locale";
 
@@ -13,20 +15,38 @@
 
   export let data: PageData;
 
-  let filter: "today" | "last-24h" = "today";
+  type Filter = "today" | "last-24h" | `date:${string}`;
+
+  let filter: Filter = "today";
+  $: filterFn = filterFnFromFilter(filter);
+
+  function filterFnFromFilter(filter: Filter) {
+    switch (filter) {
+      case "today":
+        return (d: Dayjs) =>
+          d.isAfter(
+            dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
+          );
+      case "last-24h":
+        return (d: Dayjs) => d.isAfter(dayjs().subtract(24, "hour"));
+      default:
+        const dateStr = filter.slice(5);
+        const date = dayjs(dateStr, "YYYY-MM-DD").tz(
+          "America/Argentina/Buenos_Aires",
+          true,
+        );
+        return (d: Dayjs) => {
+          return d.isAfter(date) && d.isBefore(date.add(1, "day"));
+        };
+    }
+  }
 
   $: filteredTweets = data.tweets
     .map((t) => ({
       ...t,
       firstSeenAt: dayjs(t.firstSeenAt),
     }))
-    .filter((t) =>
-      filter === "today"
-        ? t.firstSeenAt.isAfter(
-            dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
-          )
-        : t.firstSeenAt.isAfter(dayjs().subtract(24, "hour")),
-    )
+    .filter((t) => filterFn(t.firstSeenAt))
     .map((t) => ({
       ...t,
       firstSeenAt: t.firstSeenAt.toDate(),
@@ -195,9 +215,14 @@
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro Presidente
       <select bind:value={filter}>
+        <option value="last-24h">las últimas 24hs</option>
         <option value="today">hoy, {weekDayFormatter.format(new Date())}</option
         >
-        <option value="last-24h">las últimas 24hs</option>
+        {#each ultimaSemana.toReversed().slice(1) as { day }}
+          <option value={`date:${day.format("YYYY-MM-DD")}`}
+            >{weekDayFormatter.format(day.toDate())}</option
+          >
+        {/each}
       </select>
       ?
     </h1>
