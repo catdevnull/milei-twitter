@@ -13,12 +13,20 @@
 
   export let data: PageData;
 
-  $: today = data.tweets
+  let filter: "today" | "last-24h" = "today";
+
+  $: filteredTweets = data.tweets
     .map((t) => ({
       ...t,
       firstSeenAt: dayjs(t.firstSeenAt),
     }))
-    .filter((t) => t.firstSeenAt.isAfter(dayjs().subtract(24, "hour")))
+    .filter((t) =>
+      filter === "today"
+        ? t.firstSeenAt.isAfter(
+            dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
+          )
+        : t.firstSeenAt.isAfter(dayjs().subtract(24, "hour")),
+    )
     .map((t) => ({
       ...t,
       firstSeenAt: t.firstSeenAt.toDate(),
@@ -111,7 +119,7 @@
   }
 
   $: ranges = calculateScreenTime(
-    today,
+    filteredTweets,
     // .filter((t) =>
     //   dayjs(t.firstSeenAt).isAfter(dayjs().subtract(8, "hour")),
     // ),
@@ -132,7 +140,7 @@
       .slice(0, 10);
   }
 
-  $: masLikeados = sortMost(today);
+  $: masLikeados = sortMost(filteredTweets);
 
   function lastWeek(allTweets: LikedTweet[]) {
     const today = dayjs
@@ -185,9 +193,15 @@
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
   <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
-      ¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas?
+      ¿Cuántos tweets likeó nuestro Presidente
+      <select bind:value={filter}>
+        <option value="today">hoy, {weekDayFormatter.format(new Date())}</option
+        >
+        <option value="last-24h">las últimas 24hs</option>
+      </select>
+      ?
     </h1>
-    <h2 class="text-9xl font-black">{today.length}</h2>
+    <h2 class="text-9xl font-black">{filteredTweets.length}</h2>
     <small
       >última vez actualizado {dateFormatter.format(
         data.lastUpdated?.firstSeenAt,
@@ -196,7 +210,7 @@
   </section>
 
   <section class="mx-auto w-full max-w-2xl">
-    <Chart tweets={today} />
+    <Chart tweets={filteredTweets} />
   </section>
 
   <section class="mx-auto flex flex-col items-start gap-16 px-8 md:flex-row">

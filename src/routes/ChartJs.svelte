@@ -15,7 +15,8 @@
     BarElement,
   } from "chart.js";
   import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
-  import { onMount } from "svelte";
+  import { char } from "drizzle-orm/mysql-core";
+  import { afterUpdate, onMount } from "svelte";
 
   Chart.register(
     BarController,
@@ -34,13 +35,24 @@
   export let options: ChartOptions<typeof type> = {};
 
   let canvasEl: HTMLCanvasElement;
+  let chart: Chart;
+
   onMount(() => {
-    const chart = new Chart(canvasEl, {
+    chart = new Chart(canvasEl, {
       type,
       data,
       options,
     });
     return () => chart.destroy();
+  });
+
+  // https://github.com/SauravKanchan/svelte-chartjs/blob/master/src/Chart.svelte
+  afterUpdate(() => {
+    if (!chart) return;
+
+    chart.data = data;
+    Object.assign(chart.options, options);
+    chart.update();
   });
 </script>
 
