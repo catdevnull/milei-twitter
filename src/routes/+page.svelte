@@ -88,7 +88,11 @@
   // https://stackoverflow.com/a/65711327
   function formatDurationFromMs(ms: number) {
     const duration = intervalToDuration({ start: 0, end: ms });
-    return formatDuration(duration, { locale: es, delimiter: ", " });
+    return formatDuration(duration, {
+      locale: es,
+      delimiter: ", ",
+      format: ["hours", "minutes"],
+    });
   }
   function formatTinyDurationFromMs(ms: number) {
     const duration = intervalToDuration({ start: 0, end: ms });
@@ -187,18 +191,25 @@
     <Chart tweets={today} />
   </section>
 
-  <section class="mx-auto flex flex-col items-center gap-16 px-8 md:flex-row">
+  <section class="mx-auto flex flex-col items-start gap-16 px-8 md:flex-row">
     <div class="max-w-[400px]">
       <h2 class="text-2xl font-bold">Tiempo en Twitter</h2>
-      <p>Esto es una <em>estimación*</em> basada en cuando likea.</p>
+      <p>
+        🤖 Reviso la cuenta <a
+          href="https://twitter.com/JMilei"
+          class="text-blue-600 underline dark:text-blue-200"
+          rel="noreferrer">@JMilei</a
+        >, registro los "me gusta" y genero un estimado de cuanto tiempo estuvo
+        usando Twitter:
+      </p>
       <p class="text-4xl font-black">
         {formatDurationFromMs(totalTime)}
       </p>
-      <p class="my-1 text-sm leading-tight">
+      <!-- <p class="my-1 text-sm leading-tight">
         * Esto es un experimento que automáticamente revisa los momentos en
         donde Milei le da "me gusta" a cosas y genera un estimado de cuanto
         tiempo estuvo usando Twitter.
-      </p>
+      </p> -->
       <details>
         <summary>Rangos de tiempo estimados</summary>
         <ol class="list-decimal pl-8">
@@ -227,6 +238,13 @@
       </ol>
     </div>
   </section>
+
+  <!-- <section class="mx-auto flex max-w-2xl flex-col">
+    <p class="px-4">
+      Esta página web revisa automáticamente la cuenta , registra los "me gusta" y genera un estimado de cuanto tiempo estuvo el
+      presidente usando Twitter.
+    </p>
+  </section> -->
 
   <section class="mx-auto flex max-w-2xl flex-col">
     <h2 class="text-center text-2xl font-bold">Semanal</h2>
