@@ -1,6 +1,6 @@
 <script lang="ts">
   import dayjs, { type Dayjs } from "dayjs";
-  import { formatDuration, intervalToDuration } from "date-fns";
+  import { formatDuration, intervalToDuration, lastDayOfWeek } from "date-fns";
   import { es } from "date-fns/locale";
 
   import type { PageData } from "./$types";
@@ -90,6 +90,17 @@
     const duration = intervalToDuration({ start: 0, end: ms });
     return formatDuration(duration, { locale: es, delimiter: ", " });
   }
+  function formatTinyDurationFromMs(ms: number) {
+    const duration = intervalToDuration({ start: 0, end: ms });
+    // https://github.com/date-fns/date-fns/issues/2134
+    return formatDuration(duration, {
+      locale: es,
+      // delimiter: ", ",
+      format: ["hours", "minutes"],
+    })
+      .replace(/ horas?/, "h")
+      .replace(/ minutos?/, "m");
+  }
 
   $: ranges = calculateScreenTime(
     today,
@@ -115,6 +126,34 @@
 
   $: masLikeados = sortMost(today);
 
+  function lastWeek(allTweets: LikedTweet[]) {
+    const today = dayjs().startOf("day");
+
+    const days = [
+      today.subtract(6, "day"),
+      today.subtract(5, "day"),
+      today.subtract(4, "day"),
+      today.subtract(3, "day"),
+      today.subtract(2, "day"),
+      today.subtract(1, "day"),
+      today,
+    ];
+
+    return days.map((day) => {
+      const tweets = allTweets.filter((t) => {
+        const date = dayjs(t.firstSeenAt);
+        return date.isAfter(day) && date.isBefore(day.add(1, "day"));
+      });
+      return {
+        day,
+        tweets,
+        screenTime: totalFromDurations(calculateScreenTime(tweets)),
+      };
+    });
+  }
+
+  $: ultimaSemana = lastWeek(data.tweets);
+
   const timeFormatter = Intl.DateTimeFormat("es-AR", {
     timeStyle: "medium",
     timeZone: "America/Argentina/Buenos_Aires",
@@ -124,10 +163,15 @@
     dateStyle: "medium",
     timeStyle: "medium",
   });
+
+  const weekDayFormatter = Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    weekday: "short",
+  });
 </script>
 
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
-  <div class="my-4 flex flex-col text-center">
+  <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas?
     </h1>
@@ -137,13 +181,13 @@
         data.lastUpdated?.firstSeenAt,
       )}</small
     >
-  </div>
+  </section>
 
-  <div class="mx-auto w-full max-w-2xl">
+  <section class="mx-auto w-full max-w-2xl">
     <Chart tweets={today} />
-  </div>
+  </section>
 
-  <div class="mx-auto flex flex-col items-center gap-16 px-8 md:flex-row">
+  <section class="mx-auto flex flex-col items-center gap-16 px-8 md:flex-row">
     <div class="max-w-[400px]">
       <h2 class="text-2xl font-bold">Tiempo en Twitter</h2>
       <p>Esto es una <em>estimación</em> basada en cuando likea.</p>
@@ -164,7 +208,7 @@
       </details>
     </div>
     <div>
-      <h2 class="text-2xl font-bold">Mas likeados</h2>
+      <h2 class="text-center text-2xl font-bold">Mas likeados</h2>
       <ol class="list-decimal pl-8">
         {#each masLikeados as [persona, n]}
           <li>
@@ -177,7 +221,35 @@
         {/each}
       </ol>
     </div>
-  </div>
+  </section>
+
+  <section class="mx-auto flex max-w-2xl flex-col">
+    <h2 class="text-center text-2xl font-bold">Semanal</h2>
+
+    <table>
+      <!-- <thead>
+<tr>
+  <th></th>
+</tr>
+      </thead> -->
+
+      <tbody>
+        {#each ultimaSemana as { day, tweets, screenTime }}
+          <tr>
+            <th class="px-1 text-right"
+              >{weekDayFormatter.format(day.toDate())}</th
+            >
+            <td class="px-1 text-right">
+              {tweets.length}❤️
+            </td>
+            <td class="px-1">
+              {formatTinyDurationFromMs(screenTime)}
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </section>
 
   <footer class="flex flex-col gap-4 text-center">
     <div>
