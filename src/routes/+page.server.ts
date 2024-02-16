@@ -5,6 +5,10 @@ import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
   const tweets = await db.query.likedTweets.findMany({
+    columns: {
+      firstSeenAt: true,
+      url: true,
+    },
     orderBy: desc(likedTweets.firstSeenAt),
   });
   const lastUpdated = await db.query.likedTweets.findFirst({
