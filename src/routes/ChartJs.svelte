@@ -1,15 +1,12 @@
 <script lang="ts">
   import {
     Chart,
-    LineController,
     type ChartData,
     type ChartOptions,
     type ChartType,
-    type Point,
     CategoryScale,
     LinearScale,
     PointElement,
-    LineElement,
     Filler,
     TimeScale,
     Tooltip,
@@ -21,8 +18,6 @@
   import { onMount } from "svelte";
 
   Chart.register(
-    LineController,
-    LineElement,
     BarController,
     BarElement,
     CategoryScale,
