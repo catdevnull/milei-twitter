@@ -56,7 +56,7 @@
       data: Array.from(byHour(tweets)).map(([time, tweets]) => {
         return { x: time, y: tweets.length };
       }),
-      backgroundColor: "#fdfc01",
+      backgroundColor: "#ffd801",
     },
   ];
 
