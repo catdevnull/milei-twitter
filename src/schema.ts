@@ -24,10 +24,13 @@ export const scraps = sqliteTable("db_scraps", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   at: integer("at", { mode: "timestamp" }).notNull(),
   cuentaId: text("cuenta_id"),
+  totalTweetsSeen: integer("total_tweets_seen"),
 });
 export const scrapsRelations = relations(scraps, ({ many }) => ({
   likedTweets: many(likedTweets),
 }));
+
+export type Scrap = typeof scraps.$inferInsert;
 
 export const cuentas = sqliteTable("db_cuentas", {
   id: text("id").primaryKey(),

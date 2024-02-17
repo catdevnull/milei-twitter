@@ -5,7 +5,7 @@ import * as schema from "./schema.js";
 import { db } from "$lib/db.js";
 import { dev } from "$app/environment";
 import { env } from "$env/dynamic/private";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 
 type Db = BetterSQLite3Database<typeof schema>;
 class Scraper {
@@ -57,7 +57,13 @@ class Scraper {
       await page.setCookie(...cookies);
 
       await this.goToLikes();
-      await this.scrapLikedTweets(n, scrapId);
+      const count = await this.scrapLikedTweets(n, scrapId);
+      await this.db
+        .update(schema.scraps)
+        .set({
+          totalTweetsSeen: count,
+        })
+        .where(eq(schema.scraps.id, scrapId));
     } catch (error) {
       console.error(`oneoff[${cuenta?.id}]:`, error);
     } finally {
@@ -75,7 +81,11 @@ class Scraper {
     }
   }
 
-  async saveLikedTweets(scrapId: number) {
+  /**
+   * @param scrapId
+   * @returns la cantidad de tweets vistos (no guardados)
+   */
+  async saveLikedTweets(scrapId: number): Promise<number> {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
 
@@ -117,20 +127,25 @@ class Scraper {
       else q = q.onConflictDoNothing();
       await q;
     }
+
+    return got.length;
   }
 
   /**
    * scrollea varias veces y guarda los tweets likeados que encuentra
+   * @returns cantidad de tweets vistos
    */
-  async scrapLikedTweets(n: number = 10, scrapId: number) {
+  async scrapLikedTweets(n: number = 10, scrapId: number): Promise<number> {
     const { page } =
       this.puppeteer || (this.puppeteer = await this.buildBrowser());
+
+    let count = 0;
 
     for (let i = 0; i < n; i++) {
       const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
 
       // scrapear tweets y guardarlos
-      await this.saveLikedTweets(scrapId);
+      count += await this.saveLikedTweets(scrapId);
 
       // scrollear al final para permitir que mas se cargenrfdo
       const els = await page.$$(sel);
@@ -139,6 +154,8 @@ class Scraper {
       // esperar para cargar tweets
       await wait(1500);
     }
+
+    return count;
   }
 
   async goToLikes() {
