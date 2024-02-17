@@ -7,6 +7,9 @@
   import ChartJs from "./ChartJs.svelte";
   import type { ChartData } from "chart.js";
 
+  import { listen } from "svelte-mq-store";
+  const isDark = listen("(prefers-color-scheme: dark)", false);
+
   export let tweets: LikedTweet[];
 
   const hourFormatter = Intl.DateTimeFormat("es-AR", {
@@ -65,6 +68,7 @@
         align: "end",
         clamp: true,
         offset: 1,
+        color: $isDark ? "#ffffff" : "000000",
       },
     },
   ];
@@ -92,6 +96,7 @@
           autoSkip: true,
           minRotation: 0,
           maxRotation: 0,
+          color: $isDark ? "#aaaaaa" : "000000",
         },
         grid: {
           display: false,
