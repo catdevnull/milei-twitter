@@ -20,6 +20,10 @@
   let filter: Filter = "today";
   $: filterFn = filterFnFromFilter(filter);
 
+  $: dudoso = filteredTweets.some((t) =>
+    dayjs(t.firstSeenAt).isBefore(dayjs("2024-02-12", "YYYY-MM-DD")),
+  );
+
   function filterFnFromFilter(filter: Filter) {
     switch (filter) {
       case "today":
@@ -233,6 +237,15 @@
       )}</small
     >
   </section>
+
+  {#if dudoso}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de antes del 12 de febrero pueden ser incorrectos a
+        nivel hora.
+      </p>
+    </section>
+  {/if}
 
   <section class="mx-auto w-full max-w-2xl">
     <Chart tweets={filteredTweets} />
