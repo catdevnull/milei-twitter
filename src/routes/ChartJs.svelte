@@ -15,6 +15,8 @@
     BarElement,
   } from "chart.js";
   import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
+  import ChartDataLabels from "chartjs-plugin-datalabels";
+
   import { afterUpdate, onMount } from "svelte";
 
   Chart.register(
@@ -27,6 +29,8 @@
     Filler,
     Tooltip,
     Legend,
+
+    ChartDataLabels,
   );
 
   export let type: ChartType;
@@ -56,4 +60,4 @@
   });
 </script>
 
-<canvas class="h-[200px] md:h-[300px]" bind:this={canvasEl} />
+<canvas class="h-[250px] md:h-[300px]" bind:this={canvasEl} />

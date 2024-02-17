@@ -5,6 +5,7 @@
   import MinMax from "dayjs/plugin/minMax";
   dayjs.extend(MinMax);
   import ChartJs from "./ChartJs.svelte";
+  import type { ChartData } from "chart.js";
 
   export let tweets: LikedTweet[];
 
@@ -48,6 +49,10 @@
     return map;
   }
 
+  let datasets: ChartData<
+    "bar",
+    Array<{ x: string | number; y: number }>
+  >["datasets"];
   $: datasets = [
     {
       label: "Tweets likeados por @JMilei",
@@ -55,6 +60,12 @@
         return { x: hourFormatter.format(time) + "hs", y: tweets.length };
       }),
       backgroundColor: "#ffd801",
+      datalabels: {
+        anchor: "end",
+        align: "end",
+        clamp: true,
+        offset: 1,
+      },
     },
   ];
 
@@ -69,11 +80,40 @@
   options={{
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        top: 10,
+      },
+    },
     scales: {
       x: {
         type: "category",
         ticks: {
           autoSkip: true,
+          minRotation: 0,
+          maxRotation: 0,
+        },
+        grid: {
+          display: false,
+        },
+      },
+      y: {
+        border: { display: false },
+        ticks: {
+          display: false,
+        },
+        grid: {
+          display: false,
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+      },
+      datalabels: {
+        formatter(value, context) {
+          return value.y === 0 ? "" : value.y;
         },
       },
     },

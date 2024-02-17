@@ -18,6 +18,7 @@
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.1",
     "chartjs-adapter-dayjs-4": "^1.0.4",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "date-fns": "^3.3.1",
     "dayjs": "^1.11.10",
     "dotenv": "^16.4.2",
