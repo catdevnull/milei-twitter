@@ -14,8 +14,23 @@ export const likedTweetsRelations = relations(likedTweets, ({ one, many }) => ({
     references: [scraps.id],
   }),
 }));
+export const retweets = sqliteTable("db_retweets", {
+  url: text("url").primaryKey(),
+  firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
+  retweetAt: integer("retweet_at", { mode: "timestamp" }).notNull(),
+  postedAt: integer("posted_at", { mode: "timestamp" }).notNull(),
+  text: text("text"),
+  scrapId: integer("scrap_id"),
+});
+export const retweetsRelations = relations(retweets, ({ one, many }) => ({
+  scrap: one(scraps, {
+    fields: [retweets.scrapId],
+    references: [scraps.id],
+  }),
+}));
 
 export type LikedTweet = typeof likedTweets.$inferInsert;
+export type Retweet = typeof retweets.$inferInsert;
 
 // guardamos esto para detectar si en algun momento tardamos mucho en volver a scrapear y reportamos incorrectamente muchos likes al mismo tiempo
 // aunque todavia no está implementado
@@ -28,6 +43,7 @@ export const scraps = sqliteTable("db_scraps", {
 });
 export const scrapsRelations = relations(scraps, ({ many }) => ({
   likedTweets: many(likedTweets),
+  retweets: many(retweets),
 }));
 
 export type Scrap = typeof scraps.$inferInsert;
@@ -36,6 +52,8 @@ export const cuentas = sqliteTable("db_cuentas", {
   id: text("id").primaryKey(),
   accountDataJson: text("account_data_json"),
 });
+
+export type Cuenta = typeof cuentas.$inferInsert;
 
 export const zTokenAccountData = z.object({
   ct0: z.string(),
