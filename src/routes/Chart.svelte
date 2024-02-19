@@ -163,7 +163,7 @@
     align: "center",
     clamp: true,
     // offset: 1,
-    color: $isDark ? "#ffffff" : "000000",
+    color: "#000000",
   };
 
   let datasets: Datasets;
@@ -231,7 +231,7 @@
           autoSkip: true,
           minRotation: 0,
           maxRotation: 0,
-          color: $isDark ? "#aaaaaa" : "000000",
+          color: $isDark ? "#aaaaaa" : "#000000",
         },
         grid: {
           display: false,
