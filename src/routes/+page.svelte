@@ -169,6 +169,7 @@
       .startOf("day");
 
     const days = [
+      today.subtract(7, "day"),
       today.subtract(6, "day"),
       today.subtract(5, "day"),
       today.subtract(4, "day"),
