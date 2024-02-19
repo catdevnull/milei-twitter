@@ -77,9 +77,8 @@ import { sql, eq } from "drizzle-orm";
 import { z } from "zod";
 import { mkdir, writeFile } from "fs/promises";
 import { nanoid } from "nanoid";
+import { JMILEI_ID } from "../src/lib/consts.js";
 const dev = process.env.NODE_ENV !== "production";
-
-const JMILEI_ID = "4020276615";
 
 function cookiesFromAccountData(cuenta: schema.Cuenta): Array<CookieParam> {
   if (!cuenta.accountDataJson) throw new Error("falta token");
@@ -109,6 +108,17 @@ function cookiesFromAccountData(cuenta: schema.Cuenta): Array<CookieParam> {
   return cookies;
 }
 
+const zCore = z.object({
+  user_results: z.object({
+    result: z.object({
+      __typename: z.literal("User"),
+      legacy: z.object({
+        screen_name: z.string(), // handle
+      }),
+    }),
+  }),
+});
+
 const zUserTweetsTweet = z.object({
   created_at: z.coerce.date(),
   user_id_str: z.string(),
@@ -123,6 +133,7 @@ const zUserTweetsRetweetTweet = z.object({
     result: z.object({
       __typename: z.literal("Tweet"),
       rest_id: z.string(),
+      core: zCore,
       legacy: zUserTweetsTweet,
     }),
   }),
@@ -131,6 +142,7 @@ const zUserTweetsRetweetTweet = z.object({
 const zUserTweetsTweetResultTweet = z.object({
   __typename: z.literal("Tweet"),
   rest_id: z.string(),
+  core: zCore,
   legacy: z.union([zUserTweetsRetweetTweet, zUserTweetsTweet]),
 });
 const zUserTweetsTweetResult = z.discriminatedUnion("__typename", [
@@ -208,7 +220,7 @@ class Scraper {
   browser: Browser | null = null;
   db: Db;
   headful: boolean;
-  constructor(db: Db, { headful = false }: { headful: boolean }) {
+  constructor(db: Db, { headful = false }: { headful?: boolean } = {}) {
     this.db = db;
     this.headful = headful;
   }
@@ -367,7 +379,12 @@ class Scraper {
         )
         .map(
           (tweet): schema.Retweet => ({
-            url: `https://twitter.com/${tweet.user_id_str}/status/${tweet.id_str}`,
+            posterId: tweet.retweeted_status_result.result.legacy.user_id_str,
+            posterHandle:
+              tweet.retweeted_status_result.result.core.user_results.result
+                .legacy.screen_name,
+            postId: tweet.retweeted_status_result.result.legacy.id_str,
+
             firstSeenAt: new Date(),
             postedAt: tweet.retweeted_status_result.result.legacy.created_at,
             retweetAt: tweet.created_at,

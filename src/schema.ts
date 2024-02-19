@@ -1,5 +1,10 @@
 import { relations } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 import z from "zod";
 
 export const likedTweets = sqliteTable("db_liked_tweets", {
@@ -14,14 +19,25 @@ export const likedTweetsRelations = relations(likedTweets, ({ one, many }) => ({
     references: [scraps.id],
   }),
 }));
-export const retweets = sqliteTable("db_retweets", {
-  url: text("url").primaryKey(),
-  firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
-  retweetAt: integer("retweet_at", { mode: "timestamp" }).notNull(),
-  postedAt: integer("posted_at", { mode: "timestamp" }).notNull(),
-  text: text("text"),
-  scrapId: integer("scrap_id"),
-});
+export const retweets = sqliteTable(
+  "db_retweets",
+  {
+    posterId: text("poster_id").notNull(),
+    posterHandle: text("poster_handle"),
+    postId: text("poster_id").notNull(),
+
+    firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
+    retweetAt: integer("retweet_at", { mode: "timestamp" }).notNull(),
+    postedAt: integer("posted_at", { mode: "timestamp" }).notNull(),
+    text: text("text"),
+    scrapId: integer("scrap_id"),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.posterId, table.postId] }),
+    };
+  },
+);
 export const retweetsRelations = relations(retweets, ({ one, many }) => ({
   scrap: one(scraps, {
     fields: [retweets.scrapId],
