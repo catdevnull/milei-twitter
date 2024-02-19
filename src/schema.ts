@@ -48,6 +48,14 @@ export const retweetsRelations = relations(retweets, ({ one, many }) => ({
 export type LikedTweet = typeof likedTweets.$inferInsert;
 export type Retweet = typeof retweets.$inferInsert;
 
+export type MiniLikedTweet = { url: string; firstSeenAt: Date };
+export type MiniRetweet = {
+  posterId: string;
+  posterHandle: string | null;
+  postId: string;
+  retweetAt: Date;
+};
+
 // guardamos esto para detectar si en algun momento tardamos mucho en volver a scrapear y reportamos incorrectamente muchos likes al mismo tiempo
 // aunque todavia no está implementado
 // TODO: detectar deteccion de gaps en el scrapeo

@@ -6,15 +6,9 @@
   import type { ChartData } from "chart.js";
 
   import { listen } from "svelte-mq-store";
+  import type { MiniLikedTweet, MiniRetweet } from "../schema";
   const isDark = listen("(prefers-color-scheme: dark)", false);
 
-  type MiniLikedTweet = { url: string; firstSeenAt: Date };
-  type MiniRetweet = {
-    posterId: string;
-    posterHandle: string | null;
-    postId: string;
-    retweetAt: Date;
-  };
   type LikedAndRetweeted = { url: string; estimated: Date };
 
   export let start: Dayjs;

@@ -11,7 +11,7 @@
 
   import type { PageData } from "./$types";
   import Chart from "./Chart.svelte";
-  import type { LikedTweet } from "../schema";
+  import type { LikedTweet, MiniRetweet } from "../schema";
 
   export let data: PageData;
 
@@ -160,7 +160,10 @@
 
   $: masLikeados = sortMost(filteredTweets);
 
-  function lastWeek(allTweets: LikedTweet[]) {
+  function lastWeek(
+    allLiked: Array<LikedTweet>,
+    allRetweets: Array<MiniRetweet>,
+  ) {
     const today = dayjs
       .tz(undefined, "America/Argentina/Buenos_Aires")
       .startOf("day");
@@ -176,19 +179,24 @@
     ];
 
     return days.map((day) => {
-      const tweets = allTweets.filter((t) => {
+      const tweets = allLiked.filter((t) => {
         const date = dayjs(t.firstSeenAt);
+        return date.isAfter(day) && date.isBefore(day.add(1, "day"));
+      });
+      const retweets = allRetweets.filter((t) => {
+        const date = dayjs(t.retweetAt);
         return date.isAfter(day) && date.isBefore(day.add(1, "day"));
       });
       return {
         day,
         tweets,
+        retweets,
         screenTime: totalFromDurations(calculateScreenTime(tweets)),
       };
     });
   }
 
-  $: ultimaSemana = lastWeek(data.tweets);
+  $: ultimaSemana = lastWeek(data.tweets, data.retweets);
 
   const timeFormatter = Intl.DateTimeFormat("es-AR", {
     timeStyle: "medium",
@@ -316,13 +324,16 @@
       </thead> -->
 
       <tbody>
-        {#each ultimaSemana as { day, tweets, screenTime }}
+        {#each ultimaSemana as { day, tweets, retweets, screenTime }}
           <tr>
             <th class="px-1 text-right"
               >{weekDayFormatter.format(day.toDate())}</th
             >
             <td class="px-1 text-right">
               {tweets.length}❤️
+            </td>
+            <td class="px-1 text-right">
+              {retweets.length}🔁
             </td>
             <td class="px-1">
               {formatTinyDurationFromMs(screenTime)}
