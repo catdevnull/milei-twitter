@@ -240,6 +240,7 @@ class Scraper {
           totalTweetsSeen: count,
         })
         .where(eq(schema.scraps.id, scrapId));
+      return count;
     } catch (error) {
       console.error(`oneoff[${cuenta?.id}]:`, error);
     } finally {
@@ -254,7 +255,10 @@ class Scraper {
     let i = 0;
     while (true) {
       const cuenta = await this.getRandomAccount();
-      await this.scrap(cuenta);
+      {
+        const count = await this.scrap(cuenta);
+        if (count) console.info(`scrapped likes, seen ${count}`);
+      }
       i--;
       if (i <= 0) {
         try {
