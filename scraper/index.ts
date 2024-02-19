@@ -27,7 +27,12 @@ const scrapLikesCommand = command({
 const scrapRetweetsCommand = command({
   name: "retweets",
   args: {
-    save: flag({ type: boolean, long: "dont-save", defaultValue: () => false }),
+    save: flag({
+      type: boolean,
+      long: "save",
+      description: "save results into database",
+      defaultValue: () => true,
+    }),
     n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
     saveApiResponses: flag({
       type: boolean,
