@@ -27,26 +27,23 @@ const scrapLikesCommand = command({
 const scrapRetweetsCommand = command({
   name: "retweets",
   args: {
-    save: flag({
-      type: boolean,
+    notSave: flag({
       long: "save",
-      description: "save results into database",
-      defaultValue: () => true,
+      description: "don't save results into database",
     }),
     n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
     saveApiResponses: flag({
-      type: boolean,
       long: "save-api-responses",
       defaultValue: () => false,
     }),
   },
-  async handler({ save, n, saveApiResponses }) {
+  async handler({ notSave, n, saveApiResponses }) {
     const db = await connectDb(process.env.DB_PATH);
     const scraper = new Scraper(db);
     const cuenta = await scraper.getRandomAccount();
     const result = await scraper.scrapTweets({ n, saveApiResponses, cuenta });
     console.log(result);
-    if (save) await scraper.saveTweetsScrap(result);
+    if (!notSave) await scraper.saveTweetsScrap(result);
     await scraper.browser?.close();
   },
 });
