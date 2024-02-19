@@ -36,10 +36,14 @@ const scrapRetweetsCommand = command({
       long: "save-api-responses",
       defaultValue: () => false,
     }),
+    headful: flag({
+      long: "headful",
+      description: "run puppeteer browser as a window",
+    }),
   },
-  async handler({ notSave, n, saveApiResponses }) {
+  async handler({ notSave, n, saveApiResponses, headful }) {
     const db = await connectDb(process.env.DB_PATH);
-    const scraper = new Scraper(db);
+    const scraper = new Scraper(db, { headful });
     const cuenta = await scraper.getRandomAccount();
     const result = await scraper.scrapTweets({ n, saveApiResponses, cuenta });
     console.log(result);
@@ -203,8 +207,10 @@ type TweetsScrapResult = {
 class Scraper {
   browser: Browser | null = null;
   db: Db;
-  constructor(db: Db) {
+  headful: boolean;
+  constructor(db: Db, { headful = false }: { headful: boolean }) {
     this.db = db;
+    this.headful = headful;
   }
 
   async scrap(cuenta: schema.Cuenta, n: number | undefined = undefined) {
@@ -520,7 +526,7 @@ class Scraper {
         });
       } else {
         this.browser = await puppeteer.launch({
-          // headless: false,
+          headless: !this.headful,
         });
       }
     }
