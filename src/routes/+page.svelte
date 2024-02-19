@@ -6,7 +6,7 @@
   dayjs.extend(Utc);
   dayjs.extend(Tz);
   dayjs.extend(CustomParseFormat);
-  import { formatDuration, intervalToDuration, lastDayOfWeek } from "date-fns";
+  import { formatDuration, intervalToDuration } from "date-fns";
   import { es } from "date-fns/locale";
 
   import type { PageData } from "./$types";
@@ -18,43 +18,37 @@
   type Filter = "today" | "last-24h" | `date:${string}`;
 
   let filter: Filter = "today";
-  $: filterFn = filterFnFromFilter(filter);
+  $: startTimeFilter = startTimeFromFilter(filter);
 
   $: dudoso = filteredTweets.some((t) =>
     dayjs(t.firstSeenAt).isBefore(dayjs("2024-02-12", "YYYY-MM-DD")),
   );
 
-  function filterFnFromFilter(filter: Filter) {
+  function startTimeFromFilter(filter: Filter) {
     switch (filter) {
       case "today":
-        return (d: Dayjs) =>
-          d.isAfter(
-            dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
-          );
+        return dayjs().tz("America/Argentina/Buenos_Aires").startOf("day");
       case "last-24h":
-        return (d: Dayjs) => d.isAfter(dayjs().subtract(24, "hour"));
+        return dayjs().subtract(24, "hour");
       default:
         const dateStr = filter.slice(5);
         const date = dayjs(dateStr, "YYYY-MM-DD").tz(
           "America/Argentina/Buenos_Aires",
           true,
         );
-        return (d: Dayjs) => {
-          return d.isAfter(date) && d.isBefore(date.add(1, "day"));
-        };
+        return date;
     }
   }
 
-  $: filteredTweets = data.tweets
-    .map((t) => ({
-      ...t,
-      firstSeenAt: dayjs(t.firstSeenAt),
-    }))
-    .filter((t) => filterFn(t.firstSeenAt))
-    .map((t) => ({
-      ...t,
-      firstSeenAt: t.firstSeenAt.toDate(),
-    }));
+  const filterByStartTime = (startTime: Dayjs) => (date: Dayjs) =>
+    date.isAfter(startTime) && date.isBefore(startTime.add(1, "day"));
+
+  $: filteredTweets = data.tweets.filter((t) =>
+    filterByStartTime(startTimeFilter)(dayjs(t.firstSeenAt)),
+  );
+  $: filteredRetweets = data.retweets.filter((t) =>
+    filterByStartTime(startTimeFilter)(dayjs(t.retweetAt)),
+  );
 
   // $: lali = data.tweets.filter(
   //   (t) => t.text && (/lali|Lali/.test(t.text) || /cosquin/i.test(t.text)),
@@ -248,7 +242,11 @@
   {/if}
 
   <section class="mx-auto w-full max-w-2xl">
-    <Chart tweets={filteredTweets} />
+    <Chart
+      tweets={filteredTweets}
+      retweets={filteredRetweets}
+      start={startTimeFilter}
+    />
   </section>
 
   <section class="mx-auto flex flex-col items-start gap-16 px-8 md:flex-row">

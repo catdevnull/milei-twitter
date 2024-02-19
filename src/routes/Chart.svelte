@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { LikedTweet } from "../schema";
+  import type { LikedTweet, Retweet } from "../schema";
 
-  import dayjs from "dayjs";
+  import dayjs, { type Dayjs } from "dayjs";
   import MinMax from "dayjs/plugin/minMax";
   dayjs.extend(MinMax);
   import ChartJs from "./ChartJs.svelte";
@@ -10,20 +10,20 @@
   import { listen } from "svelte-mq-store";
   const isDark = listen("(prefers-color-scheme: dark)", false);
 
-  export let tweets: LikedTweet[];
+  export let start: Dayjs;
+  export let tweets: { firstSeenAt: Date }[];
+  export let retweets: { retweetAt: Date }[];
 
   const hourFormatter = Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
     timeZone: "America/Argentina/Buenos_Aires",
   });
 
-  function byHour(tweets: LikedTweet[]) {
-    const map = new Map<number, LikedTweet[]>();
+  function byHour(allDates: Dayjs[], start: Dayjs) {
+    const map = new Map<number, Dayjs[]>();
 
-    const allDates = tweets.map((t) => dayjs(t.firstSeenAt));
-
-    const min = dayjs.min(allDates)!;
-    const max = dayjs.max(allDates)!;
+    const min = start;
+    const max = start.add(1, "day");
 
     for (
       let time = min.set("minute", 0).set("second", 0).set("millisecond", 0);
@@ -32,44 +32,57 @@
     ) {
       map.set(
         +time.toDate(),
-        tweets.filter((t) => {
-          const d = dayjs(t.firstSeenAt);
-          return d.isAfter(time) && d.isBefore(time.add(1, "hour"));
-        }),
+        allDates.filter(
+          (d) => d.isAfter(time) && d.isBefore(time.add(1, "hour")),
+        ),
       );
     }
-
-    // for (const tweet of tweets) {
-    //   const key = +dayjs(tweet.firstSeenAt)
-    //     .set("minute", 0)
-    //     .set("second", 0)
-    //     .set("millisecond", 0)
-    //     .toDate();
-    //   const prev = map.get(key) || [];
-    //   map.set(key, [...prev, tweet]);
-    // }
 
     return map;
   }
 
-  let datasets: ChartData<
+  type Datasets = ChartData<
     "bar",
     Array<{ x: string | number; y: number }>
   >["datasets"];
+
+  const datalabelConfig: Datasets[0]["datalabels"] = {
+    // anchor: "center",
+    align: "center",
+    clamp: true,
+    // offset: 1,
+    color: $isDark ? "#ffffff" : "000000",
+  };
+
+  let datasets: Datasets;
   $: datasets = [
     {
       label: "Tweets likeados por @JMilei",
-      data: Array.from(byHour(tweets)).map(([time, tweets]) => {
+      data: Array.from(
+        byHour(
+          tweets.map((t) => dayjs(t.firstSeenAt)),
+          start,
+        ),
+      ).map(([time, tweets]) => {
         return { x: hourFormatter.format(time) + "hs", y: tweets.length };
       }),
       backgroundColor: "#ffd801",
-      datalabels: {
-        anchor: "end",
-        align: "end",
-        clamp: true,
-        offset: 1,
-        color: $isDark ? "#ffffff" : "000000",
-      },
+      stack: "bar",
+      datalabels: datalabelConfig,
+    },
+    {
+      label: "Retweets por @JMilei",
+      data: Array.from(
+        byHour(
+          retweets.map((t) => dayjs(t.retweetAt)),
+          start,
+        ),
+      ).map(([time, tweets]) => {
+        return { x: hourFormatter.format(time) + "hs", y: tweets.length };
+      }),
+      backgroundColor: "#0000ff",
+      stack: "bar",
+      datalabels: datalabelConfig,
     },
   ];
 

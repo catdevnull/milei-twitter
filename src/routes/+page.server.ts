@@ -1,6 +1,6 @@
 import { db } from "$lib/db";
 import { desc } from "drizzle-orm";
-import { likedTweets, scraps } from "../schema";
+import { likedTweets, retweets, scraps } from "../schema";
 import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
@@ -11,6 +11,13 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     },
     orderBy: desc(likedTweets.firstSeenAt),
   });
+  const retweetss = await db.query.retweets.findMany({
+    columns: {
+      retweetAt: true,
+      url: true,
+    },
+    orderBy: desc(retweets.retweetAt),
+  });
   const lastUpdated = await db.query.likedTweets.findFirst({
     orderBy: desc(likedTweets.firstSeenAt),
   });
@@ -19,5 +26,5 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     "cache-control": "public, max-age=60",
   });
 
-  return { tweets, lastUpdated };
+  return { tweets, retweets: retweetss, lastUpdated };
 };
