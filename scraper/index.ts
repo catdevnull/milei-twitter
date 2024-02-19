@@ -19,7 +19,7 @@ const scrapLikesCommand = command({
   async handler({ n }) {
     const db = await connectDb(process.env.DB_PATH);
     const scraper = new Scraper(db);
-    const cuenta = await this.getRandomAccount();
+    const cuenta = await scraper.getRandomAccount();
     await scraper.scrap(cuenta, n);
     await scraper.browser?.close();
   },
