@@ -111,7 +111,6 @@
             throw new Error("duplicate of same kind");
           map.set(id, likePlusRetweet(tweet, existing));
         } else if ("retweetAt" in tweet) {
-          console.log(tweet, existing);
           if ("retweetAt" in existing)
             throw new Error("duplicate of same kind");
           map.set(id, likePlusRetweet(existing, tweet));
