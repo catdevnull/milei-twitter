@@ -264,6 +264,7 @@ class Scraper {
         try {
           const result = await this.scrapTweets({ cuenta });
           await this.saveTweetsScrap(result);
+          console.info(`scrapped retweets, seen ${result.tweetsSeen}`);
         } catch (error) {
           console.error(`tweets[${cuenta.id}]:`, error);
         }
