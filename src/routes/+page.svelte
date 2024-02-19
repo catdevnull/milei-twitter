@@ -235,7 +235,7 @@
     <h2 class="text-9xl font-black">{filteredTweets.length}</h2>
     <small
       >última vez actualizado {dateFormatter.format(
-        data.lastUpdated?.firstSeenAt,
+        data.lastUpdated?.at,
       )}</small
     >
   </section>
