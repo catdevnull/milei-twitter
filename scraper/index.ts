@@ -290,7 +290,7 @@ class Scraper {
    * @returns la cantidad de tweets vistos (no guardados)
    */
   async scrapTweets({
-    n = 5,
+    n = 10,
     saveApiResponses = false,
     cuenta,
   }: {
