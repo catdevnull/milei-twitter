@@ -24,7 +24,7 @@ export const retweets = sqliteTable(
   {
     posterId: text("poster_id").notNull(),
     posterHandle: text("poster_handle"),
-    postId: text("poster_id").notNull(),
+    postId: text("post_id").notNull(),
 
     firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
     retweetAt: integer("retweet_at", { mode: "timestamp" }).notNull(),
