@@ -28,7 +28,7 @@ const scrapRetweetsCommand = command({
   name: "retweets",
   args: {
     notSave: flag({
-      long: "save",
+      long: "not-save",
       description: "don't save results into database",
     }),
     n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
