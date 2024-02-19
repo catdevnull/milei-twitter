@@ -518,7 +518,7 @@ class Scraper {
         });
       } else {
         this.browser = await puppeteer.launch({
-          headless: false,
+          // headless: false,
         });
       }
     }
