@@ -14,7 +14,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
   const retweetss = await db.query.retweets.findMany({
     columns: {
       retweetAt: true,
-      url: true,
+      posterId: true,
+      postId: true,
+      posterHandle: true,
     },
     orderBy: desc(retweets.retweetAt),
   });

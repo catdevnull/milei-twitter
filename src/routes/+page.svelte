@@ -243,7 +243,7 @@
 
   <section class="mx-auto w-full max-w-2xl">
     <Chart
-      tweets={filteredTweets}
+      likedTweets={filteredTweets}
       retweets={filteredRetweets}
       start={startTimeFilter}
     />
