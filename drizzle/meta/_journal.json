@@ -43,13 +43,6 @@
       "when": 1708196597015,
       "tag": "0005_clear_darwin",
       "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1708361614116,
-      "tag": "0006_rainy_mordo",
-      "breakpoints": true
     }
   ]
 }
