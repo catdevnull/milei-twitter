@@ -1,29 +1,142 @@
 <script lang="ts">
-  import type { LikedTweet } from "../schema";
-
-  import dayjs from "dayjs";
+  import dayjs, { type Dayjs } from "dayjs";
   import MinMax from "dayjs/plugin/minMax";
   dayjs.extend(MinMax);
   import ChartJs from "./ChartJs.svelte";
   import type { ChartData } from "chart.js";
 
   import { listen } from "svelte-mq-store";
+  import type { MiniLikedTweet, MiniRetweet } from "../schema";
   const isDark = listen("(prefers-color-scheme: dark)", false);
 
-  export let tweets: LikedTweet[];
+  type LikedAndRetweeted = { url: string; estimated: Date };
+
+  export let start: Dayjs;
+  export let likedTweets: Array<MiniLikedTweet>;
+  export let retweets: Array<MiniRetweet>;
+
+  $: categories = byCategories(likedTweets, retweets);
 
   const hourFormatter = Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
     timeZone: "America/Argentina/Buenos_Aires",
   });
 
-  function byHour(tweets: LikedTweet[]) {
-    const map = new Map<number, LikedTweet[]>();
+  function getIdsFromUrlWithHandle(urlStr: string) {
+    const url = new URL(urlStr);
+    if (!["x.com", "twitter.com", "www.twitter.com"].includes(url.hostname)) {
+      throw new Error("Not a Twitter link");
+    }
+    const matches = url.pathname.match(/^\/(\w+)\/status\/(\d+)$/);
+    if (!matches) {
+      throw new Error("Not a Tweet link");
+    }
+    let userHandle = matches[1];
+    const tweetId = matches[2];
+    return { userHandle, tweetId };
+  }
 
-    const allDates = tweets.map((t) => dayjs(t.firstSeenAt));
+  function dateDiff(d1: Date, d2: Date) {
+    return Math.abs(+d1 - +d2);
+  }
+  function likePlusRetweet(
+    liked: MiniLikedTweet,
+    retweet: MiniRetweet,
+  ): LikedAndRetweeted {
+    const { userHandle, tweetId } = getIdsFromUrlWithHandle(liked.url);
+    // assert
+    {
+      if (
+        userHandle.toLowerCase() !== retweet.posterHandle!.toLowerCase() ||
+        tweetId !== retweet.postId
+      )
+        throw new Error("no es el mismo tweet");
+    }
 
-    const min = dayjs.min(allDates)!;
-    const max = dayjs.max(allDates)!;
+    const diff = dateDiff(liked.firstSeenAt, retweet.retweetAt);
+    if (diff > 15 * 60 * 1000)
+      console.warn("diferencia de >15min entre like y retweet");
+    return {
+      url: `https://twitter.com/${userHandle}/status/${tweetId}`,
+      estimated: new Date((+liked.firstSeenAt + +retweet.retweetAt) / 2),
+    };
+  }
+
+  /**
+   * separates likedTweets and retweets into three categories:
+   * - retweeted
+   * - liked
+   * - liked AND retweeted
+   *
+   * this deduplicates things that have been liked and retweeted
+   */
+  function byCategories(
+    likedTweets: Array<MiniLikedTweet>,
+    retweets: Array<MiniRetweet>,
+  ): {
+    liked: Array<MiniLikedTweet>;
+    retweets: Array<MiniRetweet>;
+    likedAndRetweeted: Array<LikedAndRetweeted>;
+  } {
+    // key is `$userHandle/$tweetId`
+    let map = new Map<
+      string,
+      MiniLikedTweet | MiniRetweet | LikedAndRetweeted
+    >();
+
+    for (const tweet of [...likedTweets, ...retweets]) {
+      let userHandle: string, tweetId: string;
+      if ("firstSeenAt" in tweet) {
+        ({ userHandle, tweetId } = getIdsFromUrlWithHandle(tweet.url));
+      } else {
+        if (!tweet.posterHandle) {
+          console.debug(
+            `no handle in retweet ${tweet.posterId}/${tweet.postId}`,
+          );
+          continue;
+        }
+        ({ userHandle, tweetId } = {
+          userHandle: tweet.posterHandle,
+          tweetId: tweet.postId,
+        });
+      }
+      const id = `${userHandle}/${tweetId}`.toLowerCase();
+
+      const existing = map.get(id);
+      if (existing) {
+        if ("estimated" in existing)
+          throw new Error("duplicate of liked and retweet");
+        if ("firstSeenAt" in tweet) {
+          if ("firstSeenAt" in existing)
+            throw new Error("duplicate of same kind");
+          map.set(id, likePlusRetweet(tweet, existing));
+        } else if ("retweetAt" in tweet) {
+          console.log(tweet, existing);
+          if ("retweetAt" in existing)
+            throw new Error("duplicate of same kind");
+          map.set(id, likePlusRetweet(existing, tweet));
+        }
+      } else {
+        map.set(id, tweet);
+      }
+    }
+
+    const total = Array.from(map.values());
+
+    return {
+      liked: total.filter((x): x is MiniLikedTweet => "firstSeenAt" in x),
+      retweets: total.filter((x): x is MiniRetweet => "retweetAt" in x),
+      likedAndRetweeted: total.filter(
+        (x): x is LikedAndRetweeted => "estimated" in x,
+      ),
+    };
+  }
+
+  function byHour(allDates: Dayjs[], start: Dayjs) {
+    const map = new Map<number, Dayjs[]>();
+
+    const min = start;
+    const max = start.add(1, "day");
 
     for (
       let time = min.set("minute", 0).set("second", 0).set("millisecond", 0);
@@ -32,50 +145,73 @@
     ) {
       map.set(
         +time.toDate(),
-        tweets.filter((t) => {
-          const d = dayjs(t.firstSeenAt);
-          return d.isAfter(time) && d.isBefore(time.add(1, "hour"));
-        }),
+        allDates.filter(
+          (d) => d.isAfter(time) && d.isBefore(time.add(1, "hour")),
+        ),
       );
     }
-
-    // for (const tweet of tweets) {
-    //   const key = +dayjs(tweet.firstSeenAt)
-    //     .set("minute", 0)
-    //     .set("second", 0)
-    //     .set("millisecond", 0)
-    //     .toDate();
-    //   const prev = map.get(key) || [];
-    //   map.set(key, [...prev, tweet]);
-    // }
 
     return map;
   }
 
-  let datasets: ChartData<
+  type Datasets = ChartData<
     "bar",
     Array<{ x: string | number; y: number }>
   >["datasets"];
+
+  const datalabelConfig: Datasets[0]["datalabels"] = {
+    // anchor: "center",
+    align: "center",
+    clamp: true,
+    // offset: 1,
+    color: $isDark ? "#ffffff" : "000000",
+  };
+
+  let datasets: Datasets;
   $: datasets = [
     {
-      label: "Tweets likeados por @JMilei",
-      data: Array.from(byHour(tweets)).map(([time, tweets]) => {
+      label: "Retweet+Like",
+      data: Array.from(
+        byHour(
+          categories.likedAndRetweeted.map((t) => dayjs(t.estimated)),
+          start,
+        ),
+      ).map(([time, tweets]) => {
         return { x: hourFormatter.format(time) + "hs", y: tweets.length };
       }),
-      backgroundColor: "#ffd801",
-      datalabels: {
-        anchor: "end",
-        align: "end",
-        clamp: true,
-        offset: 1,
-        color: $isDark ? "#ffffff" : "000000",
-      },
+      backgroundColor: "#d62828",
+      stack: "bar",
+      datalabels: { ...datalabelConfig, color: "#ffffff" },
+    },
+    {
+      label: "Retweets",
+      data: Array.from(
+        byHour(
+          categories.retweets.map((t) => dayjs(t.retweetAt)),
+          start,
+        ),
+      ).map(([time, tweets]) => {
+        return { x: hourFormatter.format(time) + "hs", y: tweets.length };
+      }),
+      backgroundColor: "#f77f00",
+      stack: "bar",
+      datalabels: datalabelConfig,
+    },
+    {
+      label: "Likes",
+      data: Array.from(
+        byHour(
+          categories.liked.map((t) => dayjs(t.firstSeenAt)),
+          start,
+        ),
+      ).map(([time, tweets]) => {
+        return { x: hourFormatter.format(time) + "hs", y: tweets.length };
+      }),
+      backgroundColor: "#fcbf49",
+      stack: "bar",
+      datalabels: datalabelConfig,
     },
   ];
-
-  function onlyUnique(value: any, index: any, self: string | any[]) {
-    return self.indexOf(value) === index;
-  }
 </script>
 
 <ChartJs
