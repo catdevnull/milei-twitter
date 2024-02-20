@@ -23,6 +23,11 @@
   $: dudoso = filteredTweets.some((t) =>
     dayjs(t.firstSeenAt).isBefore(dayjs("2024-02-12", "YYYY-MM-DD")),
   );
+  $: dudosoCrashScraper = filteredRetweets.some(
+    (t) =>
+      dayjs(t.retweetAt).isAfter(dayjs("2024-02-19T20:00:00.000-03:00")) &&
+      dayjs(t.retweetAt).isBefore(dayjs("2024-02-20T01:00:00.000-03:00")),
+  );
 
   function startTimeFromFilter(filter: Filter) {
     switch (filter) {
@@ -257,6 +262,16 @@
       start={startTimeFilter}
     />
   </section>
+  {#if dudosoCrashScraper}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de los likes de la noche del 19 de febrero y las
+        primeras horas del 20 de febrero de 2024 pueden estar levemente mal (se
+        acumulan likes en las 00:00hs que deberían estar en la noche del 19 de
+        febrero de 2024)
+      </p>
+    </section>
+  {/if}
 
   <section class="mx-auto flex flex-col items-start gap-16 px-8 md:flex-row">
     <div class="max-w-[400px]">
