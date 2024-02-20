@@ -267,7 +267,7 @@
       <p class="text-center text-sm">
         ¡Ojo! Los datos de los likes de la noche del 19 de febrero y las
         primeras horas del 20 de febrero de 2024 pueden estar levemente mal (se
-        acumulan likes en las 00:00hs que deberían estar en la noche del 19 de
+        acumulan likes en las 00hs que deberían estar en la noche del 19 de
         febrero de 2024)
       </p>
     </section>
