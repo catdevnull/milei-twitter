@@ -307,48 +307,52 @@ class Scraper {
 
       // setup API response capturing and parsing
       page.on("response", async (response) => {
-        const req = response.request();
-        const url = req.url();
-        if (
-          url.includes("/graphql/") &&
-          url.includes("UserTweets?") &&
-          req.method() === "GET"
-        ) {
-          const json = await response.json();
-          if (saveApiResponses) {
-            await mkdir("debug-api-responses", { recursive: true });
-            await writeFile(
-              `debug-api-responses/${+new Date()}-${nanoid()}.json`,
-              JSON.stringify(json, undefined, 2),
-            );
-          }
-
-          const parsed = zUserTweetsRes.parse(json);
-          const entries =
-            parsed.data.user.result.timeline_v2.timeline.instructions
-              .filter(
-                (x): x is z.infer<typeof zTimelineAddEntriesEntry> =>
-                  "entries" in x,
-              )
-              .flatMap((x) =>
-                x.entries
-                  .map((e) => e.content)
-                  .filter(
-                    (y): y is TimelineTimelineItem =>
-                      y.entryType === "TimelineTimelineItem",
-                  ),
-              )
-              // filtrar publicidades
-              .filter((e) => !e.itemContent.tweet_results.promotedMetadata)
-              .map((e) => e.itemContent.tweet_results.result)
-              // filtrar publicidades
-              .filter(
-                (e): e is z.infer<typeof zUserTweetsTweetResultTweet> =>
-                  e.__typename === "Tweet",
+        try {
+          const req = response.request();
+          const url = req.url();
+          if (
+            url.includes("/graphql/") &&
+            url.includes("UserTweets?") &&
+            req.method() === "GET"
+          ) {
+            const json = await response.json();
+            if (saveApiResponses) {
+              await mkdir("debug-api-responses", { recursive: true });
+              await writeFile(
+                `debug-api-responses/${+new Date()}-${nanoid()}.json`,
+                JSON.stringify(json, undefined, 2),
               );
-          for (const entry of entries) {
-            map.set(entry.legacy.id_str, entry.legacy);
+            }
+
+            const parsed = zUserTweetsRes.parse(json);
+            const entries =
+              parsed.data.user.result.timeline_v2.timeline.instructions
+                .filter(
+                  (x): x is z.infer<typeof zTimelineAddEntriesEntry> =>
+                    "entries" in x,
+                )
+                .flatMap((x) =>
+                  x.entries
+                    .map((e) => e.content)
+                    .filter(
+                      (y): y is TimelineTimelineItem =>
+                        y.entryType === "TimelineTimelineItem",
+                    ),
+                )
+                // filtrar publicidades
+                .filter((e) => !e.itemContent.tweet_results.promotedMetadata)
+                .map((e) => e.itemContent.tweet_results.result)
+                // filtrar publicidades
+                .filter(
+                  (e): e is z.infer<typeof zUserTweetsTweetResultTweet> =>
+                    e.__typename === "Tweet",
+                );
+            for (const entry of entries) {
+              map.set(entry.legacy.id_str, entry.legacy);
+            }
           }
+        } catch (error) {
+          console.error(`no pude capturar pedido API`, error);
         }
       });
 
