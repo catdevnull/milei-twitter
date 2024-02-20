@@ -140,8 +140,8 @@
           href="https://twitter.com/JMilei"
           class="text-blue-600 underline dark:text-blue-200"
           rel="noreferrer">@JMilei</a
-        >, registro los "me gusta" y genero un estimado de cuanto tiempo estuvo
-        usando Twitter:
+        >, registro los "me gusta" y genero un estimado de cuanto tiempo habría
+        usado Twitter:
       </p>
       <p class="text-4xl font-black">
         {formatDurationFromMs(totalTime)}
