@@ -31,6 +31,11 @@ export async function GET() {
       dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
     ),
   );
+  const todayRetweets = retweetss.filter((t) =>
+    dayjs(t.retweetAt).isAfter(
+      dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
+    ),
+  );
 
   const totalTime = totalFromDurations(calculateScreenTime(todayTweets));
 
@@ -45,7 +50,8 @@ export async function GET() {
     JSON.stringify({
       hoy: {
         likes: todayTweets.length,
-        totalTime,
+        retweets: todayRetweets.length,
+        tweets: totalTime,
       },
       ultimaSemana,
     }),
