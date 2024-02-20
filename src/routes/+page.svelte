@@ -1,17 +1,18 @@
 <script lang="ts">
   import dayjs, { type Dayjs } from "dayjs";
-  import Utc from "dayjs/plugin/utc";
-  import Tz from "dayjs/plugin/timezone";
   import CustomParseFormat from "dayjs/plugin/customParseFormat";
-  dayjs.extend(Utc);
-  dayjs.extend(Tz);
   dayjs.extend(CustomParseFormat);
-  import { formatDuration, intervalToDuration } from "date-fns";
-  import { es } from "date-fns/locale";
 
   import type { PageData } from "./$types";
   import Chart from "./Chart.svelte";
-  import type { LikedTweet, MiniRetweet } from "../schema";
+  import {
+    calculateScreenTime,
+    formatDurationFromMs,
+    formatTinyDurationFromMs,
+    totalFromDurations,
+  } from "$lib/data-processing/screenTime";
+  import { sortMost } from "$lib/data-processing/mostLiked";
+  import { lastWeek } from "$lib/data-processing/weekly";
 
   export let data: PageData;
 
@@ -55,152 +56,10 @@
     filterByStartTime(startTimeFilter)(dayjs(t.retweetAt)),
   );
 
-  // $: lali = data.tweets.filter(
-  //   (t) => t.text && (/lali|Lali/.test(t.text) || /cosquin/i.test(t.text)),
-  // );
-
-  type Duration = { start: Dayjs; end: Dayjs };
-  function calculateScreenTime(tweets: LikedTweet[]): Duration[] {
-    const n = 3;
-    const durations = tweets
-      .map((t) => dayjs(t.firstSeenAt))
-      .map((d) => ({ start: d, end: d.add(n, "minute") }));
-
-    type StartEnd = {
-      type: "start" | "end";
-      date: Dayjs;
-    };
-    const startEnds: Array<StartEnd> = durations
-      .flatMap<StartEnd>(({ start, end }) => [
-        { type: "start", date: start },
-        { type: "end", date: end },
-      ])
-      .sort(({ date: a }, { date: b }) => a.diff(b));
-
-    // console.debug(startEnds.map((x) => [x.type, x.date.toDate()]));
-
-    let finalStartEnds: Array<StartEnd> = [];
-
-    // https://stackoverflow.com/questions/45109429/merge-sets-of-overlapping-time-periods-into-new-one
-    let i = 0;
-    for (const startEnd of startEnds) {
-      if (startEnd.type === "start") {
-        i++;
-        if (i === 1) finalStartEnds.push(startEnd);
-      } else {
-        if (i === 1) finalStartEnds.push(startEnd);
-        i--;
-      }
-    }
-    // console.debug(finalStartEnds.map((x) => [x.type, x.date.toDate()]));
-
-    let finalDurations: Array<Duration> = [];
-
-    while (finalStartEnds.length > 0) {
-      const [start, end] = finalStartEnds.splice(0, 2);
-      if (start.type !== "start") throw new Error("expected start");
-      if (end.type !== "end") throw new Error("expected end");
-      finalDurations.push({
-        start: start.date,
-        end: end.date.subtract(n, "minute").add(2, "minute"),
-      });
-    }
-    return finalDurations;
-  }
-
-  /**
-   * @returns number - en milisegundos
-   */
-  function totalFromDurations(durations: Duration[]): number {
-    let total = 0;
-    for (const duration of durations) {
-      const time = duration.end.diff(duration.start);
-      total += time;
-    }
-    return total;
-  }
-
-  // https://stackoverflow.com/a/65711327
-  function formatDurationFromMs(ms: number) {
-    const duration = intervalToDuration({ start: 0, end: ms });
-    return formatDuration(duration, {
-      locale: es,
-      delimiter: ", ",
-      format: ["hours", "minutes"],
-    });
-  }
-  function formatTinyDurationFromMs(ms: number) {
-    const duration = intervalToDuration({ start: 0, end: ms });
-    // https://github.com/date-fns/date-fns/issues/2134
-    return formatDuration(duration, {
-      locale: es,
-      // delimiter: ", ",
-      format: ["hours", "minutes"],
-    })
-      .replace(/ horas?/, "h")
-      .replace(/ minutos?/, "m");
-  }
-
-  $: ranges = calculateScreenTime(
-    filteredTweets,
-    // .filter((t) =>
-    //   dayjs(t.firstSeenAt).isAfter(dayjs().subtract(8, "hour")),
-    // ),
-  );
+  $: ranges = calculateScreenTime(filteredTweets);
   $: totalTime = totalFromDurations(ranges);
 
-  function sortMost(tweets: LikedTweet[]) {
-    const map = new Map<string, number>();
-    for (const tweet of tweets) {
-      const matches = tweet.url.match(/^https:\/\/twitter.com\/(.+?)\//);
-      if (!matches) continue;
-      const [, username] = matches;
-      map.set(username, (map.get(username) ?? 0) + 1);
-    }
-    return Array.from(map)
-      .filter(([, n]) => n > 3)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10);
-  }
-
   $: masLikeados = sortMost(filteredTweets);
-
-  function lastWeek(
-    allLiked: Array<LikedTweet>,
-    allRetweets: Array<MiniRetweet>,
-  ) {
-    const today = dayjs
-      .tz(undefined, "America/Argentina/Buenos_Aires")
-      .startOf("day");
-
-    const days = [
-      today.subtract(7, "day"),
-      today.subtract(6, "day"),
-      today.subtract(5, "day"),
-      today.subtract(4, "day"),
-      today.subtract(3, "day"),
-      today.subtract(2, "day"),
-      today.subtract(1, "day"),
-      today,
-    ];
-
-    return days.map((day) => {
-      const tweets = allLiked.filter((t) => {
-        const date = dayjs(t.firstSeenAt);
-        return date.isAfter(day) && date.isBefore(day.add(1, "day"));
-      });
-      const retweets = allRetweets.filter((t) => {
-        const date = dayjs(t.retweetAt);
-        return date.isAfter(day) && date.isBefore(day.add(1, "day"));
-      });
-      return {
-        day,
-        tweets,
-        retweets,
-        screenTime: totalFromDurations(calculateScreenTime(tweets)),
-      };
-    });
-  }
 
   $: ultimaSemana = lastWeek(data.tweets, data.retweets);
 
@@ -333,12 +192,6 @@
     <h2 class="text-center text-2xl font-bold">Semanal</h2>
 
     <table>
-      <!-- <thead>
-<tr>
-  <th></th>
-</tr>
-      </thead> -->
-
       <tbody>
         {#each ultimaSemana as { day, tweets, retweets, screenTime }}
           <tr>
