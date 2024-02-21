@@ -51,7 +51,7 @@ export async function GET() {
       hoy: {
         likes: todayTweets.length,
         retweets: todayRetweets.length,
-        tweets: totalTime,
+        totalTime,
       },
       ultimaSemana,
     }),
