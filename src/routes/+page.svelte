@@ -174,7 +174,14 @@
               href={`https://twitter.com/${persona}`}
               rel="noopener noreferrer"
               target="_blank">@{persona}</a
-            >: {n}
+            >{#if persona === "jdoedoe101101"}
+              <span>{" "}</span>(<a
+                class="px-1 text-green-500 underline"
+                target="_blank"
+                rel="noopener"
+                href="https://www.pagina12.com.ar/714464-quien-es-juan-pablo-carreira-el-nuevo-director-de-comunicaci"
+                >💰 Director de Comunicación Digital 💰</a
+              ><span>)</span>{/if}<span>: {n}</span>
           </li>
         {/each}
       </ol>
