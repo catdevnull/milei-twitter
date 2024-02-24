@@ -33,61 +33,65 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   const startingFrom = getStartingFrom(query);
   const endsAt = startingFrom.add(24, "hour");
 
+  const t0 = performance.now();
+  const [tweets, retweetss, lastUpdated, allTweets, allRetweets] =
+    await Promise.all([
+      db.query.likedTweets.findMany({
+        columns: {
+          firstSeenAt: true,
+          url: true,
+        },
+        where: and(
+          gte(likedTweets.firstSeenAt, startingFrom.toDate()),
+          lt(likedTweets.firstSeenAt, endsAt.toDate()),
+        ),
+        orderBy: desc(likedTweets.firstSeenAt),
+      }),
+      db.query.retweets.findMany({
+        columns: {
+          retweetAt: true,
+          posterId: true,
+          postId: true,
+          posterHandle: true,
+        },
+        where: and(
+          gte(retweets.retweetAt, startingFrom.toDate()),
+          lt(retweets.retweetAt, endsAt.toDate()),
+        ),
+        orderBy: desc(retweets.retweetAt),
+      }),
+      db.query.scraps.findFirst({
+        orderBy: desc(scraps.at),
+        where: isNotNull(scraps.totalTweetsSeen),
+      }),
+
+      db.query.likedTweets.findMany({
+        columns: {
+          firstSeenAt: true,
+          url: true,
+        },
+        orderBy: desc(likedTweets.firstSeenAt),
+      }),
+      db.query.retweets.findMany({
+        columns: {
+          retweetAt: true,
+          posterId: true,
+          postId: true,
+          posterHandle: true,
+        },
+        orderBy: desc(retweets.retweetAt),
+      }),
+    ]);
+  const t1 = performance.now();
+  console.log("queries", t1 - t0);
+
   let ultimaSemana;
   {
     const t0 = performance.now();
-    const tweets = await db.query.likedTweets.findMany({
-      columns: {
-        firstSeenAt: true,
-        url: true,
-      },
-      orderBy: desc(likedTweets.firstSeenAt),
-    });
-    const retweetss = await db.query.retweets.findMany({
-      columns: {
-        retweetAt: true,
-        posterId: true,
-        postId: true,
-        posterHandle: true,
-      },
-      orderBy: desc(retweets.retweetAt),
-    });
-    const t1 = performance.now();
-    console.log("query ultimaSemana", t1 - t0);
     ultimaSemana = lastWeek(tweets, retweetss);
+    const t1 = performance.now();
+    console.log("ultimaSemana", t1 - t0);
   }
-
-  const t0 = performance.now();
-  const tweets = await db.query.likedTweets.findMany({
-    columns: {
-      firstSeenAt: true,
-      url: true,
-    },
-    where: and(
-      gte(likedTweets.firstSeenAt, startingFrom.toDate()),
-      lt(likedTweets.firstSeenAt, endsAt.toDate()),
-    ),
-    orderBy: desc(likedTweets.firstSeenAt),
-  });
-  const retweetss = await db.query.retweets.findMany({
-    columns: {
-      retweetAt: true,
-      posterId: true,
-      postId: true,
-      posterHandle: true,
-    },
-    where: and(
-      gte(retweets.retweetAt, startingFrom.toDate()),
-      lt(retweets.retweetAt, endsAt.toDate()),
-    ),
-    orderBy: desc(retweets.retweetAt),
-  });
-  const lastUpdated = await db.query.scraps.findFirst({
-    orderBy: desc(scraps.at),
-    where: isNotNull(scraps.totalTweetsSeen),
-  });
-  const t1 = performance.now();
-  console.log("queries", t1 - t0);
 
   setHeaders({
     "cache-control": "public, max-age=60",
