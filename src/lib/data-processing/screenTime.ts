@@ -4,8 +4,12 @@ import dayjs from "dayjs";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { es } from "date-fns/locale";
 
+type LikedTweetDate = {
+  firstSeenAt: Date;
+};
+
 export type Duration = { start: Dayjs; end: Dayjs };
-export function calculateScreenTime(tweets: LikedTweet[]): Duration[] {
+export function calculateScreenTime(tweets: LikedTweetDate[]): Duration[] {
   const n = 3;
   const durations = tweets
     .map((t) => dayjs(t.firstSeenAt))

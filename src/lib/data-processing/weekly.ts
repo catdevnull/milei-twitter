@@ -1,21 +1,50 @@
-import dayjs from "dayjs";
-import Utc from "dayjs/plugin/utc";
-import Tz from "dayjs/plugin/timezone";
-dayjs.extend(Utc);
-dayjs.extend(Tz);
-import type { LikedTweet, MiniRetweet } from "../../schema";
+import { dayjs } from "$lib/consts";
 import { calculateScreenTime, totalFromDurations } from "./screenTime";
 
-export function lastWeek(
-  allLiked: Array<LikedTweet>,
-  allRetweets: Array<MiniRetweet>,
+export function getMinDate() {
+  return dayjs
+    .tz(undefined, "America/Argentina/Buenos_Aires")
+    .startOf("day")
+    .subtract(7, "day");
+}
+
+type LikedTweetDate = {
+  firstSeenAt: Date;
+};
+type RetweetDate = {
+  retweetAt: Date;
+};
+
+function makeMapOfDays<T>(
+  days: Array<Date>,
+  array: Array<T>,
+  x: (arg: T) => Date,
 ) {
-  console.time("lastWeek");
+  let map = new Map<number, Array<T>>();
+  for (const t of array) {
+    const day = days.find((day) => {
+      const y = x(t);
+      return y > day && +y < +day + 24 * 60 * 60 * 1000;
+    });
+    if (day) {
+      const key = +day;
+      let oldArray = map.get(key) ?? [];
+      map.set(key, [...oldArray, t]);
+    }
+  }
+  return map;
+}
+
+export function lastWeek(
+  allLiked: Array<LikedTweetDate>,
+  allRetweets: Array<RetweetDate>,
+) {
   const today = dayjs
     .tz(undefined, "America/Argentina/Buenos_Aires")
     .startOf("day");
 
   const days = [
+    // también cambiar en getMinDate
     today.subtract(7, "day"),
     today.subtract(6, "day"),
     today.subtract(5, "day"),
@@ -26,34 +55,10 @@ export function lastWeek(
     today,
   ];
 
-  let likedMap = new Map<number, Array<LikedTweet>>();
-  for (const tweet of allLiked) {
-    const date = dayjs(tweet.firstSeenAt);
-    const day = days.find(
-      (day, index) =>
-        date.isAfter(day) &&
-        date.isBefore(days[index + 1] ?? day.add(1, "day")),
-    );
-    if (day) {
-      const key = +day.toDate();
-      let oldArray = likedMap.get(key) ?? [];
-      likedMap.set(key, [...oldArray, tweet]);
-    }
-  }
-  let retweetedMap = new Map<number, Array<MiniRetweet>>();
-  for (const tweet of allRetweets) {
-    const date = dayjs(tweet.retweetAt);
-    const day = days.find(
-      (day, index) =>
-        date.isAfter(day) &&
-        date.isBefore(days[index + 1] ?? day.add(1, "day")),
-    );
-    if (day) {
-      const key = +day.toDate();
-      let oldArray = retweetedMap.get(key) ?? [];
-      retweetedMap.set(key, [...oldArray, tweet]);
-    }
-  }
+  const dayDates = days.map((d) => d.toDate());
+
+  const likedMap = makeMapOfDays(dayDates, allLiked, (t) => t.firstSeenAt);
+  const retweetedMap = makeMapOfDays(dayDates, allRetweets, (t) => t.retweetAt);
 
   const x = days.map((day) => {
     const tweets = likedMap.get(+day.toDate()) ?? [];
@@ -65,6 +70,5 @@ export function lastWeek(
       screenTime: totalFromDurations(calculateScreenTime(tweets)),
     };
   });
-  console.timeEnd("lastWeek");
   return x;
 }
