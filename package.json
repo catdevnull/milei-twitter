@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.0.16",
-    "better-sqlite3": "^9.4.0",
+    "@libsql/client": "^0.5.2",
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.1",
     "chartjs-adapter-dayjs-4": "^1.0.4",
@@ -36,7 +36,6 @@
     "@sveltejs/adapter-node": "^4.0.1",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
-    "@types/better-sqlite3": "^7.6.9",
     "@types/node": "^20.11.17",
     "autoprefixer": "^10.4.16",
     "drizzle-kit": "^0.20.14",

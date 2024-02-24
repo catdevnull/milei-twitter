@@ -80,6 +80,26 @@
           "store_path": "/nix/store/b3pbwqqpfllg2lxwhhv4iyw3m9xxbgld-sqlite-3.45.1-bin"
         }
       }
+    },
+    "turso-cli@latest": {
+      "last_modified": "2024-02-10T18:15:24Z",
+      "resolved": "github:NixOS/nixpkgs/10b813040df67c4039086db0f6eaf65c536886c6#turso-cli",
+      "source": "devbox-search",
+      "version": "0.88.6",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/0li4vhf6yqbdfkflwdpd27fzzgkvx2zm-turso-cli-0.88.6"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/zqiv1xv4qmlin3pw5ia79586rjx9b74f-turso-cli-0.88.6"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/lcgxxfqlmiq4lr1cfrxfawv9mwf6sxvq-turso-cli-0.88.6"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/rklxa6r12vwbfbd5byaf7ds180g5yprs-turso-cli-0.88.6"
+        }
+      }
     }
   }
 }
