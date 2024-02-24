@@ -88,7 +88,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   let ultimaSemana;
   {
     const t0 = performance.now();
-    ultimaSemana = lastWeek(tweets, retweetss);
+    ultimaSemana = lastWeek(allTweets, allRetweets);
     const t1 = performance.now();
     console.log("ultimaSemana", t1 - t0);
   }
