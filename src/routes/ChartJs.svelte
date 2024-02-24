@@ -6,15 +6,15 @@
     type ChartType,
     CategoryScale,
     LinearScale,
-    PointElement,
-    Filler,
-    TimeScale,
+    // PointElement,
+    // Filler,
+    // TimeScale,
     Tooltip,
     Legend,
     BarController,
     BarElement,
   } from "chart.js";
-  import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
+  // import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
   import ChartDataLabels from "chartjs-plugin-datalabels";
 
   import { afterUpdate, onMount } from "svelte";
@@ -24,9 +24,9 @@
     BarElement,
     CategoryScale,
     LinearScale,
-    TimeScale,
-    PointElement,
-    Filler,
+    // TimeScale,
+    // PointElement,
+    // Filler,
     Tooltip,
     Legend,
 
