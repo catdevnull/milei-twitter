@@ -1,8 +1,4 @@
 <script lang="ts">
-  import dayjs, { type Dayjs } from "dayjs";
-  import CustomParseFormat from "dayjs/plugin/customParseFormat";
-  dayjs.extend(CustomParseFormat);
-
   import type { PageData } from "./$types";
   import Chart from "./Chart.svelte";
   import {
@@ -12,14 +8,12 @@
     totalFromDurations,
   } from "$lib/data-processing/screenTime";
   import { sortMost } from "$lib/data-processing/mostLiked";
-  import { lastWeek } from "$lib/data-processing/weekly";
+  import { goto } from "$app/navigation";
+  import { dayjs } from "$lib/consts";
+
+  const tz = "America/Argentina/Buenos_Aires";
 
   export let data: PageData;
-
-  type Filter = "today" | "last-24h" | `date:${string}`;
-
-  let filter: Filter = "today";
-  $: startTimeFilter = startTimeFromFilter(filter);
 
   $: dudoso = filteredTweets.some((t) =>
     dayjs(t.firstSeenAt).isBefore(dayjs("2024-02-12", "YYYY-MM-DD")),
@@ -30,68 +24,55 @@
       dayjs(t.retweetAt).isBefore(dayjs("2024-02-20T01:00:00.000-03:00")),
   );
 
-  function startTimeFromFilter(filter: Filter) {
-    switch (filter) {
-      case "today":
-        return dayjs().tz("America/Argentina/Buenos_Aires").startOf("day");
-      case "last-24h":
-        return dayjs().subtract(24, "hour");
-      default:
-        const dateStr = filter.slice(5);
-        const date = dayjs(dateStr, "YYYY-MM-DD").tz(
-          "America/Argentina/Buenos_Aires",
-          true,
-        );
-        return date;
-    }
-  }
-
-  const filterByStartTime = (startTime: Dayjs) => (date: Dayjs) =>
-    date.isAfter(startTime) && date.isBefore(startTime.add(1, "day"));
-
-  $: filteredTweets = data.tweets.filter((t) =>
-    filterByStartTime(startTimeFilter)(dayjs(t.firstSeenAt)),
-  );
-  $: filteredRetweets = data.retweets.filter((t) =>
-    filterByStartTime(startTimeFilter)(dayjs(t.retweetAt)),
-  );
+  $: filteredTweets = data.tweets;
+  $: filteredRetweets = data.retweets;
 
   $: ranges = calculateScreenTime(filteredTweets);
   $: totalTime = totalFromDurations(ranges);
 
   $: masLikeados = sortMost(filteredTweets);
 
-  $: ultimaSemana = lastWeek(data.tweets, data.retweets);
+  $: ultimaSemana = data.ultimaSemana;
 
   const timeFormatter = Intl.DateTimeFormat("es-AR", {
     timeStyle: "medium",
-    timeZone: "America/Argentina/Buenos_Aires",
+    timeZone: tz,
   });
 
   const dateFormatter = Intl.DateTimeFormat("es-AR", {
     dateStyle: "medium",
     timeStyle: "medium",
-    timeZone: "America/Argentina/Buenos_Aires",
+    timeZone: tz,
   });
 
   const weekDayFormatter = Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     weekday: "short",
-    timeZone: "America/Argentina/Buenos_Aires",
+    timeZone: tz,
   });
+
+  function setQuery(
+    event: Event & { currentTarget: EventTarget & HTMLSelectElement },
+  ) {
+    const query = event.currentTarget.value;
+    goto(`/?q=${query}`);
+  }
 </script>
 
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
   <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro Presidente
-      <select bind:value={filter}>
+      <select on:change={setQuery} value={data.query}>
         <option value="last-24h">las últimas 24hs</option>
-        <option value="today">hoy, {weekDayFormatter.format(new Date())}</option
+        <option value={`date:${dayjs().tz(tz, true).format("YYYY-MM-DD")}`}
+          >hoy, {weekDayFormatter.format(new Date())}</option
         >
         {#each ultimaSemana.toReversed().slice(1) as { day }}
-          <option value={`date:${day.format("YYYY-MM-DD")}`}
-            >{weekDayFormatter.format(day.toDate())}</option
+          <option value={`date:${day}`}
+            >{weekDayFormatter.format(
+              dayjs(day, "YYYY-MM-DD").tz(tz, true).toDate(),
+            )}</option
           >
         {/each}
       </select>
@@ -118,7 +99,7 @@
     <Chart
       likedTweets={filteredTweets}
       retweets={filteredRetweets}
-      start={startTimeFilter}
+      start={dayjs(data.start)}
     />
   </section>
   {#if dudosoCrashScraper}
@@ -196,7 +177,9 @@
         {#each ultimaSemana as { day, tweets, retweets, screenTime }}
           <tr>
             <th class="px-1 text-right"
-              >{weekDayFormatter.format(day.toDate())}</th
+              >{weekDayFormatter.format(
+                dayjs(day, "YYYY-MM-DD").tz(tz, true).toDate(),
+              )}</th
             >
             <td class="px-1 text-right">
               {tweets.length}❤️
