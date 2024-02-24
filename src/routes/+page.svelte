@@ -13,6 +13,7 @@
   } from "$lib/data-processing/screenTime";
   import { sortMost } from "$lib/data-processing/mostLiked";
   import { lastWeek } from "$lib/data-processing/weekly";
+  import { getLastSleepTime } from "$lib/data-processing/sleepTime";
 
   export let data: PageData;
 
@@ -63,6 +64,9 @@
 
   $: ultimaSemana = lastWeek(data.tweets, data.retweets);
 
+  // TODO: calcular aplicando filtro
+  $: sleepTime = getLastSleepTime(data.tweets);
+
   const timeFormatter = Intl.DateTimeFormat("es-AR", {
     timeStyle: "medium",
     timeZone: "America/Argentina/Buenos_Aires",
@@ -71,6 +75,13 @@
   const dateFormatter = Intl.DateTimeFormat("es-AR", {
     dateStyle: "medium",
     timeStyle: "medium",
+    timeZone: "America/Argentina/Buenos_Aires",
+  });
+
+  const sleepTimeFormatter = Intl.DateTimeFormat("es-AR", {
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
     timeZone: "America/Argentina/Buenos_Aires",
   });
 
@@ -121,6 +132,24 @@
       start={startTimeFilter}
     />
   </section>
+  <!-- TODO -->
+  {#if sleepTime}
+    {@const {
+      ultimoTuitAntesDeDormir: dormir,
+      primerTuitAlDespertarse: despertar,
+    } = sleepTime}
+    <section>
+      Durmió entre
+      {sleepTimeFormatter.format(dormir.firstSeenAt)} y {sleepTimeFormatter.format(
+        despertar.firstSeenAt,
+      )}
+
+      (sería {formatDurationFromMs(
+        +despertar.firstSeenAt - +dormir.firstSeenAt,
+      )})
+    </section>
+  {/if}
+
   {#if dudosoCrashScraper}
     <section class="mx-auto w-full max-w-2xl">
       <p class="text-center text-sm">
