@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
 
   let ultimaSemana;
   {
-    console.time("query ultimaSemana");
+    const t0 = performance.now();
     const tweets = await db.query.likedTweets.findMany({
       columns: {
         firstSeenAt: true,
@@ -52,11 +52,12 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       },
       orderBy: desc(retweets.retweetAt),
     });
-    console.timeEnd("query ultimaSemana");
+    const t1 = performance.now();
+    console.log("query ultimaSemana", t1 - t0);
     ultimaSemana = lastWeek(tweets, retweetss);
   }
 
-  console.time("queries");
+  const t0 = performance.now();
   const tweets = await db.query.likedTweets.findMany({
     columns: {
       firstSeenAt: true,
@@ -85,7 +86,8 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
     orderBy: desc(scraps.at),
     where: isNotNull(scraps.totalTweetsSeen),
   });
-  console.timeEnd("queries");
+  const t1 = performance.now();
+  console.log("queries", t1 - t0);
 
   setHeaders({
     "cache-control": "public, max-age=60",
