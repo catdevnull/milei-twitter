@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ setHeaders }) => {
       text: true,
     },
     orderBy: desc(likedTweets.firstSeenAt),
-    limit: 200,
+    limit: 1000,
   });
   // const retweetss = await db.query.retweets.findMany({
   //   columns: {

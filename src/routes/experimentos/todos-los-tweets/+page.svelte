@@ -34,7 +34,7 @@
     </div>
   </div>
 
-  <h1 class="text-3xl font-black">Últimos 200 likes de @JMilei</h1>
+  <h1 class="text-3xl font-black">Últimos 1000 likes de @JMilei</h1>
 
   <ul class="flex flex-col divide-y divide-neutral-300">
     {#each data.tweets as tweet}
