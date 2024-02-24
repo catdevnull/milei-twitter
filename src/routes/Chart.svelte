@@ -135,17 +135,21 @@
     const map = new Map<number, Dayjs[]>();
 
     const min = start;
-    const max = start.add(1, "day");
+    const hours = new Array(24)
+      .fill(0)
+      .map((_, index) =>
+        min
+          .set("minute", 0)
+          .set("second", 0)
+          .set("millisecond", 0)
+          .add(index, "hour"),
+      );
 
-    for (
-      let time = min.set("minute", 0).set("second", 0).set("millisecond", 0);
-      time.isBefore(max);
-      time = time.add(1, "hour")
-    ) {
+    for (const hour of hours) {
       map.set(
-        +time.toDate(),
+        +hour.toDate(),
         allDates.filter(
-          (d) => d.isAfter(time) && d.isBefore(time.add(1, "hour")),
+          (d) => d.isAfter(hour) && d.isBefore(hour.add(1, "hour")),
         ),
       );
     }
