@@ -10,6 +10,7 @@ export function lastWeek(
   allLiked: Array<LikedTweet>,
   allRetweets: Array<MiniRetweet>,
 ) {
+  console.time("lastWeek");
   const today = dayjs
     .tz(undefined, "America/Argentina/Buenos_Aires")
     .startOf("day");
@@ -25,20 +26,45 @@ export function lastWeek(
     today,
   ];
 
-  return days.map((day) => {
-    const tweets = allLiked.filter((t) => {
-      const date = dayjs(t.firstSeenAt);
-      return date.isAfter(day) && date.isBefore(day.add(1, "day"));
-    });
-    const retweets = allRetweets.filter((t) => {
-      const date = dayjs(t.retweetAt);
-      return date.isAfter(day) && date.isBefore(day.add(1, "day"));
-    });
+  let likedMap = new Map<number, Array<LikedTweet>>();
+  for (const tweet of allLiked) {
+    const date = dayjs(tweet.firstSeenAt);
+    const day = days.find(
+      (day, index) =>
+        date.isAfter(day) &&
+        date.isBefore(days[index + 1] ?? day.add(1, "day")),
+    );
+    if (day) {
+      const key = +day.toDate();
+      let oldArray = likedMap.get(key) ?? [];
+      likedMap.set(key, [...oldArray, tweet]);
+    }
+  }
+  let retweetedMap = new Map<number, Array<MiniRetweet>>();
+  for (const tweet of allRetweets) {
+    const date = dayjs(tweet.retweetAt);
+    const day = days.find(
+      (day, index) =>
+        date.isAfter(day) &&
+        date.isBefore(days[index + 1] ?? day.add(1, "day")),
+    );
+    if (day) {
+      const key = +day.toDate();
+      let oldArray = retweetedMap.get(key) ?? [];
+      retweetedMap.set(key, [...oldArray, tweet]);
+    }
+  }
+
+  const x = days.map((day) => {
+    const tweets = likedMap.get(+day.toDate()) ?? [];
+    const retweets = retweetedMap.get(+day.toDate()) ?? [];
     return {
-      day,
+      day: day.format("YYYY-MM-DD"),
       tweets,
       retweets,
       screenTime: totalFromDurations(calculateScreenTime(tweets)),
     };
   });
+  console.timeEnd("lastWeek");
+  return x;
 }
