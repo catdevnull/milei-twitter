@@ -41,7 +41,7 @@ export async function GET() {
 
   const ultimaSemana = lastWeek(tweets, retweetss).map((x) => ({
     ...x,
-    day: x.day.format("YYYY-MM-DD"),
+    day: x.day,
     tweets: x.tweets.length,
     retweets: x.retweets.length,
   }));
