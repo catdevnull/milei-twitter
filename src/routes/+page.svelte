@@ -39,9 +39,10 @@
     timeZone: tz,
   });
 
-  const dateFormatter = Intl.DateTimeFormat("es-AR", {
-    dateStyle: "medium",
-    timeStyle: "medium",
+  const lastUpdatedFormatter = Intl.DateTimeFormat("es-AR", {
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
     timeZone: tz,
   });
 
@@ -79,11 +80,13 @@
       ?
     </h1>
     <h2 class="text-9xl font-black">{filteredTweets.length}</h2>
-    <small
-      >última vez actualizado {dateFormatter.format(
-        data.lastUpdated?.at,
-      )}</small
-    >
+    <small>
+      <a
+        href="https://milei.nulo.in"
+        class="text-blue-600 underline dark:text-blue-200">milei.nulo.in</a
+      >
+      - actualizado {lastUpdatedFormatter.format(data.lastUpdated?.at)}
+    </small>
   </section>
 
   {#if dudoso}
