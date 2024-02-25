@@ -6,6 +6,8 @@ import { dayjs } from "$lib/consts";
 import { error } from "@sveltejs/kit";
 import { queryLastWeek } from "$lib/data-processing/queryWeekly";
 
+const tz = "America/Argentina/Buenos_Aires";
+
 function getStartingFrom(query: string) {
   switch (query) {
     case "last-24h":
@@ -14,10 +16,7 @@ function getStartingFrom(query: string) {
       if (!query.startsWith("date:")) error(400, "Query imposible");
       try {
         const dateStr = query.slice(5);
-        const date = dayjs(dateStr, "YYYY-MM-DD").tz(
-          "America/Argentina/Buenos_Aires",
-          true,
-        );
+        const date = dayjs(dateStr, "YYYY-MM-DD").tz(tz, true);
         return date;
       } catch {
         error(400, "Query imposible");
@@ -27,9 +26,7 @@ function getStartingFrom(query: string) {
 
 export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   const query =
-    url.searchParams.get("q") ??
-    "date:" +
-      dayjs().tz("America/Argentina/Buenos_Aires", true).format("YYYY-MM-DD");
+    url.searchParams.get("q") ?? "date:" + dayjs().tz(tz).format("YYYY-MM-DD");
   const startingFrom = getStartingFrom(query);
   const endsAt = startingFrom.add(24, "hour");
 

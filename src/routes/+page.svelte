@@ -66,7 +66,7 @@
       ¿Cuántos tweets likeó nuestro Presidente
       <select on:change={setQuery} value={data.query}>
         <option value="last-24h">las últimas 24hs</option>
-        <option value={`date:${dayjs().tz(tz, true).format("YYYY-MM-DD")}`}
+        <option value={`date:${dayjs().tz(tz).format("YYYY-MM-DD")}`}
           >hoy, {weekDayFormatter.format(new Date())}</option
         >
         {#each ultimaSemana.toReversed().slice(1) as { day }}
