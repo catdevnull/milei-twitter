@@ -1,4 +1,5 @@
 name: check and publish container image
+on: [push]
 
 env:
   REGISTRY: ghcr.io
