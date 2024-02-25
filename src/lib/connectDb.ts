@@ -1,12 +1,15 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import Database from "better-sqlite3";
 import * as schema from "../schema";
+import { drizzle } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 
-export async function connectDb(DB_PATH?: string) {
-  const sqlite = new Database(DB_PATH ?? "sqlite.db");
-  await sqlite.exec("PRAGMA journal_mode=WAL;");
-  const db = drizzle(sqlite, { schema });
-  await migrate(db, { migrationsFolder: "drizzle" });
+export async function connectDb({
+  url,
+  authToken,
+}: {
+  url: string;
+  authToken?: string;
+}) {
+  const client = createClient({ url, authToken });
+  const db = drizzle(client, { schema });
   return db;
 }

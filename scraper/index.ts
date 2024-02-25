@@ -1,4 +1,13 @@
 import puppeteer, { Browser, Page, type CookieParam } from "puppeteer";
+import * as schema from "../src/schema.js";
+import { connectDb } from "../src/lib/connectDb.js";
+import { sql, eq } from "drizzle-orm";
+import { z } from "zod";
+import { mkdir, writeFile } from "fs/promises";
+import { nanoid } from "nanoid";
+import { JMILEI_ID } from "../src/lib/consts.js";
+import { LibSQLDatabase } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
 
 import {
   command,
@@ -10,6 +19,16 @@ import {
   boolean,
 } from "cmd-ts";
 
+function getDbConfig() {
+  const url = process.env.TURSO_CONNECTION_URL;
+  if (!url) throw new Error("Falta TURSO_CONNECTION_URL");
+  const dbConfig = {
+    url,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  };
+  return dbConfig;
+}
+
 const scrapLikesCommand = command({
   name: "likes",
   args: {
@@ -17,7 +36,7 @@ const scrapLikesCommand = command({
     n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
   },
   async handler({ n }) {
-    const db = await connectDb(process.env.DB_PATH);
+    const db = await connectDb(getDbConfig());
     const scraper = new Scraper(db);
     const cuenta = await scraper.getRandomAccount();
     await scraper.scrap(cuenta, n);
@@ -42,7 +61,7 @@ const scrapRetweetsCommand = command({
     }),
   },
   async handler({ notSave, n, saveApiResponses, headful }) {
-    const db = await connectDb(process.env.DB_PATH);
+    const db = await connectDb(getDbConfig());
     const scraper = new Scraper(db, { headful });
     const cuenta = await scraper.getRandomAccount();
     const result = await scraper.scrapTweets({ n, saveApiResponses, cuenta });
@@ -59,25 +78,27 @@ const cronCommand = command({
   name: "cron",
   args: {},
   async handler({}) {
-    const db = await connectDb(process.env.DB_PATH);
+    const db = await connectDb(getDbConfig());
     const scraper = new Scraper(db);
     await scraper.cron();
   },
 });
+const migrateCommand = command({
+  name: "migrate",
+  description: "migrar la BD",
+  args: {},
+  async handler({}) {
+    const db = await connectDb(getDbConfig());
+    migrate;
+    await migrate(db, { migrationsFolder: "drizzle" });
+  },
+});
 const app = subcommands({
   name: "milei-twitter-scraper",
-  cmds: { scrap: scrapCommand, cron: cronCommand },
+  cmds: { scrap: scrapCommand, cron: cronCommand, migrate: migrateCommand },
 });
 run(app, process.argv.slice(2));
 
-import { type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import * as schema from "../src/schema.js";
-import { connectDb } from "../src/lib/connectDb.js";
-import { sql, eq } from "drizzle-orm";
-import { z } from "zod";
-import { mkdir, writeFile } from "fs/promises";
-import { nanoid } from "nanoid";
-import { JMILEI_ID } from "../src/lib/consts.js";
 const dev = process.env.NODE_ENV !== "production";
 
 function cookiesFromAccountData(cuenta: schema.Cuenta): Array<CookieParam> {
@@ -209,7 +230,7 @@ const zUserTweetsRes = z.object({
   }),
 });
 
-type Db = BetterSQLite3Database<typeof schema>;
+type Db = LibSQLDatabase<typeof schema>;
 type TweetsScrapResult = {
   tweetsSeen: number;
   retweets: Array<schema.Retweet>;

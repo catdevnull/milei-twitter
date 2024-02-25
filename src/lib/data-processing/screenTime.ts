@@ -1,26 +1,30 @@
 import type { Dayjs } from "dayjs";
-import type { LikedTweet } from "../../schema";
 import dayjs from "dayjs";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { es } from "date-fns/locale";
 
+type LikedTweetDate = {
+  firstSeenAt: Date;
+};
+
 export type Duration = { start: Dayjs; end: Dayjs };
-export function calculateScreenTime(tweets: LikedTweet[]): Duration[] {
+export function calculateScreenTime(tweets: LikedTweetDate[]): Duration[] {
   const n = 3;
-  const durations = tweets
-    .map((t) => dayjs(t.firstSeenAt))
-    .map((d) => ({ start: d, end: d.add(n, "minute") }));
+  const durations = tweets.map((d) => ({
+    start: +d.firstSeenAt,
+    end: +d.firstSeenAt + n * 60 * 1000,
+  }));
 
   type StartEnd = {
     type: "start" | "end";
-    date: Dayjs;
+    date: number;
   };
   const startEnds: Array<StartEnd> = durations
     .flatMap<StartEnd>(({ start, end }) => [
       { type: "start", date: start },
       { type: "end", date: end },
     ])
-    .sort(({ date: a }, { date: b }) => a.diff(b));
+    .sort(({ date: a }, { date: b }) => a - b);
 
   // console.debug(startEnds.map((x) => [x.type, x.date.toDate()]));
 
@@ -46,8 +50,8 @@ export function calculateScreenTime(tweets: LikedTweet[]): Duration[] {
     if (start.type !== "start") throw new Error("expected start");
     if (end.type !== "end") throw new Error("expected end");
     finalDurations.push({
-      start: start.date,
-      end: end.date.subtract(n, "minute").add(2, "minute"),
+      start: dayjs(start.date),
+      end: dayjs(end.date).subtract(n, "minute").add(2, "minute"),
     });
   }
   return finalDurations;

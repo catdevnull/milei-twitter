@@ -4,7 +4,7 @@ import { likedTweets, retweets, scraps } from "../schema";
 import type { PageServerLoad } from "./$types";
 import { dayjs } from "$lib/consts";
 import { error } from "@sveltejs/kit";
-import { lastWeek } from "$lib/data-processing/weekly";
+import { queryLastWeek } from "$lib/data-processing/queryWeekly";
 
 function getStartingFrom(query: string) {
   switch (query) {
@@ -33,55 +33,41 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   const startingFrom = getStartingFrom(query);
   const endsAt = startingFrom.add(24, "hour");
 
-  let ultimaSemana;
-  {
-    const tweets = await db.query.likedTweets.findMany({
+  const t0 = performance.now();
+  const [tweets, retweetss, lastUpdated, ultimaSemana] = await Promise.all([
+    db.query.likedTweets.findMany({
       columns: {
         firstSeenAt: true,
         url: true,
       },
+      where: and(
+        gte(likedTweets.firstSeenAt, startingFrom.toDate()),
+        lt(likedTweets.firstSeenAt, endsAt.toDate()),
+      ),
       orderBy: desc(likedTweets.firstSeenAt),
-    });
-    const retweetss = await db.query.retweets.findMany({
+    }),
+    db.query.retweets.findMany({
       columns: {
         retweetAt: true,
         posterId: true,
         postId: true,
         posterHandle: true,
       },
+      where: and(
+        gte(retweets.retweetAt, startingFrom.toDate()),
+        lt(retweets.retweetAt, endsAt.toDate()),
+      ),
       orderBy: desc(retweets.retweetAt),
-    });
-    ultimaSemana = lastWeek(tweets, retweetss);
-  }
+    }),
+    db.query.scraps.findFirst({
+      orderBy: desc(scraps.at),
+      where: isNotNull(scraps.totalTweetsSeen),
+    }),
 
-  const tweets = await db.query.likedTweets.findMany({
-    columns: {
-      firstSeenAt: true,
-      url: true,
-    },
-    where: and(
-      gte(likedTweets.firstSeenAt, startingFrom.toDate()),
-      lt(likedTweets.firstSeenAt, endsAt.toDate()),
-    ),
-    orderBy: desc(likedTweets.firstSeenAt),
-  });
-  const retweetss = await db.query.retweets.findMany({
-    columns: {
-      retweetAt: true,
-      posterId: true,
-      postId: true,
-      posterHandle: true,
-    },
-    where: and(
-      gte(retweets.retweetAt, startingFrom.toDate()),
-      lt(retweets.retweetAt, endsAt.toDate()),
-    ),
-    orderBy: desc(retweets.retweetAt),
-  });
-  const lastUpdated = await db.query.scraps.findFirst({
-    orderBy: desc(scraps.at),
-    where: isNotNull(scraps.totalTweetsSeen),
-  });
+    queryLastWeek(),
+  ]);
+  const t1 = performance.now();
+  console.log("queries", t1 - t0);
 
   setHeaders({
     "cache-control": "public, max-age=60",

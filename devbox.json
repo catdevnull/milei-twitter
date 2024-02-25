@@ -3,7 +3,8 @@
     "nodejs@latest",
     "nodePackages.pnpm@latest",
     "git-lfs@latest",
-    "sqlite@latest"
+    "sqlite@latest",
+    "turso-cli@latest"
   ],
   "shell": {
     "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
