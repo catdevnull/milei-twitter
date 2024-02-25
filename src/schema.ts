@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  index,
   integer,
   primaryKey,
   sqliteTable,
@@ -7,12 +8,20 @@ import {
 } from "drizzle-orm/sqlite-core";
 import z from "zod";
 
-export const likedTweets = sqliteTable("db_liked_tweets", {
-  url: text("url").primaryKey(),
-  firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
-  text: text("text"),
-  scrapId: integer("scrap_id"),
-});
+export const likedTweets = sqliteTable(
+  "db_liked_tweets",
+  {
+    url: text("url").primaryKey(),
+    firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
+    text: text("text"),
+    scrapId: integer("scrap_id"),
+  },
+  (likedTweets) => {
+    return {
+      firstSeenAtIdx: index("first_seen_at_idx").on(likedTweets.firstSeenAt),
+    };
+  },
+);
 export const likedTweetsRelations = relations(likedTweets, ({ one, many }) => ({
   scrap: one(scraps, {
     fields: [likedTweets.scrapId],
@@ -35,6 +44,7 @@ export const retweets = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({ columns: [table.posterId, table.postId] }),
+      retweetAtIdx: index("retweet_at_idx").on(table.retweetAt),
     };
   },
 );
