@@ -1,5 +1,8 @@
-import { dayjs } from "$lib/consts";
+import type { connectDb } from "$lib/connectDb";
+import { dayjs, type Dayjs } from "$lib/consts";
 import { calculateScreenTime, totalFromDurations } from "./screenTime";
+import { likedTweets, retweets, type MiniLikedTweet } from "../../schema";
+import { and, desc, gte } from "drizzle-orm";
 
 export function getMinDate() {
   return dayjs
@@ -71,4 +74,26 @@ export function lastWeek(
     };
   });
   return x;
+}
+
+export async function getDataForLastWeek(
+  db: Awaited<ReturnType<typeof connectDb>>,
+  minDate: Dayjs,
+): Promise<[Array<{ firstSeenAt: Date }>, Array<{ retweetAt: Date }>]> {
+  return await Promise.all([
+    db.query.likedTweets.findMany({
+      columns: {
+        firstSeenAt: true,
+      },
+      orderBy: desc(likedTweets.firstSeenAt),
+      where: and(gte(likedTweets.firstSeenAt, minDate.toDate())),
+    }),
+    db.query.retweets.findMany({
+      columns: {
+        retweetAt: true,
+      },
+      orderBy: desc(retweets.retweetAt),
+      where: and(gte(retweets.retweetAt, minDate.toDate())),
+    }),
+  ]);
 }
