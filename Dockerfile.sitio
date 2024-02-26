@@ -4,10 +4,11 @@ WORKDIR /usr/src/app
 FROM base as build
 RUN apk add --no-cache nodejs npm
 RUN npm install --global pnpm
-COPY package.json package.json
-COPY pnpm-lock.yaml .
+
+COPY sitio/package.json .
+COPY sitio/pnpm-lock.yaml .
 RUN pnpm install
-COPY . .
+COPY sitio/ .
 RUN pnpm install && \
     pnpm build
 

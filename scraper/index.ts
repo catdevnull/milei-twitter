@@ -1,13 +1,25 @@
 import puppeteer, { Browser, Page, type CookieParam } from "puppeteer";
-import * as schema from "../src/schema.js";
-import { connectDb } from "../src/lib/connectDb.js";
+import * as schema from "./schema.js";
 import { sql, eq } from "drizzle-orm";
+import { LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
+import { createClient } from "@libsql/client";
 import { z } from "zod";
 import { mkdir, writeFile } from "fs/promises";
 import { nanoid } from "nanoid";
-import { JMILEI_ID } from "../src/lib/consts.js";
-import { LibSQLDatabase } from "drizzle-orm/libsql";
-import { migrate } from "drizzle-orm/libsql/migrator";
+import { JMILEI_ID } from "../sitio/src/lib/consts.js";
+
+async function connectDb({
+  url,
+  authToken,
+}: {
+  url: string;
+  authToken?: string;
+}) {
+  const client = createClient({ url, authToken });
+  const db = drizzle(client, { schema });
+  return db;
+}
 
 import {
   command,
@@ -104,7 +116,7 @@ const dev = process.env.NODE_ENV !== "production";
 function cookiesFromAccountData(cuenta: schema.Cuenta): Array<CookieParam> {
   if (!cuenta.accountDataJson) throw new Error("falta token");
   const tokens = schema.zTokenAccountData.parse(
-    JSON.parse(cuenta.accountDataJson),
+    JSON.parse(cuenta.accountDataJson)
   );
   const cookies: Array<CookieParam> = [
     {
@@ -205,7 +217,7 @@ const zTimelineAddEntriesEntry = z.object({
           entryType: z.literal("TimelineTimelineModule"),
         }),
       ]),
-    }),
+    })
   ),
 });
 const zUserTweetsRes = z.object({
@@ -221,7 +233,7 @@ const zUserTweetsRes = z.object({
                 z.object({ type: z.literal("TimelineTerminateTimeline") }),
                 z.object({ type: z.literal("TimelinePinEntry") }),
                 zTimelineAddEntriesEntry,
-              ]),
+              ])
             ),
           }),
         }),
@@ -341,7 +353,7 @@ class Scraper {
               await mkdir("debug-api-responses", { recursive: true });
               await writeFile(
                 `debug-api-responses/${+new Date()}-${nanoid()}.json`,
-                JSON.stringify(json, undefined, 2),
+                JSON.stringify(json, undefined, 2)
               );
             }
 
@@ -350,15 +362,15 @@ class Scraper {
               parsed.data.user.result.timeline_v2.timeline.instructions
                 .filter(
                   (x): x is z.infer<typeof zTimelineAddEntriesEntry> =>
-                    "entries" in x,
+                    "entries" in x
                 )
                 .flatMap((x) =>
                   x.entries
                     .map((e) => e.content)
                     .filter(
                       (y): y is TimelineTimelineItem =>
-                        y.entryType === "TimelineTimelineItem",
-                    ),
+                        y.entryType === "TimelineTimelineItem"
+                    )
                 )
                 // filtrar publicidades
                 .filter((e) => !e.itemContent.tweet_results.promotedMetadata)
@@ -366,7 +378,7 @@ class Scraper {
                 // filtrar publicidades
                 .filter(
                   (e): e is z.infer<typeof zUserTweetsTweetResultTweet> =>
-                    e.__typename === "Tweet",
+                    e.__typename === "Tweet"
                 );
             for (const entry of entries) {
               map.set(entry.legacy.id_str, entry.legacy);
@@ -396,7 +408,7 @@ class Scraper {
         if (tweet.user_id_str !== JMILEI_ID) {
           // esto suelen ser publicidades que no me fije bien como filtrar
           console.warn(
-            `tweet que no es de milei en feed https://twitter.com/${tweet.user_id_str}/status/${tweet.id_str}`,
+            `tweet que no es de milei en feed https://twitter.com/${tweet.user_id_str}/status/${tweet.id_str}`
           );
           return false;
         }
@@ -405,7 +417,7 @@ class Scraper {
       const retweets = allTweets
         .filter(
           (tweet): tweet is UserTweetsRetweetTweet =>
-            "retweeted_status_result" in tweet,
+            "retweeted_status_result" in tweet
         )
         .map(
           (tweet): schema.Retweet => ({
@@ -419,7 +431,7 @@ class Scraper {
             postedAt: tweet.retweeted_status_result.result.legacy.created_at,
             retweetAt: tweet.created_at,
             text: tweet.retweeted_status_result.result.legacy.full_text,
-          }),
+          })
         );
 
       // XXX: ojo que puede ser que estemos contando tweets aunque no estemos logeadxs.. pero son tweets viejos populares que twitter muestra cuando no estamos logeadxs
@@ -473,12 +485,12 @@ class Scraper {
               throw new Error("no es un link");
             const href = linkEl?.href;
             const text = x.querySelector(
-              "[data-testid=tweetText]",
+              "[data-testid=tweetText]"
             )?.textContent;
 
             return { href, text };
           }),
-      sel,
+      sel
     );
 
     for (const { href, text } of got) {
@@ -504,7 +516,7 @@ class Scraper {
   async scrapLikedTweets(
     n: number = 10,
     cuenta: schema.Cuenta,
-    scrapId: number,
+    scrapId: number
   ): Promise<number> {
     return await this.usePage(async (page) => {
       await this.setupAccountInPage(cuenta, page);

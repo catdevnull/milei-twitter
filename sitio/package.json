@@ -11,8 +11,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check .",
     "format": "prettier --write .",
-    "db:generate": "drizzle-kit generate:sqlite",
-    "scraper:run": "esrun scraper/index.ts"
+    "db:generate": "drizzle-kit generate:sqlite"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.0.16",
@@ -21,7 +20,6 @@
     "chart.js": "^4.4.1",
     "chartjs-adapter-dayjs-4": "^1.0.4",
     "chartjs-plugin-datalabels": "^2.2.0",
-    "cmd-ts": "^0.13.0",
     "date-fns": "^3.3.1",
     "dayjs": "^1.11.10",
     "dotenv": "^16.4.2",
@@ -30,7 +28,6 @@
     "markdown-it-anchor": "^8.6.7",
     "markdown-it-table-of-contents": "^0.6.0",
     "nanoid": "^5.0.5",
-    "puppeteer": "^22.0.0",
     "svelte-mq-store": "^2.2.6",
     "zod": "^3.22.4"
   },

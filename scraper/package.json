@@ -1,0 +1,25 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "esrun index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@libsql/client": "^0.5.2",
+    "cmd-ts": "^0.13.0",
+    "drizzle-orm": "^0.29.4",
+    "nanoid": "^5.0.6",
+    "puppeteer": "^22.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.20",
+    "esrun": "^3.2.26",
+    "prettier": "^3.2.5"
+  }
+}
