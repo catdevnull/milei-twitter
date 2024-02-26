@@ -1,6 +1,4 @@
 <script lang="ts">
-  export const csr = false;
-
   import markdownit from "markdown-it";
   import markdownItAnchor from "markdown-it-anchor";
   // @ts-ignore
