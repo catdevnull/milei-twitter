@@ -214,6 +214,10 @@
         href="https://twitter.com/esoesnulo"
         rel="noreferrer">@esoesnulo</a
       >
+      -
+      <a class="text-blue-600 underline dark:text-blue-200" href="/info/faq"
+        >preguntas frequentes</a
+      >
     </div>
   </footer>
 </div>
