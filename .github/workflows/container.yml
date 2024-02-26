@@ -9,6 +9,7 @@ jobs:
   check:
     name: chequear typescript del sitio
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -19,6 +20,7 @@ jobs:
         with:
           node-version: 20
           cache: "pnpm"
+          cache-dependency-path: sitio/pnpm-lock.yaml
       - name: Install dependencies
         working-directory: sitio
         run: pnpm install
