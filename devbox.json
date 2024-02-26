@@ -9,7 +9,12 @@
   "shell": {
     "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
     "scripts": {
-      "dev": ["pnpm dev"]
+      "dev": ["pnpm dev"],
+      "reset-db-to-prod": [
+        "rm -f sqlite.db{,-shm,-wal}",
+        "sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;'",
+        "turso db shell http://preciazo:8080 '.dump' | sqlite3 sqlite.db"
+      ]
     }
   }
 }
