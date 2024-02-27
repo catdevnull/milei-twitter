@@ -216,7 +216,7 @@
       >
       -
       <a class="text-blue-600 underline dark:text-blue-200" href="/info/faq"
-        >preguntas frequentes</a
+        >preguntas frecuentes</a
       >
     </div>
   </footer>
