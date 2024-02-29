@@ -167,7 +167,7 @@
                         >{scrap.id}</td
                       >
                       <td class="whitespace-nowrap px-5 py-2 text-sm"
-                        >{dateFormatter.format(scrap.at)}</td
+                        >{dateFormatter.format(scrap.finishedAt)}</td
                       >
                       <td class="whitespace-nowrap px-5 py-2 text-sm"
                         >{scrap.cuentaId}</td

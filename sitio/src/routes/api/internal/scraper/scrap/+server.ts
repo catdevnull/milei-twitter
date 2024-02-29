@@ -1,16 +1,15 @@
 import { db } from "$lib/db.js";
 import { error, json } from "@sveltejs/kit";
-import { eq } from "drizzle-orm";
+import { eq, gt } from "drizzle-orm";
 import {
   likedTweets,
   retweets,
   scraperTokens,
   scraps,
-  zTokenAccountData,
 } from "../../../../../schema.js";
-import { zScrap } from "api/schema.js";
+import { zScrap, type PostScrapRes } from "api/schema.js";
 
-export async function POST({ url, request }) {
+export async function POST({ request }) {
   {
     let authHeader = request.headers.get("Authorization");
     const token = authHeader?.slice("Bearer ".length) || null;
@@ -22,28 +21,59 @@ export async function POST({ url, request }) {
     if (!tokenEntry) error(401, "invalid token");
   }
 
-  const json = await request.json();
-  const scrapParsed = zScrap.safeParse(json);
+  const scrapParsed = zScrap.safeParse(await request.json());
   if (!scrapParsed.success) error(400, scrapParsed.error);
   const scrap = scrapParsed.data;
 
   const scrapId = await db.transaction(async (tx) => {
-    const [dbScrap] = await tx
+    const x = await tx
       .insert(scraps)
       .values({
         uid: scrap.uid,
         finishedAt: scrap.finishedAt,
         totalTweetsSeen: scrap.totalTweetsSeen,
       })
-      .returning({ id: scraps.id });
-    await tx
-      .insert(likedTweets)
-      .values(scrap.likedTweets.map((t) => ({ ...t, scrapId: dbScrap.id })));
-    await tx
-      .insert(retweets)
-      .values(scrap.retweets.map((t) => ({ ...t, scrapId: dbScrap.id })));
+      .returning({ id: scraps.id })
+      .onConflictDoNothing();
+    let dbScrap: { id: number };
+    if (!x[0]) {
+      const y = await tx.query.scraps.findFirst({
+        where: eq(scraps.uid, scrap.uid),
+      });
+      if (!y) throw new Error("wtf");
+      dbScrap = y;
+    } else {
+      dbScrap = x[0];
+    }
+    for (const likedTweet of scrap.likedTweets) {
+      await tx
+        .insert(likedTweets)
+        .values({ ...likedTweet, scrapId: dbScrap.id })
+        .onConflictDoUpdate({
+          target: likedTweets.url,
+          set: {
+            firstSeenAt: likedTweet.firstSeenAt,
+            scrapId: dbScrap.id,
+          },
+          where: gt(likedTweets.firstSeenAt, likedTweet.firstSeenAt),
+        });
+    }
+    for (const retweet of scrap.retweets) {
+      await tx
+        .insert(retweets)
+        .values({ ...retweet, scrapId: dbScrap.id })
+        .onConflictDoUpdate({
+          target: [retweets.posterId, retweets.postId],
+          set: {
+            firstSeenAt: retweet.firstSeenAt,
+            scrapId: dbScrap.id,
+          },
+          where: gt(retweets.firstSeenAt, retweet.firstSeenAt),
+        });
+    }
     return dbScrap.id;
   });
 
-  return json({ scrapId });
+  const res: PostScrapRes = { scrapId };
+  return json(res);
 }

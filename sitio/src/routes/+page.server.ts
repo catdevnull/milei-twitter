@@ -57,7 +57,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       orderBy: desc(retweets.retweetAt),
     }),
     db.query.scraps.findFirst({
-      orderBy: desc(scraps.at),
+      orderBy: desc(scraps.finishedAt),
       where: isNotNull(scraps.totalTweetsSeen),
     }),
 

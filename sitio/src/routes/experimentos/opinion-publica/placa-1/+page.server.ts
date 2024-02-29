@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ setHeaders }) => {
   const t0 = performance.now();
   const [lastUpdated, ultimaSemana] = await Promise.all([
     db.query.scraps.findFirst({
-      orderBy: desc(scraps.at),
+      orderBy: desc(scraps.finishedAt),
       where: isNotNull(scraps.totalTweetsSeen),
     }),
     queryLastWeek(),

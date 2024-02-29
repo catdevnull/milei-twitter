@@ -25,3 +25,8 @@ export const zScrap = z.object({
   retweets: z.array(zRetweet),
 });
 export type Scrap = z.infer<typeof zScrap>;
+
+export const zPostScrapRes = z.object({
+  scrapId: z.number(),
+});
+export type PostScrapRes = z.infer<typeof zPostScrapRes>;

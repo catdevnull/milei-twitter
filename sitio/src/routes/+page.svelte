@@ -85,7 +85,7 @@
         href="https://milei.nulo.in"
         class="text-blue-600 underline dark:text-blue-200">milei.nulo.in</a
       >
-      - actualizado {lastUpdatedFormatter.format(data.lastUpdated?.at)}
+      - actualizado {lastUpdatedFormatter.format(data.lastUpdated?.finishedAt)}
     </small>
   </section>
 

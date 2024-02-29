@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "00436663-d9c9-427e-82d6-65d1a326936c",
+  "id": "a3e62315-356b-4820-a708-2f87a9cc10f2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "db_scraper_scraps": {
@@ -25,7 +25,7 @@
           "name": "json",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },

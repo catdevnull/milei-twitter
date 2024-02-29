@@ -1,15 +1,30 @@
-import * as schema from "./schema.js";
+import * as schema from "./schema.ts";
 import Database from "better-sqlite3";
 import { BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { z } from "zod";
 import puppeteer, { Browser, Page, type CookieParam } from "puppeteer";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { nanoid } from "nanoid";
-import { JMILEI_ID } from "api/consts.js";
-import type { LikedTweet } from "api/schema.js";
+import { JMILEI_ID } from "api/consts.ts";
 
 import { command, subcommands, run, option, flag, number } from "cmd-ts";
+import {
+  LikedTweet,
+  Retweet,
+  Scrap,
+  zPostScrapRes,
+  zScrap,
+} from "api/schema.ts";
+import { eq, isNull, sql } from "drizzle-orm";
+
+const TOKEN = process.env.API_TOKEN;
+if (!TOKEN) {
+  console.error("Missing API_TOKEN");
+  process.exit(1);
+}
+const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
+console.info(`API: ${API_URL}`);
 
 const zTwitterLogin = z.union([
   z.object({
@@ -24,106 +39,79 @@ const zTwitterLogin = z.union([
 ]);
 type TwitterLogin = z.infer<typeof zTwitterLogin>;
 
-const scrapLikesCommand = command({
-  name: "likes",
-  args: {
-    // dontSave: flag({ type: boolean, long: "dont-save" }),
-    n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
-  },
-  async handler({ n }) {
-    const db = await connectDb();
-    const scraper = new Scraper(db);
-    const cuenta = await scraper.getRandomAccount();
-    await scraper.scrap(cuenta, n);
-    await scraper.browser?.close();
-  },
-});
-const scrapRetweetsCommand = command({
-  name: "retweets",
-  args: {
-    notSave: flag({
-      long: "not-save",
-      description: "don't save results into database",
-    }),
-    n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
-    saveApiResponses: flag({
-      long: "save-api-responses",
-      defaultValue: () => false,
-    }),
-    headful: flag({
-      long: "headful",
-      description: "run puppeteer browser as a window",
-    }),
-  },
-  async handler({ notSave, n, saveApiResponses, headful }) {
-    const db = await connectDb();
-    const scraper = new Scraper(db, { headful });
-    const cuenta = await scraper.getRandomAccount();
-    const result = await scraper.scrapTweets({ n, saveApiResponses, cuenta });
-    console.log(result);
-    if (!notSave) await scraper.saveTweetsScrap(result);
-    await scraper.browser?.close();
-  },
-});
-const scrapCommand = subcommands({
-  name: "scrap",
-  cmds: { likes: scrapLikesCommand, retweets: scrapRetweetsCommand },
-});
-const cronCommand = command({
-  name: "cron",
-  args: {},
-  async handler({}) {
-    const db = await connectDb();
-    const scraper = new Scraper(db);
-    await scraper.cron();
-  },
-});
-const migrateCommand = command({
-  name: "migrate",
-  description: "migrar la BD",
-  args: {},
-  async handler({}) {
-    const db = await connectDb();
-    await migrate(db, { migrationsFolder: "drizzle" });
-  },
-});
-const app = subcommands({
-  name: "milei-twitter-scraper",
-  cmds: { scrap: scrapCommand, cron: cronCommand, migrate: migrateCommand },
-});
-run(app, process.argv.slice(2));
+{
+  const scrapLikesCommand = command({
+    name: "likes",
+    args: {
+      // dontSave: flag({ type: boolean, long: "dont-save" }),
+      n: option({
+        type: number,
+        long: "n",
+        short: "n",
+        defaultValue: () => 10,
+      }),
+    },
+    async handler({ n }) {
+      const db = await connectDb();
+      const scraper = new Scraper(db);
+      const cuenta = await scraper.getRandomAccount();
+      const scrap = await scraper.scrapAndSaveLikedTweets(n, cuenta);
+      console.log(scrap);
+      await scraper.browser?.close();
+    },
+  });
+  const scrapRetweetsCommand = command({
+    name: "retweets",
+    args: {
+      n: option({
+        type: number,
+        long: "n",
+        short: "n",
+        defaultValue: () => 10,
+      }),
+      saveApiResponses: flag({
+        long: "save-api-responses",
+        defaultValue: () => false,
+      }),
+      headful: flag({
+        long: "headful",
+        description: "run puppeteer browser as a window",
+      }),
+    },
+    async handler({ n, saveApiResponses, headful }) {
+      const db = await connectDb();
+      const scraper = new Scraper(db, { headful });
+      const cuenta = await scraper.getRandomAccount();
+      const result = await scraper.scrapAndSaveTweets({
+        n,
+        saveApiResponses,
+        cuenta,
+      });
+      console.log(result);
+      await scraper.browser?.close();
+    },
+  });
+  const scrapCommand = subcommands({
+    name: "scrap",
+    cmds: { likes: scrapLikesCommand, retweets: scrapRetweetsCommand },
+  });
+  const cronCommand = command({
+    name: "cron",
+    args: {},
+    async handler({}) {
+      const db = await connectDb();
+      const scraper = new Scraper(db);
+      await scraper.cron();
+    },
+  });
+  const app = subcommands({
+    name: "milei-twitter-scraper",
+    cmds: { scrap: scrapCommand, cron: cronCommand },
+  });
+  run(app, process.argv.slice(2));
+}
 
 const dev = process.env.NODE_ENV !== "production";
-
-function cookiesFromLogin(twitterLogin: TwitterLogin): Array<CookieParam> {
-  if ("username" in twitterLogin) {
-    throw new Error("login not yet supported");
-  }
-
-  const cookies: Array<CookieParam> = [
-    {
-      name: "auth_token",
-      value: twitterLogin.auth_token,
-      domain: ".twitter.com",
-      path: "/",
-      secure: true,
-      httpOnly: true,
-      sameSite: "None",
-    },
-  ];
-  if (twitterLogin.ct0) {
-    cookies.push({
-      name: "ct0",
-      value: twitterLogin.ct0,
-      domain: ".twitter.com",
-      path: "/",
-      secure: true,
-      httpOnly: false,
-      sameSite: "Lax",
-    });
-  }
-  return cookies;
-}
 
 const zCore = z.object({
   user_results: z.object({
@@ -231,35 +219,96 @@ class Scraper {
   browser: Browser | null = null;
   db: Db;
   headful: boolean;
+  flushUploader: () => void;
   constructor(db: Db, { headful = false }: { headful?: boolean } = {}) {
     this.db = db;
     this.headful = headful;
+    this.flushUploader = this.scrapUploaderLoop();
   }
 
-  async scrap(cuenta: TwitterLogin, n: number | undefined = undefined) {
-    try {
-      // const scrap = await this.db
-      //   .insert(schema.scraps)
-      //   .values({ at: new Date(), cuentaId: cuenta.id })
-      //   .returning();
-      // const scrapId = scrap[0].id;
+  scrapUploaderLoop() {
+    let flusher: () => void;
+    const flusherPromise = new Promise(
+      (resolve) => (flusher = () => resolve(void 0))
+    );
+    (async () => {
+      const scrapsToSave = await this.db.query.scraps.findMany({
+        where: isNull(schema.scraps.savedWithId),
+      });
+      console.info(`[uploaderLoop] flushing ${scrapsToSave.length} scraps`);
 
-      const count = await this.scrapLikedTweets(n, cuenta);
-      // await this.db
-      //   .update(schema.scraps)
-      //   .set({
-      //     totalTweetsSeen: count,
-      //   })
-      //   .where(eq(schema.scraps.id, scrapId));
-      return count;
-    } catch (error) {
-      console.error(`oneoff[${cuenta?.id}]:`, error);
-    } finally {
-      if (!dev) {
-        await this.browser?.close();
-        this.browser = null;
+      for (const entry of scrapsToSave) {
+        try {
+          const scrap = zScrap.parse(JSON.parse(entry.json));
+          const { scrapId } = await sendScrapToApi(scrap);
+          await this.db
+            .update(schema.scraps)
+            .set({
+              savedWithId: scrapId,
+            })
+            .where(eq(schema.scraps.uid, entry.uid));
+          console.info(`[uploaderLoop] flushed ${scrap.uid} into ${scrapId}`);
+        } catch (error) {
+          console.error(
+            `[uploaderLoop] failed to upload scrap ${entry.uid}`,
+            error
+          );
+        }
       }
-    }
+
+      await Promise.race([flusherPromise, wait(30 * 1000)]);
+      this.flushUploader = this.scrapUploaderLoop();
+    })();
+    if (!flusher!) throw new Error("no flusher defined");
+    return flusher;
+  }
+
+  async scrapAndSaveLikedTweets(
+    n: number | undefined = undefined,
+    cuenta: TwitterLogin
+  ) {
+    const likedTweets = await this.scrapLikedTweets(n, cuenta);
+    const scrap: Scrap = {
+      finishedAt: new Date(),
+      likedTweets,
+      retweets: [],
+      totalTweetsSeen: likedTweets.length,
+      uid: nanoid(),
+    };
+    await this.uploadScrap(scrap);
+    return scrap;
+  }
+  async scrapAndSaveTweets({
+    n = 10,
+    saveApiResponses = false,
+    cuenta,
+  }: {
+    n?: number;
+    saveApiResponses?: boolean;
+    cuenta: TwitterLogin;
+  }) {
+    const { retweets, tweetsSeen } = await this.scrapTweets({
+      n,
+      cuenta,
+      saveApiResponses,
+    });
+    const scrap: Scrap = {
+      finishedAt: new Date(),
+      likedTweets: [],
+      retweets,
+      totalTweetsSeen: tweetsSeen,
+      uid: nanoid(),
+    };
+    await this.uploadScrap(scrap);
+    return scrap;
+  }
+
+  async uploadScrap(scrap: Scrap) {
+    await this.db.insert(schema.scraps).values({
+      uid: scrap.uid,
+      json: JSON.stringify(zScrap.parse(scrap)),
+    });
+    this.flushUploader();
   }
 
   async cron() {
@@ -267,37 +316,42 @@ class Scraper {
     while (true) {
       const cuenta = await this.getRandomAccount();
       {
-        const count = await this.scrap(cuenta);
-        if (count) console.info(`scrapped likes, seen ${count}`);
+        try {
+          const scrap = await this.scrapAndSaveLikedTweets(undefined, cuenta);
+          console.info(`scrapped likes, seen ${scrap.totalTweetsSeen}`);
+        } catch (error) {
+          console.error(`likedTweets[${JSON.stringify(cuenta)}]:`, error);
+        }
       }
       i--;
       if (i <= 0) {
         try {
-          const result = await this.scrapTweets({ cuenta });
-          await this.saveTweetsScrap(result);
-          console.info(`scrapped retweets, seen ${result.tweetsSeen}`);
+          const scrap = await this.scrapAndSaveTweets({ cuenta });
+          console.info(`scrapped retweets, seen ${scrap.totalTweetsSeen}`);
         } catch (error) {
-          console.error(`tweets[${cuenta.id}]:`, error);
+          console.error(`tweets[${JSON.stringify(cuenta)}]:`, error);
         }
         i = 15;
       }
+      this.browser?.close();
+      this.browser = null;
       await wait(50 * 1000 + Math.random() * 15 * 1000);
     }
   }
 
-  async getRandomAccount(): Promise<schema.Cuenta> {
-    const cuenta = await this.db.query.cuentas.findFirst({
-      orderBy: sql`random()`,
-    });
-    if (!cuenta) throw new Error("no tengo cuentas para scrapear");
-    return cuenta;
+  async getRandomAccount(): Promise<TwitterLogin> {
+    const accounts = await this.readAccounts();
+    return accounts[Math.floor(Math.random() * accounts.length)];
   }
-  async setupAccountInPage(cuenta: schema.Cuenta, page: Page) {
+  async setupAccountInPage(cuenta: TwitterLogin, page: Page) {
     page.deleteCookie(...(await page.cookies()));
     page.setCookie(...cookiesFromLogin(cuenta));
   }
 
   /**
+   * va por el feed principal de /JMilei y captura los tweets
+   *
+   * por ahora solo guarda los retuits
    * @returns la cantidad de tweets vistos (no guardados)
    */
   async scrapTweets({
@@ -307,8 +361,8 @@ class Scraper {
   }: {
     n?: number;
     saveApiResponses?: boolean;
-    cuenta: schema.Cuenta;
-  }): Promise<TweetsScrapResult> {
+    cuenta: TwitterLogin;
+  }): Promise<{ retweets: Array<Retweet>; tweetsSeen: number }> {
     // TODO: scrapear tuits propios
 
     return await this.usePage(async (page) => {
@@ -398,7 +452,7 @@ class Scraper {
             "retweeted_status_result" in tweet
         )
         .map(
-          (tweet): schema.Retweet => ({
+          (tweet): Retweet => ({
             posterId: tweet.retweeted_status_result.result.legacy.user_id_str,
             posterHandle:
               tweet.retweeted_status_result.result.core.user_results.result
@@ -423,30 +477,11 @@ class Scraper {
     });
   }
 
-  async saveTweetsScrap({ retweets, tweetsSeen, cuenta }: TweetsScrapResult) {
-    const scrap = await this.db
-      .insert(schema.scraps)
-      .values({
-        at: new Date(),
-        cuentaId: cuenta.id,
-        totalTweetsSeen: tweetsSeen,
-      })
-      .returning();
-    const scrapId = scrap[0].id;
-    // TODO: guardar tweets propios
-    for (const retweet of retweets.map((r) => ({ ...r, scrapId }))) {
-      await this.db
-        .insert(schema.retweets)
-        .values(retweet)
-        .onConflictDoNothing();
-    }
-  }
-
   /**
    * @param scrapId
    * @returns la cantidad de tweets vistos (no guardados)
    */
-  async saveLikedTweets(page: Page, scrapId: number): Promise<Array<Liked>> {
+  async getAllLikedTweetsInPage(page: Page): Promise<Array<LikedTweet>> {
     const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] [data-testid=tweet]`;
     await page.waitForSelector(`${sel} a[href] time`);
     await wait(500);
@@ -461,30 +496,20 @@ class Scraper {
             const linkEl = x.querySelector("time")?.parentElement;
             if (!(linkEl instanceof HTMLAnchorElement))
               throw new Error("no es un link");
-            const href = linkEl?.href;
-            const text = x.querySelector(
-              "[data-testid=tweetText]"
-            )?.textContent;
+            const href = linkEl.href;
+            const text =
+              x.querySelector("[data-testid=tweetText]")?.textContent || "";
 
             return { href, text };
           }),
       sel
     );
 
-    for (const { href, text } of got) {
-      let q = this.db
-        .insert(schema.likedTweets)
-        .values({ url: href, text, firstSeenAt: new Date(), scrapId });
-      if (text)
-        q = q.onConflictDoUpdate({
-          target: schema.likedTweets.url,
-          set: { text },
-        });
-      else q = q.onConflictDoNothing();
-      await q;
-    }
-
-    return got.length;
+    return got.map(({ href, text }) => ({
+      url: href,
+      text,
+      firstSeenAt: new Date(),
+    }));
   }
 
   /**
@@ -494,7 +519,7 @@ class Scraper {
   async scrapLikedTweets(
     n: number = 10,
     cuenta: TwitterLogin
-  ): Promise<number> {
+  ): Promise<Array<LikedTweet>> {
     return await this.usePage(async (page) => {
       await this.setupAccountInPage(cuenta, page);
       {
@@ -518,13 +543,14 @@ class Scraper {
         }
       }
 
-      let likedTweets = [];
-
+      let likedTweets: Array<LikedTweet> = [];
       for (let i = 0; i < n; i++) {
         const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
 
         // scrapear tweets y guardarlos
-        likedTweets = likedTweets.concat(await this.saveLikedTweets(page));
+        likedTweets = likedTweets.concat(
+          await this.getAllLikedTweetsInPage(page)
+        );
 
         // scrollear al final para permitir que mas se cargenrfdo
         const els = await page.$$(sel);
@@ -533,7 +559,10 @@ class Scraper {
         // esperar para cargar tweets
         await wait(1500);
       }
-
+      likedTweets = likedTweets.filter(
+        (val, index, array) =>
+          array.findIndex((val2) => val.url === val2.url) !== index
+      );
       return likedTweets;
     });
   }
@@ -568,6 +597,28 @@ class Scraper {
     }
     return this.browser;
   }
+
+  async readAccounts() {
+    const txt = await readFile("accounts.json", "utf-8");
+    const json = JSON.parse(txt);
+    return z.array(zTwitterLogin).parse(json);
+  }
+}
+
+async function sendScrapToApi(scrap: Scrap) {
+  const res = await fetch(`${API_URL}/api/internal/scraper/scrap`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${TOKEN}`,
+    },
+    body: JSON.stringify(scrap),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP status response: ${res.status}`);
+  }
+  const json = await res.json();
+  return zPostScrapRes.parse(json);
 }
 
 function wait(ms: number) {
@@ -576,5 +627,38 @@ function wait(ms: number) {
 
 async function connectDb() {
   const sqlite = new Database("sqlite.db");
-  return drizzle(sqlite, { schema });
+  sqlite.pragma("journal_mode=wal");
+  const db = drizzle(sqlite, { schema });
+  await migrate(db, { migrationsFolder: "drizzle" });
+  return db;
+}
+
+function cookiesFromLogin(twitterLogin: TwitterLogin): Array<CookieParam> {
+  if ("username" in twitterLogin) {
+    throw new Error("login not yet supported");
+  }
+
+  const cookies: Array<CookieParam> = [
+    {
+      name: "auth_token",
+      value: twitterLogin.auth_token,
+      domain: ".twitter.com",
+      path: "/",
+      secure: true,
+      httpOnly: true,
+      sameSite: "None",
+    },
+  ];
+  if (twitterLogin.ct0) {
+    cookies.push({
+      name: "ct0",
+      value: twitterLogin.ct0,
+      domain: ".twitter.com",
+      path: "/",
+      secure: true,
+      httpOnly: false,
+      sameSite: "Lax",
+    });
+  }
+  return cookies;
 }

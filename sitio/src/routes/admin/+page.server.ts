@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   redirectIfNotLoggedIn(cookies);
 
   const scraps = await db.query.scraps.findMany({
-    orderBy: desc(schema.scraps.at),
+    orderBy: desc(schema.scraps.finishedAt),
     with: {
       likedTweets: true,
     },
