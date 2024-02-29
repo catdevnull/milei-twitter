@@ -25,7 +25,7 @@
 
 <div class="min-h-screen w-screen bg-[#5ea1b4] font-bold text-black">
   <h1 class="px-8 py-24 text-center text-7xl font-extrabold">
-    El pronóstico de Milei en Twitter
+    El clima en La Rosada
   </h1>
 
   <table class="mx-auto text-center text-4xl">
