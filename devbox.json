@@ -4,7 +4,8 @@
     "nodePackages.pnpm@latest",
     "git-lfs@latest",
     "sqlite@latest",
-    "turso-cli@latest"
+    "turso-cli@latest",
+    "git-filter-repo@latest"
   ],
   "shell": {
     "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],

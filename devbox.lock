@@ -1,6 +1,26 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "git-filter-repo@latest": {
+      "last_modified": "2024-02-26T19:46:43Z",
+      "resolved": "github:NixOS/nixpkgs/548a86b335d7ecd8b57ec617781f5e652ab0c38e#git-filter-repo",
+      "source": "devbox-search",
+      "version": "2.38.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/xdl38dgf018bm4mc634yzbx3sv6dhrsa-python3.11-git-filter-repo-2.38.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/0s60zb8fd51b7x9cp0i4lqafavnrzpqz-python3.11-git-filter-repo-2.38.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/aggi4gnrdqy6gy6wa6lrp1cx3hcpbn6h-python3.11-git-filter-repo-2.38.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/23gmvzm87wqnabbzc83f5v6mb4yr40yl-python3.11-git-filter-repo-2.38.0"
+        }
+      }
+    },
     "git-lfs@latest": {
       "last_modified": "2024-02-10T18:15:24Z",
       "resolved": "github:NixOS/nixpkgs/10b813040df67c4039086db0f6eaf65c536886c6#git-lfs",
