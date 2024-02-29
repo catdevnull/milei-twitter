@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@bybas/weather-icons':
+    specifier: ^2.0.0
+    version: 2.0.0
   '@fontsource-variable/inter':
     specifier: ^5.0.16
     version: 5.0.16
@@ -120,7 +123,7 @@ devDependencies:
     version: 5.3.3
   vite:
     specifier: ^5.0.3
-    version: 5.1.1(@types/node@20.11.17)
+    version: 5.1.1
 
 packages:
 
@@ -135,6 +138,10 @@ packages:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.3
       '@jridgewell/trace-mapping': 0.3.22
+
+  /@bybas/weather-icons@2.0.0:
+    resolution: {integrity: sha512-sUcp8kbQZYoYgTpHkQ1vrxKVSHdc4SxzXLuluVZYa5u8Nqq/GhDYOtWrWLqgN/GhwsZ74dja8TlMvyTll4yl0Q==}
+    dev: false
 
   /@digitak/grubber@3.1.4:
     resolution: {integrity: sha512-pqsnp2BUYlDoTXWG34HWgEJse/Eo1okRgNex8IG84wHrJp8h3SakeR5WhB4VxSA2+/D+frNYJ0ch3yXzsfNDoA==}
@@ -3148,6 +3155,41 @@ packages:
 
   /util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
+    dev: true
+
+  /vite@5.1.1:
+    resolution: {integrity: sha512-wclpAgY3F1tR7t9LL5CcHC41YPkQIpKUGeIuT8MdNwNZr6OqOTLs7JX5vIHAtzqLWXts0T+GDrh9pN2arneKqg==}
+    engines: {node: ^18.0.0 || >=20.0.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^18.0.0 || >=20.0.0
+      less: '*'
+      lightningcss: ^1.21.0
+      sass: '*'
+      stylus: '*'
+      sugarss: '*'
+      terser: ^5.4.0
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      less:
+        optional: true
+      lightningcss:
+        optional: true
+      sass:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+    dependencies:
+      esbuild: 0.19.12
+      postcss: 8.4.35
+      rollup: 4.9.6
+    optionalDependencies:
+      fsevents: 2.3.3
     dev: true
 
   /vite@5.1.1(@types/node@20.11.17):
