@@ -71,7 +71,8 @@ export type MiniRetweet = {
 // TODO: detectar deteccion de gaps en el scrapeo
 export const scraps = sqliteTable("db_scraps", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  at: integer("at", { mode: "timestamp" }).notNull(),
+  uid: text("uid"),
+  finishedAt: integer("at", { mode: "timestamp" }).notNull(),
   cuentaId: text("cuenta_id"),
   totalTweetsSeen: integer("total_tweets_seen"),
 });
@@ -88,6 +89,11 @@ export const cuentas = sqliteTable("db_cuentas", {
 });
 
 export type Cuenta = typeof cuentas.$inferInsert;
+
+export const scraperTokens = sqliteTable("db_scraper_tokens", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  token: text("token").notNull(),
+});
 
 export const zTokenAccountData = z.object({
   ct0: z.string(),

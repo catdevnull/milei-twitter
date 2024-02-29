@@ -1,45 +1,28 @@
-import puppeteer, { Browser, Page, type CookieParam } from "puppeteer";
 import * as schema from "./schema.js";
-import { sql, eq } from "drizzle-orm";
-import { LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
-import { migrate } from "drizzle-orm/libsql/migrator";
-import { createClient } from "@libsql/client";
+import Database from "better-sqlite3";
+import { BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { z } from "zod";
-import { mkdir, writeFile } from "fs/promises";
+import puppeteer, { Browser, Page, type CookieParam } from "puppeteer";
+import { mkdir, writeFile } from "node:fs/promises";
 import { nanoid } from "nanoid";
-import { JMILEI_ID } from "../sitio/src/lib/consts.js";
+import { JMILEI_ID } from "api/consts.js";
+import type { LikedTweet } from "api/schema.js";
 
-async function connectDb({
-  url,
-  authToken,
-}: {
-  url: string;
-  authToken?: string;
-}) {
-  const client = createClient({ url, authToken });
-  const db = drizzle(client, { schema });
-  return db;
-}
+import { command, subcommands, run, option, flag, number } from "cmd-ts";
 
-import {
-  command,
-  subcommands,
-  run,
-  option,
-  flag,
-  number,
-  boolean,
-} from "cmd-ts";
-
-function getDbConfig() {
-  const url = process.env.TURSO_CONNECTION_URL;
-  if (!url) throw new Error("Falta TURSO_CONNECTION_URL");
-  const dbConfig = {
-    url,
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  };
-  return dbConfig;
-}
+const zTwitterLogin = z.union([
+  z.object({
+    username: z.string(),
+    password: z.string(),
+    mfaCode: z.string().optional(),
+  }),
+  z.object({
+    auth_token: z.string(),
+    ct0: z.string().optional(),
+  }),
+]);
+type TwitterLogin = z.infer<typeof zTwitterLogin>;
 
 const scrapLikesCommand = command({
   name: "likes",
@@ -48,7 +31,7 @@ const scrapLikesCommand = command({
     n: option({ type: number, long: "n", short: "n", defaultValue: () => 10 }),
   },
   async handler({ n }) {
-    const db = await connectDb(getDbConfig());
+    const db = await connectDb();
     const scraper = new Scraper(db);
     const cuenta = await scraper.getRandomAccount();
     await scraper.scrap(cuenta, n);
@@ -73,7 +56,7 @@ const scrapRetweetsCommand = command({
     }),
   },
   async handler({ notSave, n, saveApiResponses, headful }) {
-    const db = await connectDb(getDbConfig());
+    const db = await connectDb();
     const scraper = new Scraper(db, { headful });
     const cuenta = await scraper.getRandomAccount();
     const result = await scraper.scrapTweets({ n, saveApiResponses, cuenta });
@@ -90,7 +73,7 @@ const cronCommand = command({
   name: "cron",
   args: {},
   async handler({}) {
-    const db = await connectDb(getDbConfig());
+    const db = await connectDb();
     const scraper = new Scraper(db);
     await scraper.cron();
   },
@@ -100,8 +83,7 @@ const migrateCommand = command({
   description: "migrar la BD",
   args: {},
   async handler({}) {
-    const db = await connectDb(getDbConfig());
-    migrate;
+    const db = await connectDb();
     await migrate(db, { migrationsFolder: "drizzle" });
   },
 });
@@ -113,31 +95,33 @@ run(app, process.argv.slice(2));
 
 const dev = process.env.NODE_ENV !== "production";
 
-function cookiesFromAccountData(cuenta: schema.Cuenta): Array<CookieParam> {
-  if (!cuenta.accountDataJson) throw new Error("falta token");
-  const tokens = schema.zTokenAccountData.parse(
-    JSON.parse(cuenta.accountDataJson)
-  );
+function cookiesFromLogin(twitterLogin: TwitterLogin): Array<CookieParam> {
+  if ("username" in twitterLogin) {
+    throw new Error("login not yet supported");
+  }
+
   const cookies: Array<CookieParam> = [
     {
       name: "auth_token",
-      value: tokens.auth_token,
+      value: twitterLogin.auth_token,
       domain: ".twitter.com",
       path: "/",
       secure: true,
       httpOnly: true,
       sameSite: "None",
     },
-    {
+  ];
+  if (twitterLogin.ct0) {
+    cookies.push({
       name: "ct0",
-      value: tokens.ct0,
+      value: twitterLogin.ct0,
       domain: ".twitter.com",
       path: "/",
       secure: true,
       httpOnly: false,
       sameSite: "Lax",
-    },
-  ];
+    });
+  }
   return cookies;
 }
 
@@ -242,13 +226,7 @@ const zUserTweetsRes = z.object({
   }),
 });
 
-type Db = LibSQLDatabase<typeof schema>;
-type TweetsScrapResult = {
-  tweetsSeen: number;
-  retweets: Array<schema.Retweet>;
-  cuenta: schema.Cuenta;
-};
-
+type Db = BetterSQLite3Database<typeof schema>;
 class Scraper {
   browser: Browser | null = null;
   db: Db;
@@ -258,21 +236,21 @@ class Scraper {
     this.headful = headful;
   }
 
-  async scrap(cuenta: schema.Cuenta, n: number | undefined = undefined) {
+  async scrap(cuenta: TwitterLogin, n: number | undefined = undefined) {
     try {
-      const scrap = await this.db
-        .insert(schema.scraps)
-        .values({ at: new Date(), cuentaId: cuenta.id })
-        .returning();
-      const scrapId = scrap[0].id;
+      // const scrap = await this.db
+      //   .insert(schema.scraps)
+      //   .values({ at: new Date(), cuentaId: cuenta.id })
+      //   .returning();
+      // const scrapId = scrap[0].id;
 
-      const count = await this.scrapLikedTweets(n, cuenta, scrapId);
-      await this.db
-        .update(schema.scraps)
-        .set({
-          totalTweetsSeen: count,
-        })
-        .where(eq(schema.scraps.id, scrapId));
+      const count = await this.scrapLikedTweets(n, cuenta);
+      // await this.db
+      //   .update(schema.scraps)
+      //   .set({
+      //     totalTweetsSeen: count,
+      //   })
+      //   .where(eq(schema.scraps.id, scrapId));
       return count;
     } catch (error) {
       console.error(`oneoff[${cuenta?.id}]:`, error);
@@ -316,7 +294,7 @@ class Scraper {
   }
   async setupAccountInPage(cuenta: schema.Cuenta, page: Page) {
     page.deleteCookie(...(await page.cookies()));
-    page.setCookie(...cookiesFromAccountData(cuenta));
+    page.setCookie(...cookiesFromLogin(cuenta));
   }
 
   /**
@@ -468,7 +446,7 @@ class Scraper {
    * @param scrapId
    * @returns la cantidad de tweets vistos (no guardados)
    */
-  async saveLikedTweets(page: Page, scrapId: number): Promise<number> {
+  async saveLikedTweets(page: Page, scrapId: number): Promise<Array<Liked>> {
     const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] [data-testid=tweet]`;
     await page.waitForSelector(`${sel} a[href] time`);
     await wait(500);
@@ -515,8 +493,7 @@ class Scraper {
    */
   async scrapLikedTweets(
     n: number = 10,
-    cuenta: schema.Cuenta,
-    scrapId: number
+    cuenta: TwitterLogin
   ): Promise<number> {
     return await this.usePage(async (page) => {
       await this.setupAccountInPage(cuenta, page);
@@ -541,13 +518,13 @@ class Scraper {
         }
       }
 
-      let count = 0;
+      let likedTweets = [];
 
       for (let i = 0; i < n; i++) {
         const sel = `[aria-label="Timeline: Javier Milei’s liked posts"] a[dir="ltr"] > time`;
 
         // scrapear tweets y guardarlos
-        count += await this.saveLikedTweets(page, scrapId);
+        likedTweets = likedTweets.concat(await this.saveLikedTweets(page));
 
         // scrollear al final para permitir que mas se cargenrfdo
         const els = await page.$$(sel);
@@ -557,7 +534,7 @@ class Scraper {
         await wait(1500);
       }
 
-      return count;
+      return likedTweets;
     });
   }
 
@@ -595,4 +572,9 @@ class Scraper {
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function connectDb() {
+  const sqlite = new Database("sqlite.db");
+  return drizzle(sqlite, { schema });
 }
