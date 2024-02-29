@@ -20,18 +20,28 @@
   $: mostLiked = sortMost(allTweets);
 </script>
 
+<link
+  href="https://cdn.jsdelivr.net/gh/repalash/gilroy-free-webfont@fonts/Gilroy-Extrabold.css"
+  rel="stylesheet"
+/>
 <!-- d83926 -->
 
-<div class="min-h-screen w-screen bg-[#5ea1b4] font-bold text-black">
+<div
+  class="flex min-h-screen w-screen flex-col items-center bg-[#5ea1b4] font-gilroy font-bold uppercase text-black"
+>
   <h1 class="px-8 pb-16 pt-24 text-center text-7xl font-extrabold">
     Los más likeados de la semana
   </h1>
 
-  <ol
-    class="mx-auto max-w-[90%] list-decimal columns-2 gap-x-32 px-8 pl-[2em] text-[2.75rem]"
+  <div
+    class="border-collapse-[separate] mx-auto box-border inline-flex rounded-3xl border-4 border-black bg-[#5ea1b4] py-8 drop-shadow-opinionPublica"
   >
-    {#each mostLiked as [handle, n]}
-      <li class="pb-2">@{handle} {n}❤️</li>
-    {/each}
-  </ol>
+    <ol
+      class="mx-auto list-decimal columns-2 gap-x-32 px-8 pl-[2em] text-[2.75rem]"
+    >
+      {#each mostLiked as [handle, n]}
+        <li class="pb-2">@{handle} ({n}❤️)</li>
+      {/each}
+    </ol>
+  </div>
 </div>

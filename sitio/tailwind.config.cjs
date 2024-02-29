@@ -8,6 +8,14 @@ const config = {
     extend: {
       fontFamily: {
         sans: ['"Inter Variable"', ...defaultTheme.fontFamily.sans],
+        gilroy: [
+          '"Gilroy"',
+          '"Inter Variable"',
+          ...defaultTheme.fontFamily.sans,
+        ],
+      },
+      dropShadow: {
+        opinionPublica: "-12px 19px 0px #d83926",
       },
     },
   },
