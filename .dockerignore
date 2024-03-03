@@ -3,8 +3,7 @@ node_modules/
 *.db*
 build/
 */build/
-Dockerfile
-Dockerfile.scraper
+Dockerfile*
 scraper/accounts.json
 
 */.svelte-kit
