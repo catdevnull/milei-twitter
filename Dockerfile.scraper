@@ -20,7 +20,7 @@ USER pptruser
 WORKDIR /app
 COPY --chown=pptruser:pptruser . .
 WORKDIR /app/scraper/
-RUN npx pnpm install
+RUN npx pnpm install --prod
 
 ENV DB_PATH=/db/db.db
 EXPOSE 3000
