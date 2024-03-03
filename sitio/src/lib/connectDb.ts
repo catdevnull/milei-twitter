@@ -12,6 +12,6 @@ export async function connectDb({
 }) {
   const client = createClient({ url, authToken });
   const db = drizzle(client, { schema, logger: true });
-  migrate(db, { migrationsFolder: "drizzle" });
+  await migrate(db, { migrationsFolder: "drizzle" });
   return db;
 }

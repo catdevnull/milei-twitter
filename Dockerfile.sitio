@@ -8,8 +8,7 @@ FROM base as build
 COPY . .
 WORKDIR sitio/
 RUN pnpm install && \
-    pnpm build && \
-    rm -rf node_modules
+    pnpm build
 
 FROM base
 ENV NODE_ENV=production
@@ -18,8 +17,10 @@ RUN apk add --no-cache jq sqlite
 
 # Sitio
 COPY --from=build /usr/src/app .
+COPY --from=build /usr/src/app/sitio/drizzle /usr/src/app/sitio/build/drizzle
+WORKDIR /usr/src/app/sitio
+RUN pnpm install
 WORKDIR /usr/src/app/sitio/build
-RUN pnpm install --prod
 
 ENV DB_PATH=/db/db.db
 EXPOSE 3000

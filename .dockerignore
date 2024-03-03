@@ -12,3 +12,4 @@ scraper/accounts.json
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+fly.toml
