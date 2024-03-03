@@ -69,13 +69,21 @@ export type MiniRetweet = {
 // guardamos esto para detectar si en algun momento tardamos mucho en volver a scrapear y reportamos incorrectamente muchos likes al mismo tiempo
 // aunque todavia no está implementado
 // TODO: detectar deteccion de gaps en el scrapeo
-export const scraps = sqliteTable("db_scraps", {
-  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  uid: text("uid"),
-  finishedAt: integer("at", { mode: "timestamp" }).notNull(),
-  cuentaId: text("cuenta_id"),
-  totalTweetsSeen: integer("total_tweets_seen"),
-});
+export const scraps = sqliteTable(
+  "db_scraps",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    uid: text("uid"),
+    finishedAt: integer("at", { mode: "timestamp" }).notNull(),
+    cuentaId: text("cuenta_id"),
+    totalTweetsSeen: integer("total_tweets_seen"),
+  },
+  (table) => {
+    return {
+      finishedAtIdx: index("db_scraps_finished_at_idx").on(table.finishedAt),
+    };
+  },
+);
 export const scrapsRelations = relations(scraps, ({ many }) => ({
   likedTweets: many(likedTweets),
   retweets: many(retweets),
