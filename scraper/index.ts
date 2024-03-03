@@ -599,7 +599,8 @@ class Scraper {
   }
 
   async readAccounts() {
-    const txt = await readFile("accounts.json", "utf-8");
+    const txt = process.env.ACCOUNTS_JSON;
+    if (!txt) throw new Error("falta ACCOUNTS_JSON");
     const json = JSON.parse(txt);
     return z.array(zTwitterLogin).parse(json);
   }
