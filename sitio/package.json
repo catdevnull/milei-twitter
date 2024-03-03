@@ -17,8 +17,8 @@
   "dependencies": {
     "@bybas/weather-icons": "^2.0.0",
     "@fontsource-variable/inter": "^5.0.16",
-    "@libsql/client": "^0.5.2",
     "api": "workspace:^",
+    "better-sqlite3": "^9.4.3",
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.1",
     "chartjs-adapter-dayjs-4": "^1.0.4",
@@ -41,6 +41,7 @@
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "@swc/core": "^1.4.2",
     "@tailwindcss/typography": "^0.5.10",
+    "@types/better-sqlite3": "^7.6.9",
     "@types/markdown-it": "^13.0.7",
     "@types/node": "^20.11.17",
     "autoprefixer": "^10.4.16",

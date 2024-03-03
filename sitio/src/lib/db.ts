@@ -1,8 +1,8 @@
 import { env } from "$env/dynamic/private";
 import { connectDb } from "./connectDb.js";
 
-const url = env.DB_PATH ? `file:${env.DB_PATH}` : "file:sqlite.db";
-console.info(`Using db at ${url}`);
+const path = env.DB_PATH ?? "sqlite.db";
+console.info(`Using db at ${path}`);
 export const db = await connectDb({
-  url,
+  path,
 });
