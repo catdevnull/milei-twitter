@@ -11,6 +11,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check .",
     "format": "prettier --write .",
+    "benchmark:lastWeek": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./benchmarks/lastWeek.ts",
     "db:generate": "drizzle-kit generate:sqlite"
   },
   "dependencies": {
@@ -38,12 +39,12 @@
     "@sveltejs/adapter-node": "^4.0.1",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "@swc/core": "^1.4.2",
     "@tailwindcss/typography": "^0.5.10",
     "@types/markdown-it": "^13.0.7",
     "@types/node": "^20.11.17",
     "autoprefixer": "^10.4.16",
     "drizzle-kit": "^0.20.14",
-    "esrun": "^3.2.26",
     "mitata": "^0.1.11",
     "postcss": "^8.4.32",
     "postcss-load-config": "^5.0.2",
@@ -53,6 +54,7 @@
     "svelte": "^4.2.7",
     "svelte-check": "^3.6.0",
     "tailwindcss": "^3.3.6",
+    "ts-node": "^10.9.2",
     "tslib": "^2.4.1",
     "typescript": "^5.0.0",
     "vite": "^5.0.3"

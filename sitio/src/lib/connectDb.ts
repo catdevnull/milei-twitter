@@ -1,4 +1,4 @@
-import * as schema from "../schema";
+import * as schema from "../schema.ts";
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 import { migrate } from "drizzle-orm/libsql/migrator";

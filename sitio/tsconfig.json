@@ -5,6 +5,7 @@
     "checkJs": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -12,6 +13,10 @@
     "strict": true,
     "moduleResolution": "bundler",
     "lib": ["ES2023", "DOM"]
+  },
+  "ts-node": {
+    "swc": true,
+    "esm": true
   }
   // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
   //
