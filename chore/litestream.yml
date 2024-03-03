@@ -5,5 +5,5 @@ dbs:
       - type: s3
         bucket: ${S3_BUCKET}
         path: ${S3_PATH}
-        endpoint: s3.us-west-000.backblazeb2.com
+        endpoint: s3.us-west-004.backblazeb2.com
         force-path-style: true
