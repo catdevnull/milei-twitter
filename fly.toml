@@ -20,3 +20,7 @@ primary_region = 'eze'
 
 [build]
   dockerfile = "Dockerfile.sitio"
+
+[env]
+  S3_BUCKET = "milei-twitter-db"
+  S3_PATH = "db-fly"
