@@ -22,7 +22,7 @@ WORKDIR /usr/src/app/sitio
 RUN pnpm install
 WORKDIR /usr/src/app/sitio/build
 
-ENV TURSO_CONNECTION_URL=sqlite:/db/db.db
+ENV TURSO_CONNECTION_URL=file:/db/db.db
 EXPOSE 3000
 
 CMD ["node", "."]
