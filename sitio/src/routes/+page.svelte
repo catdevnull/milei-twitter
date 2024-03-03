@@ -15,13 +15,12 @@
 
   export let data: PageData;
 
-  $: dudoso = filteredTweets.some((t) =>
-    dayjs(t.firstSeenAt).isBefore(dayjs("2024-02-12", "YYYY-MM-DD")),
-  );
+  const startOfActivity = dayjs("2024-02-12", "YYYY-MM-DD").toDate();
+  $: dudoso = filteredTweets.some((t) => t.firstSeenAt < startOfActivity);
+  const crashStart = dayjs("2024-02-19T20:00:00.000-03:00").toDate();
+  const crashEnd = dayjs("2024-02-20T01:00:00.000-03:00").toDate();
   $: dudosoCrashScraper = filteredRetweets.some(
-    (t) =>
-      dayjs(t.retweetAt).isAfter(dayjs("2024-02-19T20:00:00.000-03:00")) &&
-      dayjs(t.retweetAt).isBefore(dayjs("2024-02-20T01:00:00.000-03:00")),
+    (t) => t.retweetAt > crashStart && t.retweetAt < crashEnd,
   );
 
   $: filteredTweets = data.tweets;
