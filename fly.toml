@@ -12,7 +12,7 @@ primary_region = 'eze'
   processes = ['app']
 
 [[vm]]
-  size = 'shared-cpu-1x'
+  size = 'shared-cpu-2x'
 
 [mounts]
   source="milei_twitter_db"
