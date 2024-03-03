@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts",
     "migrate": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts migrate",
-    "db:generate": "drizzle-kit generate:sqlite"
+    "db:generate": "drizzle-kit generate:sqlite",
+    "check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,8 @@
     "@types/better-sqlite3": "^7.6.9",
     "@types/node": "^20.11.20",
     "drizzle-kit": "^0.20.14",
-    "prettier": "^3.2.5"
-  }
+    "prettier": "^3.2.5",
+    "typescript": "^5.0.0"
+  },
+  "packageManager": "pnpm@8.15.4+sha256.cea6d0bdf2de3a0549582da3983c70c92ffc577ff4410cbf190817ddc35137c2"
 }

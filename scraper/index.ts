@@ -626,7 +626,7 @@ function wait(ms: number) {
 }
 
 async function connectDb() {
-  const sqlite = new Database("sqlite.db");
+  const sqlite = new Database(process.env.DB_PATH ?? "sqlite.db");
   sqlite.pragma("journal_mode=wal");
   const db = drizzle(sqlite, { schema });
   await migrate(db, { migrationsFolder: "drizzle" });

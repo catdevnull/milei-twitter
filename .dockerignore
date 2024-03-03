@@ -1,4 +1,15 @@
 node_modules/
+*/node_modules/
 *.db*
 build/
+*/build/
 Dockerfile
+Dockerfile.scraper
+scraper/accounts.json
+
+*/.svelte-kit
+.env
+.env.*
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
