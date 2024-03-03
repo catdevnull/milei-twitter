@@ -36,13 +36,13 @@ const [liked, retweetss] = await Promise.all([
   }),
 ]);
 
-bench("query most index", async () => {
-  const startingFrom = dayjs("2024-02-18").tz(
-    "America/Argentina/Buenos_Aires",
-    true,
-  );
-  const endsAt = startingFrom.add(24, "hour");
+const startingFrom = dayjs("2024-02-18").tz(
+  "America/Argentina/Buenos_Aires",
+  true,
+);
+const endsAt = startingFrom.add(24, "hour");
 
+bench("query most index", async () => {
   const [tweets, retweetss, lastUpdated, dataForWeekly] = await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
@@ -79,52 +79,58 @@ bench("query most index", async () => {
   return [tweets, retweetss, lastUpdated, dataForWeekly];
 });
 
-function makeMapOfDays<T>(
-  days: Array<Date>,
-  array: Array<T>,
-  x: (arg: T) => Date,
-) {
-  let map = new Map<number, Array<T>>();
-  for (const t of array) {
-    const day = days.find((day) => {
-      const y = x(t);
-      return +y < +day + 24 * 60 * 60 * 1000 && y > day;
-    });
-    if (day) {
-      const key = +day;
-      let array = map.get(key);
-      if (!array) {
-        array = [];
-        map.set(key, array);
-      }
-      array.push(t);
-    }
-  }
-  return map;
-}
-bench("dayjs week", () => {
-  const today = dayjs
-    .tz(undefined, "America/Argentina/Buenos_Aires")
-    .startOf("day");
-
-  const days = [
-    // también cambiar en getMinDate
-    today.subtract(7, "day"),
-    today.subtract(6, "day"),
-    today.subtract(5, "day"),
-    today.subtract(4, "day"),
-    today.subtract(3, "day"),
-    today.subtract(2, "day"),
-    today.subtract(1, "day"),
-    today,
-  ];
-  const dayDates = days.map((d) => d.toDate());
-  const likedMap = makeMapOfDays(dayDates, liked, (t) => t.firstSeenAt);
-  const retweetedMap = makeMapOfDays(dayDates, retweetss, (t) => t.retweetAt);
-
-  return [likedMap, retweetedMap];
+bench("liked tweets", async () => {
+  return await db.query.likedTweets.findMany({
+    columns: {
+      firstSeenAt: true,
+      url: true,
+    },
+    where: and(
+      gte(likedTweets.firstSeenAt, startingFrom.toDate()),
+      lt(likedTweets.firstSeenAt, endsAt.toDate()),
+    ),
+    orderBy: desc(likedTweets.firstSeenAt),
+  });
 });
-
+bench("retweets", async () => {
+  return await db.query.retweets.findMany({
+    columns: {
+      retweetAt: true,
+      posterId: true,
+      postId: true,
+      posterHandle: true,
+    },
+    where: and(
+      gte(retweets.retweetAt, startingFrom.toDate()),
+      lt(retweets.retweetAt, endsAt.toDate()),
+    ),
+    orderBy: desc(retweets.retweetAt),
+  });
+});
+bench("last scrap", async () => {
+  return await db.query.scraps.findFirst({
+    orderBy: desc(scraps.finishedAt),
+    where: isNotNull(scraps.totalTweetsSeen),
+  });
+});
+bench("querylastweek->likedTweets", async () => {
+  return await db.query.likedTweets.findMany({
+    columns: {
+      firstSeenAt: true,
+    },
+    orderBy: desc(likedTweets.firstSeenAt),
+    where: and(gte(likedTweets.firstSeenAt, minDate.toDate())),
+  });
+});
+bench("querylastweek->retweets", async () => {
+  return await db.query.retweets.findMany({
+    columns: {
+      retweetAt: true,
+    },
+    orderBy: desc(retweets.retweetAt),
+    where: and(gte(retweets.retweetAt, minDate.toDate())),
+  });
+});
 bench("lastWeek", () => {
   return lastWeek(liked, retweetss);
 });
