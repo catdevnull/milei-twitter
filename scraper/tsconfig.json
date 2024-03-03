@@ -2,11 +2,16 @@
   "compilerOptions": {
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "lib": ["es2023", "dom"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "target": "es2022",
+
     "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "target": "ES2022"
+    "noEmit": true
   },
   "ts-node": {
     "swc": true,
