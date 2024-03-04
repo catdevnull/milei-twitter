@@ -3,7 +3,7 @@ name = "scraper-py"
 version = "0.1.0"
 description = ""
 authors = ["Nulo <git@nulo.in>"]
-readme = "README.md"
+readme = "readme.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
