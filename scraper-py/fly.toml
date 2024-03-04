@@ -11,14 +11,6 @@ primary_region = 'eze'
 [[vm]]
   size = 'shared-cpu-1x'
 
-[processes]
-  cron = "supercronic /app/crontab"
-[[services]]
-  processes = ['cron']
-[[services.ports]]
-  handlers = ["tls", "http"]
-  port = 443
-
 [env]
   API_URL = "https://milei-twitter.fly.dev"
 [mounts]
