@@ -37,7 +37,7 @@ async def scrap_liked():
             'url': t.url,
             'firstSeenAt': datetime.datetime.now().isoformat(),
             'text': t.rawContent,
-        } for t in liked],
+        } for t in liked if t.sourceLabel != 'advertiser-interface'],
         'retweets': []
     }
     scrap_json = json.dumps(scrap)
