@@ -1,0 +1,26 @@
+# fly.toml app configuration file generated for milei-twitter-scraper-py on 2024-03-04T14:14:35-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'milei-twitter-scraper-py'
+primary_region = 'eze'
+
+[build]
+
+[[vm]]
+  size = 'shared-cpu-1x'
+
+[processes]
+  cron = "supercronic /app/crontab"
+[[services]]
+  processes = ['cron']
+[[services.ports]]
+  handlers = ["tls", "http"]
+  port = 443
+
+[env]
+  API_URL = "https://milei-twitter.fly.dev"
+[mounts]
+  source="milei_tw_scraper_py"
+  destination="/db"
