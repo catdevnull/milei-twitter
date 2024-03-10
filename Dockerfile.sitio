@@ -12,9 +12,7 @@ RUN pnpm install && \
 
 FROM base
 ENV NODE_ENV=production
-RUN apk add --no-cache jq sqlite wget
-RUN wget -O- https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.tar.gz | tar -zx -C /usr/local/bin
-
+RUN apk add --no-cache jq sqlite
 # glib libnss dbus-libs libatk-1.0 libatk-bridge-2.0 cups-libs libdrm libxkbcommon libxcomposite libxdamage libxrandr mesa-gbm pango alsa-lib freetype harfbuzz ca-certificates
 
 # Sitio
@@ -24,9 +22,7 @@ WORKDIR /usr/src/app/sitio
 RUN pnpm install
 WORKDIR /usr/src/app/sitio/build
 
-COPY chore/litestream.yml /etc/litestream.yml
-
 ENV DB_PATH=/db/db.db
 EXPOSE 3000
 
-CMD ["litestream", "replicate"]
+CMD ["node", "."]
