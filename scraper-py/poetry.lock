@@ -62,13 +62,13 @@ files = [
 
 [[package]]
 name = "fake-useragent"
-version = "1.4.0"
+version = "1.5.0"
 description = "Up-to-date simple useragent faker with real world database"
 optional = false
 python-versions = "*"
 files = [
-    {file = "fake-useragent-1.4.0.tar.gz", hash = "sha256:5426e4015d8ccc5bb25f64d3dfcfd3915eba30ffebd31b86b60dc7a4c5d65528"},
-    {file = "fake_useragent-1.4.0-py3-none-any.whl", hash = "sha256:9acce439ee2c6cf9c3772fa6c200f62dc8d56605063327a4d8c5d0e47f414b85"},
+    {file = "fake-useragent-1.5.0.tar.gz", hash = "sha256:c2adf4c536f9b74053e1161374398cdd78d28762062db9b741639b2133da0016"},
+    {file = "fake_useragent-1.5.0-py3-none-any.whl", hash = "sha256:1ee651ebd17fa2442abe4393f00e311769051765cd20de23cc50dc771db89540"},
 ]
 
 [[package]]
@@ -215,7 +215,7 @@ dev = ["pyright (>=1.1.350)", "pytest (>=7.4.4)", "pytest-asyncio (>=0.23.3)", "
 type = "git"
 url = "https://github.com/catdevnull/twscrape"
 reference = "HEAD"
-resolved_reference = "1dbda4c7fbaab447c29c86861b2470dac63ec6f7"
+resolved_reference = "ebdc36440041bee0278304cf507de1e19d89c568"
 
 [[package]]
 name = "typing-extensions"

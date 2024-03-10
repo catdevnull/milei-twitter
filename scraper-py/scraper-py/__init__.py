@@ -1,93 +1,152 @@
 import asyncio
-from twscrape import API, gather
+from twscrape import API, gather, Tweet, to_old_rep
 from twscrape.logger import set_log_level
+from twscrape.utils import to_old_obj
+import twscrape
 from db import fetchone, fetchall, execute
 from nanoid import generate
 import datetime
 import json
 import os
 import httpx
+import argparse
+import pprint
 
 JMILEI_ID = "4020276615"
 JMILEI_HANDLE = "jmilei"
 
-db_dir = os.environ['DB_DIR']
-db_path = db_dir+"/scraper.db"
+db_dir = os.environ["DB_DIR"]
+db_path = db_dir + "/scraper.db"
 
-api_url = os.environ['API_URL']
-api_token = os.environ['API_TOKEN']
+api_url = os.environ["API_URL"]
+api_token = os.environ["API_TOKEN"]
 
-api = API(db_dir+"/accounts.db")
+api = API(db_dir + "/accounts.db")
+
+parser = argparse.ArgumentParser(prog="scraper-py")
+subparsers = parser.add_subparsers(dest="subcommand_name")
+cron_parser = subparsers.add_parser("cron")
+liked_parser = subparsers.add_parser("liked")
+retweets_parser = subparsers.add_parser("retweets")
 
 
 async def main():
+    args = parser.parse_args()
     await api.pool.login_all()
-    await scrap_liked()
-    await scrap_retweets()
+    await api.pool.relogin_failed()
+
+    if args.subcommand_name == "liked":
+        res = await scrap_liked(1)
+        pprint.pprint(res)
+    elif args.subcommand_name == "retweets":
+        res = await scrap_retweets(1)
+        pprint.pprint(res)
+    elif args.subcommand_name == "cron":
+        await cron()
 
 
-async def scrap_liked():
-    liked = await gather(api.liked_tweets(JMILEI_ID, limit=100))
+async def cron():
+    res = await scrap_liked()
+    await save_scrap(res["scrap"])
+    res = await scrap_retweets()
+    await save_scrap(res["scrap"])
 
-    scrap = {
-        'uid': generate(),
-        'finishedAt': datetime.datetime.now().isoformat(),
-        'totalTweetsSeen': len(liked),
-        'likedTweets': [{
-            'url': t.url,
-            'firstSeenAt': datetime.datetime.now().isoformat(),
-            'text': t.rawContent,
-        } for t in liked if t.sourceLabel != 'advertiser-interface'],
-        'retweets': []
-    }
+
+async def save_scrap(scrap):
     scrap_json = json.dumps(scrap)
-
-    await execute(db_path, "INSERT INTO db_scraper_scraps(uid, json) VALUES(:uid, :json)", {
-        'uid': scrap["uid"],
-        'json': scrap_json
-    })
+    await execute(
+        db_path,
+        "INSERT INTO db_scraper_scraps(uid, json) VALUES(:uid, :json)",
+        {"uid": scrap["uid"], "json": scrap_json},
+    )
     await upload_scraps()
 
 
-async def scrap_retweets():
-    tweets = await gather(api.user_tweets(JMILEI_ID, limit=100))
+async def get_liked_tweets_timeline(uid: int, limit=-1):
+    async for res in api.liked_tweets_raw(uid, limit):
+        json = res.json()
+        old_rep = to_old_rep(res.json())
+        for instruction in json["data"]["user"]["result"]["timeline_v2"]["timeline"][
+            "instructions"
+        ]:
+            if instruction["type"] != "TimelineAddEntries":
+                continue
+            for entry in instruction["entries"]:
+                if entry["content"]["__typename"] != "TimelineTimelineItem":
+                    continue
+                if entry["entryId"].startswith("promoted-tweet-"):
+                    continue
+                old = to_old_obj(
+                    entry["content"]["itemContent"]["tweet_results"]["result"]
+                )
+                tweet = Tweet.parse(old, old_rep)
+                yield tweet
+
+
+async def scrap_liked(limit=100):
+    liked = await gather(get_liked_tweets_timeline(JMILEI_ID, limit))
+
     scrap = {
-        'uid': generate(),
-        'finishedAt': datetime.datetime.now().isoformat(),
-        'totalTweetsSeen': len(tweets),
-        'likedTweets': [],
-        'retweets': [{
-            'posterId': str(t.retweetedTweet.user.id),
-            'posterHandle': t.retweetedTweet.user.username,
-            'postId': str(t.retweetedTweet.id),
-
-            'firstSeenAt': datetime.datetime.now().isoformat(),
-            'retweetAt': t.date.isoformat(),
-            'postedAt': t.retweetedTweet.date.isoformat(),
-            'text': t.retweetedTweet.rawContent,
-        } for t in tweets if t.retweetedTweet]
+        "uid": generate(),
+        "finishedAt": datetime.datetime.now().isoformat(),
+        "totalTweetsSeen": len(liked),
+        "likedTweets": [
+            {
+                "url": t.url,
+                "firstSeenAt": datetime.datetime.now().isoformat(),
+                "text": t.rawContent,
+            }
+            for t in liked
+            if t.sourceLabel != "advertiser-interface"
+        ],
+        "retweets": [],
     }
-    scrap_json = json.dumps(scrap)
+    return {"scrap": scrap, "raw_liked": liked}
 
-    await execute(db_path, "INSERT INTO db_scraper_scraps(uid, json) VALUES(:uid, :json)", {
-        'uid': scrap["uid"],
-        'json': scrap_json
-    })
-    await upload_scraps()
+
+async def scrap_retweets(limit=100):
+    tweets = await gather(api.user_tweets(JMILEI_ID, limit))
+    scrap = {
+        "uid": generate(),
+        "finishedAt": datetime.datetime.now().isoformat(),
+        "totalTweetsSeen": len(tweets),
+        "likedTweets": [],
+        "retweets": [
+            {
+                "posterId": str(t.retweetedTweet.user.id),
+                "posterHandle": t.retweetedTweet.user.username,
+                "postId": str(t.retweetedTweet.id),
+                "firstSeenAt": datetime.datetime.now().isoformat(),
+                "retweetAt": t.date.isoformat(),
+                "postedAt": t.retweetedTweet.date.isoformat(),
+                "text": t.retweetedTweet.rawContent,
+            }
+            for t in tweets
+            if t.retweetedTweet
+        ],
+    }
+    return {"scrap": scrap, "raw_tweets": tweets}
 
 
 async def upload_scraps():
     async with httpx.AsyncClient() as client:
-        for scrap in await fetchall(db_path, "SELECT * FROM db_scraper_scraps WHERE saved_with_id IS NULL"):
+        for scrap in await fetchall(
+            db_path, "SELECT * FROM db_scraper_scraps WHERE saved_with_id IS NULL"
+        ):
             print("Saving scrap", scrap["uid"])
-            r = await client.post(api_url+"/api/internal/scraper/scrap", json=json.loads(scrap["json"]), headers={"Authorization": "Bearer "+api_token})
+            r = await client.post(
+                api_url + "/api/internal/scraper/scrap",
+                json=json.loads(scrap["json"]),
+                headers={"Authorization": "Bearer " + api_token},
+            )
             print(r.text)
             res = r.json()
 
             await execute(
                 db_path,
                 "update db_scraper_scraps set saved_with_id = :scrap_id where uid = :uid",
-                {'scrap_id': res['scrapId'], 'uid': scrap['uid']})
+                {"scrap_id": res["scrapId"], "uid": scrap["uid"]},
+            )
 
 
 if __name__ == "__main__":
