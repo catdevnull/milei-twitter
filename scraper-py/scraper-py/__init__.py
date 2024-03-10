@@ -85,6 +85,8 @@ async def get_liked_tweets_timeline(uid: int, limit=-1):
 
 async def scrap_liked(limit=100):
     liked = await gather(get_liked_tweets_timeline(JMILEI_ID, limit))
+    if len(liked) == 0:
+        raise Exception("no likes returned")
 
     scrap = {
         "uid": generate(),
@@ -106,6 +108,8 @@ async def scrap_liked(limit=100):
 
 async def scrap_retweets(limit=100):
     tweets = await gather(api.user_tweets(JMILEI_ID, limit))
+    if len(tweets) == 0:
+        raise Exception("no tweets returned")
     scrap = {
         "uid": generate(),
         "finishedAt": datetime.datetime.now().isoformat(),
