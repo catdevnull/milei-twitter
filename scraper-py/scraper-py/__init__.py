@@ -33,7 +33,10 @@ retweets_parser = subparsers.add_parser("retweets")
 
 async def main():
     args = parser.parse_args()
-    await api.pool.login_all()
+    try:
+        await api.pool.login_all()
+    except Exception as e:
+        print(e)
 
     if args.subcommand_name == "liked":
         res = await scrap_liked(1)
