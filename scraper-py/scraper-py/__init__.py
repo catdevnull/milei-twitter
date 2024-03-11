@@ -36,7 +36,7 @@ async def main():
     try:
         await api.pool.login_all()
     except Exception as e:
-        print(e)
+        print("Error in loginall", e)
 
     if args.subcommand_name == "liked":
         res = await scrap_liked(1)
@@ -49,7 +49,7 @@ async def main():
             try:
                 await cron()
             except Exception as e:
-                print(e)
+                print("Error in cron", e)
             await asyncio.sleep(50 + random.randint(5, 15))
     else:
         print("wtf")
