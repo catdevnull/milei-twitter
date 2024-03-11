@@ -45,7 +45,7 @@ jobs:
       - run: pnpm check
         working-directory: scraper
 
-  build-and-push-sitio:
+  oci-sitio:
     name: "[amd64] oci:sitio"
     needs: check-sitio
     runs-on: ubicloud-standard-2
@@ -77,10 +77,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sitio:buildcache
-          cache-to: type=inline
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sitio:buildcache,mode=max
           platforms: linux/amd64
 
-  build-and-push-scraper:
+  oci-scraper:
     name: "[amd64] oci:scraper"
     needs: check-scraper
     runs-on: ubicloud-standard-2
@@ -112,10 +112,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper:buildcache
-          cache-to: type=inline
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper:buildcache,mode=max
           platforms: linux/amd64
 
-  build-and-push-scraper-py:
+  oci-scraper-py-amd64:
     name: "[amd64] oci:scraper-py"
     runs-on: ubicloud-standard-2
     permissions:
@@ -146,7 +146,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache
-          cache-to: type=inline
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache,mode=max
           platforms: linux/amd64
 
   oci-scraper-py-arm:
@@ -180,5 +180,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache
-          cache-to: type=inline
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache,mode=max
           platforms: linux/arm64/v8
