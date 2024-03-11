@@ -45,8 +45,8 @@ jobs:
       - run: pnpm check
         working-directory: scraper
 
-  build-and-push-sitio:
-    name: [amd64] oci:sitio
+  oci-sitio:
+    name: "[amd64] oci:sitio"
     needs: check-sitio
     runs-on: buildjet-2vcpu-ubuntu-2204
     permissions:
@@ -80,8 +80,8 @@ jobs:
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sitio:buildcache,mode=max
           platforms: linux/amd64
 
-  build-and-push-scraper:
-    name: [amd64] oci:scraper
+  oci-scraper:
+    name: "[amd64] oci:scraper"
     needs: check-scraper
     runs-on: buildjet-2vcpu-ubuntu-2204
     permissions:
@@ -115,8 +115,8 @@ jobs:
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper:buildcache,mode=max
           platforms: linux/amd64
 
-  build-and-push-scraper-py:
-    name: [amd64] oci:scraper-py
+  oci-scraper-py-amd64:
+    name: "[amd64] oci:scraper-py"
     runs-on: buildjet-2vcpu-ubuntu-2204
     permissions:
       contents: read
@@ -149,8 +149,8 @@ jobs:
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache,mode=max
           platforms: linux/amd64
 
-  build-and-push-scraper-py-arm:
-    name: [arm64] oci:scraper-py
+  oci-scraper-py-arm:
+    name: "[arm64] oci:scraper-py"
     runs-on: buildjet-2vcpu-ubuntu-2204-arm
     permissions:
       contents: read
