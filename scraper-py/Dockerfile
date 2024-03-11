@@ -14,7 +14,7 @@ COPY scraper-py/ .
 
 VOLUME /db
 ENV DB_DIR=/db
-ENV PYTHONUNBUFFERED=0
+ENV PYTHONUNBUFFERED=1
 
 ENTRYPOINT ["tini", "--"]
 CMD ["poetry", "run", "python3", "__init__.py", "cron"]
