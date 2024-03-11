@@ -11,6 +11,7 @@ import os
 import httpx
 import argparse
 import pprint
+import random
 
 JMILEI_ID = "4020276615"
 JMILEI_HANDLE = "jmilei"
@@ -41,7 +42,12 @@ async def main():
         res = await scrap_retweets(1)
         pprint.pprint(res)
     elif args.subcommand_name == "cron":
-        await cron()
+        while True:
+            try:
+                await cron()
+            except Exception as e:
+                print(e)
+            await asyncio.sleep(50 + random.randint(5, 15))
 
 
 async def cron():
