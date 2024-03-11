@@ -42,7 +42,7 @@ async def main():
         res = await scrap_liked(1)
         pprint.pprint(res)
     elif args.subcommand_name == "retweets":
-        res = await scrap_retweets(1)
+        res = await scrap_tweets(1)
         pprint.pprint(res)
     elif args.subcommand_name == "cron":
         while True:
@@ -59,7 +59,7 @@ async def cron():
     print("Running cron")
     res = await scrap_liked()
     await save_scrap(res["scrap"])
-    res = await scrap_retweets()
+    res = await scrap_tweets()
     await save_scrap(res["scrap"])
 
 
@@ -117,7 +117,7 @@ async def scrap_liked(limit=100):
     return {"scrap": scrap, "raw_liked": liked}
 
 
-async def scrap_retweets(limit=100):
+async def scrap_tweets(limit=40):
     tweets = await gather(api.user_tweets(JMILEI_ID, limit))
     if len(tweets) == 0:
         raise Exception("no tweets returned")
