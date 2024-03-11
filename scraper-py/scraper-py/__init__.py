@@ -54,6 +54,7 @@ async def main():
 
 
 async def cron():
+    print("Running cron")
     res = await scrap_liked()
     await save_scrap(res["scrap"])
     res = await scrap_retweets()
