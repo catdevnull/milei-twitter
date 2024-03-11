@@ -131,7 +131,7 @@ async def scrap_retweets(limit=100):
             {
                 "id": str(t.id),
                 "capturedAt": datetime.datetime.now().isoformat(),
-                "snscrapeJson": json.dumps(t),
+                "snscrapeJson": t.json(),
             }
             for t in tweets
         ],
