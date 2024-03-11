@@ -7,8 +7,8 @@ env:
 
 jobs:
   check-sitio:
-    name: chequear typescript del sitio
-    runs-on: ubuntu-latest
+    name: check:sitio
+    runs-on: buildjet-2vcpu-ubuntu-2204
 
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +26,8 @@ jobs:
       - run: pnpm check
         working-directory: sitio
   check-scraper:
-    name: chequear typescript del scraper
-    runs-on: ubuntu-latest
+    name: check:sitio
+    runs-on: buildjet-2vcpu-ubuntu-2204
 
     steps:
       - uses: actions/checkout@v4
@@ -46,9 +46,9 @@ jobs:
         working-directory: scraper
 
   build-and-push-sitio:
-    name: Compilar contenedor del sitio
+    name: [amd64] oci:sitio
     needs: check-sitio
-    runs-on: ubuntu-latest
+    runs-on: buildjet-2vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -81,9 +81,9 @@ jobs:
           platforms: linux/amd64
 
   build-and-push-scraper:
-    name: Compilar contenedor del scraper
+    name: [amd64] oci:scraper
     needs: check-scraper
-    runs-on: ubuntu-latest
+    runs-on: buildjet-2vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -116,8 +116,8 @@ jobs:
           platforms: linux/amd64
 
   build-and-push-scraper-py:
-    name: Compilar contenedor del scraper-py
-    runs-on: ubuntu-latest
+    name: [amd64] oci:scraper-py
+    runs-on: buildjet-2vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -147,4 +147,38 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+
+  build-and-push-scraper-py-arm:
+    name: [arm64] oci:scraper-py
+    runs-on: buildjet-2vcpu-ubuntu-2204-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: scraper-py
+          file: scraper-py/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/scraper-py:buildcache,mode=max
+          platforms: linux/arm64
