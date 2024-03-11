@@ -8,7 +8,7 @@ env:
 jobs:
   check-sitio:
     name: chequear typescript del sitio
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-default
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         working-directory: sitio
   check-scraper:
     name: chequear typescript del scraper
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-default
 
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
   build-and-push-sitio:
     name: Compilar contenedor del sitio
     needs: check-sitio
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-default
     permissions:
       contents: read
       packages: write
@@ -83,7 +83,7 @@ jobs:
   build-and-push-scraper:
     name: Compilar contenedor del scraper
     needs: check-scraper
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-default
     permissions:
       contents: read
       packages: write
@@ -117,7 +117,7 @@ jobs:
 
   build-and-push-scraper-py:
     name: Compilar contenedor del scraper-py
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-default
     permissions:
       contents: read
       packages: write
