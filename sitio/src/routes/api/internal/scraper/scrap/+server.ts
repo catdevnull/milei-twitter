@@ -6,6 +6,7 @@ import {
   retweets,
   scraperTokens,
   scraps,
+  tweets,
 } from "../../../../../schema.js";
 import { zScrap, type PostScrapRes } from "api/schema.js";
 
@@ -45,7 +46,7 @@ export async function POST({ request }) {
     } else {
       dbScrap = x[0];
     }
-    for (const likedTweet of scrap.likedTweets) {
+    for (const likedTweet of scrap.likedTweets ?? []) {
       await tx
         .insert(likedTweets)
         .values({ ...likedTweet, scrapId: dbScrap.id })
@@ -58,7 +59,7 @@ export async function POST({ request }) {
           where: gt(likedTweets.firstSeenAt, likedTweet.firstSeenAt),
         });
     }
-    for (const retweet of scrap.retweets) {
+    for (const retweet of scrap.retweets ?? []) {
       await tx
         .insert(retweets)
         .values({ ...retweet, scrapId: dbScrap.id })
@@ -69,6 +70,19 @@ export async function POST({ request }) {
             scrapId: dbScrap.id,
           },
           where: gt(retweets.firstSeenAt, retweet.firstSeenAt),
+        });
+    }
+    for (const tweet of scrap.tweets ?? []) {
+      await tx
+        .insert(tweets)
+        .values({ ...tweet })
+        .onConflictDoUpdate({
+          target: [tweets.id],
+          set: {
+            snscrapeJson: tweet.snscrapeJson,
+            capturedAt: tweet.capturedAt,
+          },
+          where: gt(tweets.capturedAt, tweet.capturedAt),
         });
     }
     return dbScrap.id;
