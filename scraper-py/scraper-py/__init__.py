@@ -51,6 +51,8 @@ async def main():
             except Exception as e:
                 print(e)
             await asyncio.sleep(50 + random.randint(5, 15))
+    else:
+        print("wtf")
 
 
 async def cron():
