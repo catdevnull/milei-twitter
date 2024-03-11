@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN adduser --disabled-password --gecos "" nonroot \
  && chown -R nonroot.nonroot /app/
-RUN apt-get update && apt-get install -y sqlite3 curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y sqlite3 tini && rm -rf /var/lib/apt/lists/*
 RUN pip install poetry
 
 USER nonroot
@@ -15,4 +15,5 @@ COPY scraper-py/ .
 VOLUME /db
 ENV DB_DIR=/db
 
-ENTRYPOINT ["poetry", "run", "python3", "__init__.py", "cron"]
+ENTRYPOINT ["tini", "--"]
+CMD ["poetry", "run", "python3", "__init__.py", "cron"]
