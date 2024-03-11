@@ -75,11 +75,11 @@ export async function POST({ request }) {
     for (const tweet of scrap.tweets ?? []) {
       await tx
         .insert(tweets)
-        .values({ ...tweet })
+        .values({ ...tweet, snscrapeJson: JSON.parse(tweet.snscrapeJson) })
         .onConflictDoUpdate({
           target: [tweets.id],
           set: {
-            snscrapeJson: tweet.snscrapeJson,
+            snscrapeJson: JSON.parse(tweet.snscrapeJson),
             capturedAt: tweet.capturedAt,
           },
           where: gt(tweets.capturedAt, tweet.capturedAt),
