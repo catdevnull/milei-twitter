@@ -56,11 +56,18 @@ async def main():
 
 
 async def cron():
-    print("Running cron")
-    res = await scrap_liked()
-    await save_scrap(res["scrap"])
-    res = await scrap_tweets()
-    await save_scrap(res["scrap"])
+    try:
+        print("Scrapping liked")
+        res = await scrap_liked()
+        await save_scrap(res["scrap"])
+    except Exception as e:
+        print("Error when scrapping liked", e)
+    try:
+        print("Scrapping tweets")
+        res = await scrap_tweets()
+        await save_scrap(res["scrap"])
+    except Exception as e:
+        print("Error when scrapping tweets", e)
 
 
 async def save_scrap(scrap):
