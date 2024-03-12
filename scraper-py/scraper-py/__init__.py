@@ -49,7 +49,7 @@ async def main():
             try:
                 await cron()
             except Exception as e:
-                print("Error in cron", type(ex).__name__, e)
+                print("Error in cron", type(e).__name__, e)
             await asyncio.sleep(50 + random.randint(5, 15))
     else:
         print("wtf")
@@ -61,13 +61,13 @@ async def cron():
         res = await scrap_liked()
         await save_scrap(res["scrap"])
     except Exception as e:
-        print("Error when scrapping liked", type(ex).__name__, e)
+        print("Error when scrapping liked", type(e).__name__, e)
     try:
         print("Scrapping tweets")
         res = await scrap_tweets()
         await save_scrap(res["scrap"])
     except Exception as e:
-        print("Error when scrapping tweets", type(ex).__name__, e)
+        print("Error when scrapping tweets", type(e).__name__, e)
 
 
 async def save_scrap(scrap):
