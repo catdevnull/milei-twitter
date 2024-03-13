@@ -18,6 +18,7 @@ export async function queryLastWeek() {
       columns: {
         firstSeenAt: true,
         url: true,
+        text: true,
       },
       orderBy: desc(likedTweets.firstSeenAt),
       where: and(gte(likedTweets.firstSeenAt, minDate.toDate())),
@@ -25,6 +26,7 @@ export async function queryLastWeek() {
     db.query.retweets.findMany({
       columns: {
         retweetAt: true,
+        text: true,
       },
       orderBy: desc(retweets.retweetAt),
       where: and(gte(retweets.retweetAt, minDate.toDate())),
