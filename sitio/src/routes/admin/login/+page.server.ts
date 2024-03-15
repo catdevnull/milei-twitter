@@ -3,7 +3,10 @@ import type { Actions, PageServerLoad } from "./$types";
 import { env } from "$env/dynamic/private";
 
 export const load: PageServerLoad = async ({ cookies }) => {
-  if (cookies.get("password") === env.ADMIN_PASSWORD) {
+  if (
+    cookies.get("password")?.length &&
+    cookies.get("password") === env.ADMIN_PASSWORD
+  ) {
     redirect(303, "/admin");
   }
 };
