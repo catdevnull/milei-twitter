@@ -227,7 +227,7 @@ dev = ["pyright (>=1.1.350)", "pytest (>=7.4.4)", "pytest-asyncio (>=0.23.3)", "
 type = "git"
 url = "https://github.com/catdevnull/twscrape"
 reference = "HEAD"
-resolved_reference = "5f3598ab2952d16080adae53c76681aa70133f17"
+resolved_reference = "e652b143618816fa16187fa08ad1fc38325e3a8c"
 
 [[package]]
 name = "typing-extensions"
