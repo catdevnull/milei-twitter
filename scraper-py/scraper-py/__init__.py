@@ -12,6 +12,7 @@ import httpx
 import argparse
 import pprint
 import random
+import traceback
 
 JMILEI_ID = "4020276615"
 JMILEI_HANDLE = "jmilei"
@@ -50,6 +51,7 @@ async def main():
                 await cron()
             except Exception as e:
                 print("Error in cron", type(e).__name__, e)
+                print(traceback.format_exc())
             await asyncio.sleep(50 + random.randint(5, 15))
     else:
         print("wtf")
@@ -62,12 +64,15 @@ async def cron():
         await save_scrap(res["scrap"])
     except Exception as e:
         print("Error when scrapping liked", type(e).__name__, e)
+        print(traceback.format_exc())
+
     try:
         print("Scrapping tweets")
         res = await scrap_tweets()
         await save_scrap(res["scrap"])
     except Exception as e:
         print("Error when scrapping tweets", type(e).__name__, e)
+        print(traceback.format_exc())
 
 
 async def save_scrap(scrap):
