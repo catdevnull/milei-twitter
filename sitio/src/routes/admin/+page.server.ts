@@ -6,6 +6,7 @@ import * as schema from "../../schema";
 import { desc } from "drizzle-orm";
 import generate from "boring-name-generator";
 import { redirectIfNotLoggedIn } from "$lib/login";
+import { nanoid } from "nanoid";
 export const load: PageServerLoad = async ({ cookies }) => {
   redirectIfNotLoggedIn(cookies);
 
@@ -14,10 +15,12 @@ export const load: PageServerLoad = async ({ cookies }) => {
     with: {
       likedTweets: true,
     },
+    limit: 200,
   });
   const cuentas = await db.query.cuentas.findMany({});
+  const scraperTokens = await db.query.scraperTokens.findMany({});
 
-  return { scraps, cuentas };
+  return { scraps, cuentas, scraperTokens };
 };
 
 export const actions: Actions = {
@@ -42,5 +45,14 @@ export const actions: Actions = {
       id: generate().spaced,
       accountDataJson: json,
     });
+  },
+  newScraperToken: async ({ cookies, request }) => {
+    redirectIfNotLoggedIn(cookies);
+
+    const dataObj: schema.ScraperToken = {
+      token: nanoid(),
+    };
+
+    await db.insert(schema.scraperTokens).values(dataObj);
   },
 };

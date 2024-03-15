@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { PageData, ActionData } from "./$types";
+  import Button from "./Button.svelte";
+  import Alert from "./Alert.svelte";
 
   export let data: PageData;
   export let form: ActionData;
@@ -10,13 +12,16 @@
   });
 </script>
 
-<div class="mx-auto flex max-w-[600px] flex-col gap-6 py-6 md:flex-row">
+<div class="mx-auto flex max-w-[900px] flex-col gap-6 py-6 md:flex-row">
   <nav
     class="sticky top-0 mx-auto my-2 self-start bg-neutral-100 dark:bg-neutral-900"
   >
     <ul
       class="inline-flex divide-x divide-neutral-200 border border-neutral-200 md:flex-col md:divide-x-0 md:divide-y dark:divide-neutral-800 dark:border-neutral-800"
     >
+      <a class="flex px-4 py-2 font-medium underline" href="#scraper-tokens"
+        >Scraper Tokens</a
+      >
       <a class="flex px-4 py-2 font-medium underline" href="#cuentas">Cuentas</a
       >
       <a class="flex px-4 py-2 font-medium underline" href="#scraps">Scraps</a>
@@ -24,6 +29,54 @@
   </nav>
 
   <main class="min-w-0 px-2">
+    <section class="my-4">
+      <h2 class="text-3xl font-black" id="scraper-tokens">Scraper Tokens</h2>
+
+      <div class="flex flex-col">
+        <div class="overflow-x-auto">
+          <div class="inline-block min-w-full">
+            <div class="overflow-hidden">
+              <table class="min-w-full divide-y divide-neutral-200">
+                <thead>
+                  <tr class="text-neutral-500">
+                    <th
+                      class="px-5 py-3 text-left text-xs font-medium uppercase"
+                      >ID</th
+                    >
+                    <th
+                      class="px-5 py-3 text-left text-xs font-medium uppercase"
+                      >Token</th
+                    >
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-200">
+                  {#each data.scraperTokens as { id, token }}
+                    <tr class="text-neutral-800 dark:text-neutral-300">
+                      <td
+                        class="whitespace-nowrap px-5 py-4 text-sm font-medium"
+                        >{id}</td
+                      >
+                      <td class="break-all px-5 py-4 text-sm">{token}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form method="POST" action="?/newScraperToken" class="p-2">
+        {#if form?.error}
+          <Alert>{form?.error}</Alert>
+        {/if}
+
+        <div class="flex flex-col gap-2">
+          <Button>Nuevo token</Button>
+        </div>
+      </form>
+    </section>
+
     <section class="my-4">
       <h2 class="text-3xl font-black" id="cuentas">Cuentas</h2>
 
@@ -125,6 +178,7 @@
         </div>
       </form>
     </section>
+
     <section class="my-4">
       <h2 class="text-3xl font-black" id="scraps">Scraps</h2>
 

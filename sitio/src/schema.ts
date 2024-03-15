@@ -109,6 +109,8 @@ export const scraperTokens = sqliteTable("db_scraper_tokens", {
   token: text("token").notNull(),
 });
 
+export type ScraperToken = typeof scraperTokens.$inferInsert;
+
 export const zTokenAccountData = z.object({
   ct0: z.string(),
   auth_token: z.string(),
