@@ -111,7 +111,7 @@
   <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro Presidente
-      <div class="inline-flex flex-wrap justify-center gap-2">
+      <div class="inline-flex flex-wrap justify-end gap-2">
         <select
           on:change={(e) => setQuery(e.currentTarget.value)}
           value={data.query}
