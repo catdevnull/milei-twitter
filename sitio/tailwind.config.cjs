@@ -1,4 +1,5 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
+const { addDynamicIconSelectors } = require("@iconify/tailwind");
 
 /** @type {import('tailwindcss').Config}*/
 const config = {
@@ -21,7 +22,7 @@ const config = {
     },
   },
 
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [require("@tailwindcss/typography"), addDynamicIconSelectors()],
 };
 
 module.exports = config;

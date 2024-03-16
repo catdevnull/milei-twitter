@@ -11,6 +11,7 @@
   import { goto } from "$app/navigation";
   import { dayjs } from "$lib/consts";
   import "core-js/es/array/to-reversed";
+  import { DatePicker } from "@svelte-plugins/datepicker";
 
   const tz = "America/Argentina/Buenos_Aires";
 
@@ -52,11 +53,14 @@
     weekday: "short",
     timeZone: tz,
   });
+  const dateFormatter = Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    weekday: "short",
+    month: "short",
+    timeZone: tz,
+  });
 
-  function setQuery(
-    event: Event & { currentTarget: EventTarget & HTMLSelectElement },
-  ) {
-    const query = event.currentTarget.value;
+  function setQuery(query: string) {
     goto(`/?q=${query}`);
   }
 
@@ -86,22 +90,56 @@
     ];
     console.debug(start, opciones);
     if (!opciones.some(({ date }) => date && +start == +date)) {
-      opciones.push(weeklyOpcion(start));
+      opciones.push({
+        query: getWeeklyQuery(start),
+        label: dateFormatter.format(start),
+        date: start,
+      });
     }
     return opciones;
   }
   $: opcionesDias = generarOpcionesDias(data.start);
+
+  let isDatePickerOpen = false;
+  const toggleDatePicker = () => (isDatePickerOpen = !isDatePickerOpen);
+
+  const onDayClick = (evt: any) =>
+    setQuery(`date:${dayjs(evt.startDate).format("YYYY-MM-DD")}`);
 </script>
 
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
   <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro Presidente
-      <select on:change={setQuery} value={data.query}>
-        {#each opcionesDias as { label, query }}
-          <option value={query}>{label}</option>
-        {/each}
-      </select>
+      <div class="inline-flex gap-2">
+        <select
+          on:change={(e) => setQuery(e.currentTarget.value)}
+          value={data.query}
+          class="rounded-md px-2"
+        >
+          {#each opcionesDias as { label, query }}
+            <option value={query}>{label}</option>
+          {/each}
+        </select>
+        <DatePicker
+          bind:isOpen={isDatePickerOpen}
+          includeFont={false}
+          align="right"
+          startDate={data.start}
+          {onDayClick}
+          enabledDates={[
+            `${dayjs(data.firstLikedTweet?.firstSeenAt).format("MM/DD/YYYY")}:${dayjs().tz(tz).format("MM/DD/YYYY")}`,
+          ]}
+        >
+          <button
+            type="button"
+            class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-950 p-1 font-medium tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-700 dark:hover:bg-neutral-600 dark:focus:ring-neutral-950"
+            on:click={toggleDatePicker}
+          >
+            <span class="icon-[heroicons--calendar-solid]"></span>
+          </button>
+        </DatePicker>
+      </div>
       ?
     </h1>
     <h2 class="text-9xl font-black">{filteredTweets.length}</h2>
@@ -246,3 +284,12 @@
     </div>
   </footer>
 </div>
+
+<style lang="postcss">
+  :global(.datepicker) {
+    display: inline-flex;
+  }
+  :global(.datepicker) button {
+    @apply text-4xl;
+  }
+</style>

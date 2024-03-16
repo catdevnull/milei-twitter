@@ -17,6 +17,7 @@
     "@bybas/weather-icons": "^2.0.0",
     "@fontsource-variable/inter": "^5.0.16",
     "@libsql/client": "^0.5.2",
+    "@svelte-plugins/datepicker": "^1.0.9",
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.1",
     "chartjs-adapter-dayjs-4": "^1.0.4",
@@ -34,6 +35,8 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@iconify-json/heroicons": "^1.1.20",
+    "@iconify/tailwind": "^0.1.4",
     "@sveltejs/adapter-auto": "^3.0.0",
     "@sveltejs/adapter-node": "^4.0.1",
     "@sveltejs/kit": "^2.0.0",
