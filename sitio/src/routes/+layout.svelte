@@ -45,7 +45,6 @@
       src="https://umami.experimentos.nulo.ar/script.js"
       data-website-id="3728adc2-6131-4895-9b0c-98f3038d9126"
     ></script>
-    <script src="https://polyfill.io/v3/polyfill.min.js"></script>
   {/if}
 </svelte:head>
 
