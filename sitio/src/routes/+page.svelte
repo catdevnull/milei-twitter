@@ -10,9 +10,6 @@
   import { sortMost } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
   import { dayjs } from "$lib/consts";
-  // @ts-ignore
-  import toReversed from "array.prototype.toreversed";
-  toReversed.shim();
 
   const tz = "America/Argentina/Buenos_Aires";
 
