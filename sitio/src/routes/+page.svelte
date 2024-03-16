@@ -88,7 +88,6 @@
         .filter((d) => +d !== +hoy)
         .map((date) => weeklyOpcion(date)),
     ];
-    console.debug(start, opciones);
     if (!opciones.some(({ date }) => date && +start == +date)) {
       opciones.push({
         query: getWeeklyQuery(start),
@@ -99,6 +98,22 @@
     return opciones;
   }
   $: opcionesDias = generarOpcionesDias(data.start);
+
+  const dowLabels = ["D", "L", "M", "X", "J", "V", "S"];
+  const monthLabels = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
 
   let isDatePickerOpen = false;
   const toggleDatePicker = () => (isDatePickerOpen = !isDatePickerOpen);
@@ -144,6 +159,8 @@
           enabledDates={[
             `${dayjs(data.firstLikedTweet?.firstSeenAt).format("MM/DD/YYYY")}:${dayjs().tz(tz).format("MM/DD/YYYY")}`,
           ]}
+          {dowLabels}
+          {monthLabels}
         >
           <button
             type="button"
