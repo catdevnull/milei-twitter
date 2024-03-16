@@ -59,6 +59,38 @@
     const query = event.currentTarget.value;
     goto(`/?q=${query}`);
   }
+
+  function generarOpcionesDias(
+    start: Date,
+  ): Array<{ label: string; query: string }> {
+    const hoy = dayjs().tz(tz).toDate();
+    const getWeeklyQuery = (date: Date) =>
+      `date:${dayjs(date).format("YYYY-MM-DD")}`;
+    const weeklyOpcion = (date: Date) => ({
+      label: weekDayFormatter.format(date),
+      query: getWeeklyQuery(date),
+      date,
+    });
+    const opciones = [
+      { label: "las últimas 24hs", query: "last-24h" },
+      {
+        label: `hoy, ${weekDayFormatter.format(hoy)}`,
+        query: getWeeklyQuery(hoy),
+        date: hoy,
+      },
+      ...ultimaSemana
+        .toReversed()
+        .map((d) => dayjs(d.day, "YYYY-MM-DD").tz(tz, true).toDate())
+        .filter((d) => d !== hoy)
+        .map((date) => weeklyOpcion(date)),
+    ];
+    console.debug(start, opciones);
+    if (!opciones.some(({ date }) => date && +start == +date)) {
+      opciones.push(weeklyOpcion(start));
+    }
+    return opciones;
+  }
+  $: opcionesDias = generarOpcionesDias(data.start);
 </script>
 
 <div class="flex min-h-screen flex-col justify-center gap-12 p-2">
@@ -66,16 +98,8 @@
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro Presidente
       <select on:change={setQuery} value={data.query}>
-        <option value="last-24h">las últimas 24hs</option>
-        <option value={`date:${dayjs().tz(tz).format("YYYY-MM-DD")}`}
-          >hoy, {weekDayFormatter.format(new Date())}</option
-        >
-        {#each ultimaSemana.toReversed().slice(1) as { day }}
-          <option value={`date:${day}`}
-            >{weekDayFormatter.format(
-              dayjs(day, "YYYY-MM-DD").tz(tz, true).toDate(),
-            )}</option
-          >
+        {#each opcionesDias as { label, query }}
+          <option value={query}>{label}</option>
         {/each}
       </select>
       ?
