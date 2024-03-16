@@ -10,6 +10,7 @@
   import { sortMost } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
   import { dayjs } from "$lib/consts";
+  import "core-js/es/array/to-reversed";
 
   const tz = "America/Argentina/Buenos_Aires";
 
