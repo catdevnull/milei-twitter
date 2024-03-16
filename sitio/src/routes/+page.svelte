@@ -105,12 +105,26 @@
 
   const onDayClick = (evt: any) =>
     setQuery(`date:${dayjs(evt.startDate).format("YYYY-MM-DD")}`);
+
+  let duende = false;
+  let easterEggClicks = 0;
+  function easterEggClick() {
+    easterEggClicks++;
+    if (easterEggClicks > 4) {
+      duende = true;
+    }
+  }
 </script>
 
-<div class="flex min-h-screen flex-col justify-center gap-12 p-2">
+<div
+  class="flex min-h-screen flex-col justify-center gap-12 p-2"
+  class:milei-duende={duende}
+>
   <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
-      ¿Cuántos tweets likeó nuestro Presidente
+      ¿Cuántos tweets likeó nuestro <span on:click={easterEggClick}
+        >{#if duende}presiduende{:else}Presidente{/if}</span
+      >
       <div class="inline-flex flex-wrap justify-end gap-2">
         <select
           on:change={(e) => setQuery(e.currentTarget.value)}
@@ -291,5 +305,20 @@
   }
   :global(.datepicker) button {
     @apply text-4xl;
+  }
+
+  .milei-duende {
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
+      center / cover no-repeat url("$lib/assets/milei-duende.webp");
+    background-attachment: fixed;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .milei-duende {
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+        center / cover no-repeat url("$lib/assets/milei-duende.webp");
+    }
   }
 </style>
