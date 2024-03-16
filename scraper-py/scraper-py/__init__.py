@@ -13,6 +13,7 @@ import argparse
 import pprint
 import random
 import traceback
+import typing
 
 JMILEI_ID = "4020276615"
 JMILEI_HANDLE = "jmilei"
@@ -85,46 +86,34 @@ async def save_scrap(scrap):
     await upload_scraps()
 
 
+async def read_tweet_timeline(res: httpx.Response):
+    json = res.json()
+    old_rep = to_old_rep(res.json())
+    for instruction in json["data"]["user"]["result"]["timeline_v2"]["timeline"][
+        "instructions"
+    ]:
+        if instruction["type"] != "TimelineAddEntries":
+            continue
+        for entry in instruction["entries"]:
+            if entry["content"]["__typename"] != "TimelineTimelineItem":
+                continue
+            if entry["entryId"].startswith("promoted-tweet-"):
+                continue
+            old = to_old_obj(entry["content"]["itemContent"]["tweet_results"]["result"])
+            tweet = Tweet.parse(old, old_rep)
+            yield tweet
+
+
 async def get_user_tweets_timeline(uid: int, limit=-1):
     async for res in api.user_tweets_raw(uid, limit):
-        json = res.json()
-        old_rep = to_old_rep(res.json())
-        for instruction in json["data"]["user"]["result"]["timeline_v2"]["timeline"][
-            "instructions"
-        ]:
-            if instruction["type"] != "TimelineAddEntries":
-                continue
-            for entry in instruction["entries"]:
-                if entry["content"]["__typename"] != "TimelineTimelineItem":
-                    continue
-                if entry["entryId"].startswith("promoted-tweet-"):
-                    continue
-                old = to_old_obj(
-                    entry["content"]["itemContent"]["tweet_results"]["result"]
-                )
-                tweet = Tweet.parse(old, old_rep)
-                yield tweet
+        async for tweet in read_tweet_timeline(res):
+            yield tweet
 
 
 async def get_liked_tweets_timeline(uid: int, limit=-1):
     async for res in api.liked_tweets_raw(uid, limit):
-        json = res.json()
-        old_rep = to_old_rep(res.json())
-        for instruction in json["data"]["user"]["result"]["timeline_v2"]["timeline"][
-            "instructions"
-        ]:
-            if instruction["type"] != "TimelineAddEntries":
-                continue
-            for entry in instruction["entries"]:
-                if entry["content"]["__typename"] != "TimelineTimelineItem":
-                    continue
-                if entry["entryId"].startswith("promoted-tweet-"):
-                    continue
-                old = to_old_obj(
-                    entry["content"]["itemContent"]["tweet_results"]["result"]
-                )
-                tweet = Tweet.parse(old, old_rep)
-                yield tweet
+        async for tweet in read_tweet_timeline(res):
+            yield tweet
 
 
 async def scrap_liked(limit=100):
