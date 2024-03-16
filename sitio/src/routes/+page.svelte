@@ -81,7 +81,7 @@
       ...ultimaSemana
         .toReversed()
         .map((d) => dayjs(d.day, "YYYY-MM-DD").tz(tz, true).toDate())
-        .filter((d) => d !== hoy)
+        .filter((d) => +d !== +hoy)
         .map((date) => weeklyOpcion(date)),
     ];
     console.debug(start, opciones);
