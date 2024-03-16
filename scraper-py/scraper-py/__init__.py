@@ -85,6 +85,27 @@ async def save_scrap(scrap):
     await upload_scraps()
 
 
+async def get_user_tweets_timeline(uid: int, limit=-1):
+    async for res in api.user_tweets_raw(uid, limit):
+        json = res.json()
+        old_rep = to_old_rep(res.json())
+        for instruction in json["data"]["user"]["result"]["timeline_v2"]["timeline"][
+            "instructions"
+        ]:
+            if instruction["type"] != "TimelineAddEntries":
+                continue
+            for entry in instruction["entries"]:
+                if entry["content"]["__typename"] != "TimelineTimelineItem":
+                    continue
+                if entry["entryId"].startswith("promoted-tweet-"):
+                    continue
+                old = to_old_obj(
+                    entry["content"]["itemContent"]["tweet_results"]["result"]
+                )
+                tweet = Tweet.parse(old, old_rep)
+                yield tweet
+
+
 async def get_liked_tweets_timeline(uid: int, limit=-1):
     async for res in api.liked_tweets_raw(uid, limit):
         json = res.json()
@@ -130,7 +151,7 @@ async def scrap_liked(limit=100):
 
 
 async def scrap_tweets(limit=40):
-    tweets = await gather(api.user_tweets(JMILEI_ID, limit))
+    tweets = await gather(get_user_tweets_timeline(JMILEI_ID, limit))
     if len(tweets) == 0:
         raise Exception("no tweets returned")
     scrap = {
