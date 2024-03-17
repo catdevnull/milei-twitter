@@ -67,7 +67,7 @@
   function generarOpcionesDias(
     start: Date,
   ): Array<{ label: string; query: string }> {
-    const hoy = dayjs().tz(tz).toDate();
+    const hoy = dayjs().tz(tz).startOf("day").toDate();
     const getWeeklyQuery = (date: Date) =>
       `date:${dayjs(date).format("YYYY-MM-DD")}`;
     const weeklyOpcion = (date: Date) => ({
