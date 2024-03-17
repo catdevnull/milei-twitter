@@ -6,7 +6,7 @@
     "sqlite@latest",
     "turso-cli@latest",
     "git-filter-repo@latest",
-    "python3@latest",
+    "python@latest",
     "poetry@latest"
   ],
   "env": {
