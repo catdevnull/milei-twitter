@@ -7,7 +7,7 @@
     "turso-cli@latest",
     "git-filter-repo@latest",
     "python@latest",
-    "poetry@latest"
+    "python312Packages.pip@latest"
   ],
   "env": {
     "DEVBOX_PYPROJECT_DIR": "$PWD/scraper-py"
