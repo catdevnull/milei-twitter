@@ -38,24 +38,25 @@ export function makeMapOfDays<T>(
   return map;
 }
 
-export function lastWeek(
+export function week(
+  endDate: Dayjs,
   allLiked: Array<LikedTweetDate>,
   allRetweets: Array<RetweetDate>,
 ) {
-  const today = dayjs
-    .tz(undefined, "America/Argentina/Buenos_Aires")
+  const lastDay = endDate
+    .tz("America/Argentina/Buenos_Aires")
     .startOf("day");
 
   const days = [
     // también cambiar en getMinDate
-    today.subtract(7, "day"),
-    today.subtract(6, "day"),
-    today.subtract(5, "day"),
-    today.subtract(4, "day"),
-    today.subtract(3, "day"),
-    today.subtract(2, "day"),
-    today.subtract(1, "day"),
-    today,
+    lastDay.subtract(7, "day"),
+    lastDay.subtract(6, "day"),
+    lastDay.subtract(5, "day"),
+    lastDay.subtract(4, "day"),
+    lastDay.subtract(3, "day"),
+    lastDay.subtract(2, "day"),
+    lastDay.subtract(1, "day"),
+    lastDay,
   ];
 
   const dayDates = days.map((d) => d.toDate());
@@ -74,6 +75,13 @@ export function lastWeek(
     };
   });
   return x;
+}
+
+export function lastWeek(
+  allLiked: Array<LikedTweetDate>,
+  allRetweets: Array<RetweetDate>,
+) {
+  return week(dayjs(), allLiked, allRetweets)
 }
 
 export async function getDataForLastWeek(
