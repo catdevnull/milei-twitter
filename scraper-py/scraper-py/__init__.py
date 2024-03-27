@@ -38,7 +38,11 @@ async def main():
     try:
         await api.pool.login_all()
     except Exception as e:
-        print("Error in loginall", e)
+        print("Error in login_all", e)
+    try:
+        await api.pool.relogin_failed()
+    except Exception as e:
+        print("Error in relogin_failed", e)
 
     if args.subcommand_name == "liked":
         res = await scrap_liked(1)
