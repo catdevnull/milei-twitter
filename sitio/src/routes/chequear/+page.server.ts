@@ -22,25 +22,19 @@ const validarYParsearLinkDeTwitter = (s: string) => {
 };
 
 export const load: PageServerLoad = async ({ url }) => {
-  const test = url.searchParams.get("test");
-  let search: any | null | undefined = null;
-  let error: null | string = null;
-  if (test) {
-    const parsedTwit = validarYParsearLinkDeTwitter(test);
-    if (!parsedTwit) {
-      error = "La URL del twit está mal construida";
-    } else {
-      search = await db.query.likedTweets.findFirst({
-        columns: {
-          firstSeenAt: true,
-          url: true,
-        },
-        where: eq(likedTweets.url, parsedTwit),
-      });
-    }
+  const query = url.searchParams.get("url");
+  if (!query) return {};
+  const parsedTwit = validarYParsearLinkDeTwitter(query);
+  if (!parsedTwit) {
+    return { error: "La URL del twit está mal construida" };
   }
   return {
-    found: search,
-    error,
+    found: await db.query.likedTweets.findFirst({
+      columns: {
+        firstSeenAt: true,
+        url: true,
+      },
+      where: eq(likedTweets.url, parsedTwit),
+    }),
   };
 };
