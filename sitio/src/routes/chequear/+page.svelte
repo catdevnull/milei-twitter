@@ -7,7 +7,7 @@
   export let data: { found: typeof likedTweets, error: string | null };
   $: test = $page.url.searchParams.get("test");
 
-  $: fecha = data.found ? dayjs(data.found.firstSeenAt + "").format("YYYY-MM-DD") : ""
+  $: fecha = data.found ? dayjs(data.found.firstSeenAt + "").format("YYYY-MM-DD hh:mm") : ""
   $: sinChequear = data.found === null // si no vino info está para chequear
 
   const limpiarRespuesta = () => {
@@ -46,6 +46,9 @@
           {data.error}
         </div>
       {/if}
+    </div>
+    <div class="w-full mt-5">
+      Los datos disponibles son posteriores al 10 de febrero. <br/> Esta herramienta es experimental y podría dar resultados erróneos.
     </div>
   </form>
 
