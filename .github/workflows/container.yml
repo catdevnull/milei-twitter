@@ -1,5 +1,5 @@
 name: check and publish container image
-on: [push]
+on: [push, pull_request]
 
 env:
   REGISTRY: ghcr.io
@@ -7,7 +7,7 @@ env:
 
 jobs:
   check:
-    name: chequear typescript del sitio
+    name: chequear typescript/lint del sitio
     runs-on: ubuntu-latest
 
     steps:
@@ -21,10 +21,11 @@ jobs:
           node-version: 20
           cache: "pnpm"
           cache-dependency-path: sitio/pnpm-lock.yaml
-      - name: Install dependencies
+      - run: pnpm install
         working-directory: sitio
-        run: pnpm install
       - run: pnpm check
+        working-directory: sitio
+      - run: pnpm run lint
         working-directory: sitio
 
   build-and-push-sitio:
