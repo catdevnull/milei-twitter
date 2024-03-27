@@ -11,7 +11,7 @@ const tz = "America/Argentina/Buenos_Aires";
 function getStartingFrom(query: string) {
   switch (query) {
     case "last-24h":
-      return dayjs().subtract(23, "hour");
+      return dayjs().subtract(24, "hour");
     default:
       if (!query.startsWith("date:")) error(400, "Query imposible");
       try {
