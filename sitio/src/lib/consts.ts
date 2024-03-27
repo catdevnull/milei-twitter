@@ -11,3 +11,16 @@ dayjs.extend(Tz);
 
 export { dayjs };
 export type { Dayjs };
+
+export const tz = "America/Argentina/Buenos_Aires";
+
+export const timeFormatter = Intl.DateTimeFormat("es-AR", {
+  timeStyle: "medium",
+  timeZone: tz,
+});
+export const dateFormatter = Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  weekday: "short",
+  month: "short",
+  timeZone: tz,
+});

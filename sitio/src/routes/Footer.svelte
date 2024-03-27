@@ -1,4 +1,4 @@
-<footer class="flex flex-col gap-4 text-center">
+<footer class="flex flex-col gap-4 px-2 text-center">
   <div>
     Compartir por
     <a

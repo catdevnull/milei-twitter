@@ -2,22 +2,21 @@
   import { page } from "$app/stores";
   import ButtonPrimary from "$lib/components/ButtonPrimary.svelte";
   import ErrorBox from "$lib/components/ErrorBox.svelte";
+  import InfoBox from "$lib/components/InfoBox.svelte";
   import Input from "$lib/components/Input.svelte";
-  import { dayjs } from "$lib/consts";
+  import Prose from "$lib/components/Prose.svelte";
+  import { dateFormatter, dayjs, timeFormatter } from "$lib/consts";
   import Footer from "../Footer.svelte";
   import type { PageServerData } from "./$types";
 
   export let data: PageServerData;
   $: query = $page.url.searchParams.get("url");
 
-  $: fecha = data.found
-    ? dayjs(data.found.firstSeenAt + "").format("YYYY-MM-DD hh:mm")
-    : "";
   $: chequeoIntentado = "found" in data;
 </script>
 
 <div class="m-auto flex max-w-2xl flex-col justify-center">
-  <form data-sveltekit-reload class="mb-4 p-8">
+  <form class="px-4 py-6">
     <h1 class="my-8 text-4xl font-black">Chequeador de likes de @JMilei</h1>
     <div class="my-2">
       <label class="mb-2 block text-sm font-bold" for="username">
@@ -33,36 +32,46 @@
     {#if data.error}
       <div class="my-2 w-full">
         <ErrorBox>
-          {data.error}
+          <svelte:fragment slot="title">{data.error}</svelte:fragment>
         </ErrorBox>
       </div>
     {/if}
-    <div class="flex flex-wrap items-center justify-between">
+    <div class="my-2 flex flex-col content-center items-center justify-between">
       <ButtonPrimary>Chequear</ButtonPrimary>
     </div>
 
     {#if chequeoIntentado}
-      <div
-        class={`mt-4 w-full border-2 border-dashed p-4 text-center ${data.found ? "border-green-500" : "border-red-500"}`}
-      >
-        {#if data.found}
-          <span class="font-bold text-green-500"
-            >✓ Sí, fue likeado el <a
-              class="text-blue-500 underline"
+      {#if data.found}
+        <InfoBox>
+          <svelte:fragment slot="title"
+            >Habría sido likeado por Milei el <a
+              class="text-blue-200 underline"
               href={`/?q=date:${dayjs(data.found.firstSeenAt).format("YYYY-MM-DD")}`}
-              >{fecha}</a
-            ></span
+              >{dateFormatter.format(data.found.firstSeenAt)}</a
+            >
+            aproximadamente a las {timeFormatter.format(
+              data.found.firstSeenAt,
+            )}.</svelte:fragment
           >
-        {:else}
-          <span class="font-bold text-red-500">No fue likeado por Milei ❌</span
+        </InfoBox>
+      {:else}
+        <ErrorBox>
+          <svelte:fragment slot="title"
+            >No habría sido likeado por Milei</svelte:fragment
           >
-        {/if}
-      </div>
+          Según nuestra base de datos, que contempla los likes a partir del 10 de
+          febrero.
+        </ErrorBox>
+      {/if}
     {/if}
-    <div class="my-2 w-full">
-      Los datos disponibles son posteriores al 10 de febrero. <br /> Esta herramienta
-      es experimental y podría dar resultados erróneos.
-    </div>
+    <Prose>
+      <ul>
+        <li>Los datos disponibles son posteriores al 10 de febrero.</li>
+        <li>
+          Esta herramienta es experimental y podría dar resultados erróneos.
+        </li>
+      </ul>
+    </Prose>
   </form>
 
   <Footer />

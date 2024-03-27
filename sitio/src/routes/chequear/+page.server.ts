@@ -1,22 +1,26 @@
 import { db } from "$lib/db";
-import { eq } from "drizzle-orm";
+import { like } from "drizzle-orm";
 import { likedTweets } from "../../schema";
 import type { PageServerLoad } from "../$types";
 
-const simpleTwitterPathRegexp = /\/[^/]+\/status\/[0-9]+\/?/;
+const simpleTwitterPathRegexp = /\/[^/]+\/status\/([0-9]+)\/?/;
 
-const validarYParsearLinkDeTwitter = (s: string) => {
+const parsearLinkDeTwitter = (
+  s: string,
+): { error: string } | { id: string } | null => {
+  let url: URL;
   try {
-    const url = new URL(s);
-    if (
-      (url.hostname === "x.com" || url.hostname === "twitter.com") &&
-      url.pathname.match(simpleTwitterPathRegexp)
-    ) {
-      return `${url.origin.replace("x.com", "twitter.com")}${url.pathname}`;
-    } else {
-      return null;
-    }
+    url = new URL(s);
   } catch {
+    return { error: "La URL es inválida" };
+  }
+  if (!(url.hostname === "x.com" || url.hostname === "twitter.com"))
+    return { error: "El link no es de Twitter" };
+  const matches = url.pathname.match(simpleTwitterPathRegexp);
+  if (matches) {
+    const id = matches[1];
+    return { id };
+  } else {
     return null;
   }
 };
@@ -24,9 +28,11 @@ const validarYParsearLinkDeTwitter = (s: string) => {
 export const load: PageServerLoad = async ({ url }) => {
   const query = url.searchParams.get("url");
   if (!query) return {};
-  const parsedTwit = validarYParsearLinkDeTwitter(query);
+  const parsedTwit = parsearLinkDeTwitter(query);
   if (!parsedTwit) {
-    return { error: "La URL del twit está mal construida" };
+    return { error: "La URL no es de un tweet" };
+  } else if ("error" in parsedTwit) {
+    return { error: parsedTwit.error };
   }
   return {
     found: await db.query.likedTweets.findFirst({
@@ -34,7 +40,7 @@ export const load: PageServerLoad = async ({ url }) => {
         firstSeenAt: true,
         url: true,
       },
-      where: eq(likedTweets.url, parsedTwit),
+      where: like(likedTweets.url, `%/${parsedTwit.id}`),
     }),
   };
 };

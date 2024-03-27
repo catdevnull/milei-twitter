@@ -10,11 +10,9 @@
   } from "$lib/data-processing/screenTime";
   import { sortMost } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
-  import { dayjs } from "$lib/consts";
+  import { dateFormatter, dayjs, timeFormatter, tz } from "$lib/consts";
   import "core-js/es/array/to-reversed";
   import { DatePicker } from "@svelte-plugins/datepicker";
-
-  const tz = "America/Argentina/Buenos_Aires";
 
   export let data: PageData;
 
@@ -37,11 +35,6 @@
 
   $: ultimaSemana = data.ultimaSemana;
 
-  const timeFormatter = Intl.DateTimeFormat("es-AR", {
-    timeStyle: "medium",
-    timeZone: tz,
-  });
-
   const lastUpdatedFormatter = Intl.DateTimeFormat("es-AR", {
     weekday: "short",
     hour: "2-digit",
@@ -54,13 +47,6 @@
     weekday: "short",
     timeZone: tz,
   });
-  const dateFormatter = Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    weekday: "short",
-    month: "short",
-    timeZone: tz,
-  });
-
   function setQuery(query: string) {
     goto(`/?q=${query}`);
   }
