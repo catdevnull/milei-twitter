@@ -3,6 +3,7 @@
   import { dayjs } from "$lib/consts";
   import { likedTweets } from "../../schema";
   import Footer from "../Footer.svelte"
+  import { goto } from "$app/navigation";
 
   export let data: { found: typeof likedTweets, error: string | null };
   $: test = $page.url.searchParams.get("test");
@@ -12,6 +13,10 @@
 
   const limpiarRespuesta = () => {
     sinChequear = true
+  }
+
+  const onDayClick = () => {
+    goto();
   }
 </script>
 <div
@@ -32,15 +37,15 @@
           Chequeado
         {/if}
       </button>
-      <div class="w-full sm:w-3/6 mt-2 text-center">
-        {#if !sinChequear}
+      {#if !sinChequear}
+      <div class={`w-full mt-4 text-center border-dashed border-2 p-4 ${data.found?'border-green-500':'border-red-500'}`}>
           {#if data.found}
-            ✓ Sí, fue likeado el {fecha}
+            <span class="text-green-500 font-bold">✓ Sí, fue likeado el <a class="underline text-blue-500" href={`/?q=date:${dayjs(data.found.firstSeenAt + "").format("YYYY-MM-DD")}`}>{fecha}</a></span>
           {:else}
-            No fue likeado por Milei ❌
+            <span class="text-red-500 font-bold">No fue likeado por Milei ❌</span>
           {/if}
-        {/if}
       </div>
+      {/if}
       {#if data.error}
         <div class="w-full text-red-500 font-bold mt-2">
           {data.error}
