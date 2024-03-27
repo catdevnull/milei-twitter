@@ -1,3 +1,3 @@
-<div class="prose prose-neutral dark:prose-invert mx-auto">
+<div class="prose prose-neutral mx-auto dark:prose-invert">
   <slot />
 </div>
