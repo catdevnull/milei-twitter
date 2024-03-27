@@ -7,7 +7,7 @@ env:
 
 jobs:
   check:
-    name: chequear typescript del sitio
+    name: chequear typescript/lint del sitio
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +25,8 @@ jobs:
         working-directory: sitio
         run: pnpm install
       - run: pnpm check
+        working-directory: sitio
+      - run: pnpm run lint
         working-directory: sitio
 
   build-and-push-sitio:
