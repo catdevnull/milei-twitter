@@ -102,7 +102,7 @@ const migrateCommand = command({
   async handler({}) {
     const db = await connectDb(getDbConfig());
     migrate;
-    await migrate(db, { migrationsFolder: "drizzle" });
+    await migrate(db, { migrationsFolder: "../sitio/drizzle" });
   },
 });
 const app = subcommands({
