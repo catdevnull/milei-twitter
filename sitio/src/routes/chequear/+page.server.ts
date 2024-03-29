@@ -1,28 +1,12 @@
 import { db } from "$lib/db";
-import { like } from "drizzle-orm";
-import { likedTweets } from "../../schema";
+import { eq, like } from "drizzle-orm";
+import { historicLikedTweets, likedTweets } from "../../schema";
 import type { PageServerLoad } from "../$types";
+import { parsearLinkDeTwitter } from "$lib/consts";
 
-const simpleTwitterPathRegexp = /\/[^/]+\/status\/([0-9]+)\/?/;
-
-const parsearLinkDeTwitter = (
-  s: string,
-): { error: string } | { id: string } | null => {
-  let url: URL;
-  try {
-    url = new URL(s);
-  } catch {
-    return { error: "La URL es inválida" };
-  }
-  if (!(url.hostname === "x.com" || url.hostname === "twitter.com"))
-    return { error: "El link no es de Twitter" };
-  const matches = url.pathname.match(simpleTwitterPathRegexp);
-  if (matches) {
-    const id = matches[1];
-    return { id };
-  } else {
-    return null;
-  }
+type FoundLikedMatch = {
+  aproxLikedAt: Date;
+  url: string;
 };
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -34,13 +18,31 @@ export const load: PageServerLoad = async ({ url }) => {
   } else if ("error" in parsedTwit) {
     return { error: parsedTwit.error };
   }
+  let match: FoundLikedMatch | null = null;
+  const fromLiked = await db.query.likedTweets.findFirst({
+    columns: {
+      firstSeenAt: true,
+      url: true,
+    },
+    where: like(likedTweets.url, `%/${parsedTwit.id}`),
+  });
+  if (fromLiked) {
+    match = {
+      aproxLikedAt: fromLiked.firstSeenAt,
+      url: fromLiked.url,
+    };
+  } else {
+    const fromHistoricLiked = await db.query.historicLikedTweets.findFirst({
+      where: eq(historicLikedTweets.postId, parsedTwit.id),
+    });
+    if (fromHistoricLiked) {
+      match = {
+        aproxLikedAt: fromHistoricLiked.estimatedLikedAt,
+        url: fromHistoricLiked.url,
+      };
+    }
+  }
   return {
-    found: await db.query.likedTweets.findFirst({
-      columns: {
-        firstSeenAt: true,
-        url: true,
-      },
-      where: like(likedTweets.url, `%/${parsedTwit.id}`),
-    }),
+    found: match,
   };
 };

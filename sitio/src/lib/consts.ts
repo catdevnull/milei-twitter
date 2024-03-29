@@ -24,3 +24,25 @@ export const dateFormatter = Intl.DateTimeFormat("es-AR", {
   month: "short",
   timeZone: tz,
 });
+
+const simpleTwitterPathRegexp = /\/[^/]+\/status\/([0-9]+)\/?/;
+
+export const parsearLinkDeTwitter = (
+  s: string,
+): { error: string } | { id: string } | null => {
+  let url: URL;
+  try {
+    url = new URL(s);
+  } catch {
+    return { error: "La URL es inválida" };
+  }
+  if (!(url.hostname === "x.com" || url.hostname === "twitter.com"))
+    return { error: "El link no es de Twitter" };
+  const matches = url.pathname.match(simpleTwitterPathRegexp);
+  if (matches) {
+    const id = matches[1];
+    return { id };
+  } else {
+    return null;
+  }
+};

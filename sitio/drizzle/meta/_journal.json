@@ -64,6 +64,13 @@
       "when": 1708828223996,
       "tag": "0008_outgoing_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1711675047412,
+      "tag": "0009_light_leopardon",
+      "breakpoints": true
     }
   ]
 }

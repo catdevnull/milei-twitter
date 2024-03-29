@@ -46,11 +46,11 @@
           <svelte:fragment slot="title"
             >Habría sido likeado por Milei el <a
               class="text-blue-200 underline"
-              href={`/?q=date:${dayjs(data.found.firstSeenAt).format("YYYY-MM-DD")}`}
-              >{dateFormatter.format(data.found.firstSeenAt)}</a
+              href={`/?q=date:${dayjs(data.found.aproxLikedAt).format("YYYY-MM-DD")}`}
+              >{dateFormatter.format(data.found.aproxLikedAt)}</a
             >
             aproximadamente a las {timeFormatter.format(
-              data.found.firstSeenAt,
+              data.found.aproxLikedAt,
             )}.</svelte:fragment
           >
         </InfoBox>
