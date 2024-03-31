@@ -44,8 +44,21 @@ export const load: PageServerLoad = async ({ url }) => {
       linkToDate = false;
     }
   }
-  return {
-    found: match,
-    linkToDate,
-  };
+
+  if (match) {
+    const parsedFound = parsearLinkDeTwitter(match?.url);
+    if (!parsedFound || "error" in parsedFound) {
+      throw new Error(`error en parsedFound ${parsedFound}`);
+    }
+
+    return {
+      found: match,
+      linkToDate,
+
+      parsedQuery: parsedTwit,
+      parsedFound,
+    };
+  } else {
+    return {};
+  }
 };

@@ -3,6 +3,7 @@
   import ButtonPrimary from "$lib/components/ButtonPrimary.svelte";
   import ErrorBox from "$lib/components/ErrorBox.svelte";
   import InfoBox from "$lib/components/InfoBox.svelte";
+  import WarnBox from "$lib/components/WarnBox.svelte";
   import Input from "$lib/components/Input.svelte";
   import Prose from "$lib/components/Prose.svelte";
   import { dateFormatter, dayjs, timeFormatter } from "$lib/consts";
@@ -11,7 +12,6 @@
 
   export let data: PageServerData;
   $: query = $page.url.searchParams.get("url");
-
   $: chequeoIntentado = "found" in data;
 </script>
 
@@ -42,18 +42,33 @@
 
     {#if chequeoIntentado}
       {#if data.found}
-        <InfoBox>
-          <svelte:fragment slot="title"
-            >Habría sido likeado por Milei el {#if data.linkToDate}<a
-                class="text-blue-200 underline"
-                href={`/?q=date:${dayjs(data.found.aproxLikedAt).format("YYYY-MM-DD")}`}
-                >{dateFormatter.format(data.found.aproxLikedAt)}</a
-              >{:else}{dateFormatter.format(data.found.aproxLikedAt)}{/if}
-            aproximadamente a las {timeFormatter.format(
-              data.found.aproxLikedAt,
-            )}.</svelte:fragment
-          >
-        </InfoBox>
+        <div class="my-2">
+          <InfoBox>
+            <svelte:fragment slot="title"
+              >Habría sido likeado por Milei el {#if data.linkToDate}<a
+                  class="text-blue-200 underline"
+                  href={`/?q=date:${dayjs(data.found.aproxLikedAt).format("YYYY-MM-DD")}`}
+                  >{dateFormatter.format(data.found.aproxLikedAt)}</a
+                >{:else}{dateFormatter.format(data.found.aproxLikedAt)}{/if}
+              aproximadamente a las {timeFormatter.format(
+                data.found.aproxLikedAt,
+              )}.</svelte:fragment
+            >
+          </InfoBox>
+        </div>
+        {#if data.parsedFound.username && data.parsedQuery.username && data.parsedFound.username.toLowerCase() !== data.parsedQuery.username.toLowerCase()}
+          <div class="my-2">
+            <WarnBox>
+              <svelte:fragment slot="title"
+                >¿El usuario del post cambió su nombre de usuario?</svelte:fragment
+              >
+              El tweet del like registrado en nuestra base de datos corresponde al
+              nombre de usuario <strong>@{data.parsedFound.username}</strong>,
+              pero el link utilizado en el chequeo es de
+              <strong>@{data.parsedQuery.username}</strong>.
+            </WarnBox>
+          </div>
+        {/if}
       {:else}
         <ErrorBox>
           <svelte:fragment slot="title"

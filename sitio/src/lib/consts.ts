@@ -27,10 +27,11 @@ export const dateFormatter = Intl.DateTimeFormat("es-AR", {
 });
 
 const simpleTwitterPathRegexp = /\/[^/]+\/status\/([0-9]+)\/?/;
+const usernameTwitterPathRegexp = /^\/(\w+)\/status\//i;
 
 export const parsearLinkDeTwitter = (
   s: string,
-): { error: string } | { id: string } | null => {
+): { error: string } | { id: string; username?: string } | null => {
   let url: URL;
   try {
     url = new URL(s);
@@ -42,7 +43,12 @@ export const parsearLinkDeTwitter = (
   const matches = url.pathname.match(simpleTwitterPathRegexp);
   if (matches) {
     const id = matches[1];
-    return { id };
+    let username: undefined | string;
+
+    const usernameMatches = url.pathname.match(usernameTwitterPathRegexp);
+    if (usernameMatches) username = usernameMatches[1];
+
+    return { id, username };
   } else {
     return null;
   }
