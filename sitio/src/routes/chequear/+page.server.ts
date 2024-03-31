@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ url }) => {
     return { error: parsedTwit.error };
   }
   let match: FoundLikedMatch | null = null;
+  let linkToDate = true;
   const fromLiked = await db.query.likedTweets.findFirst({
     columns: {
       firstSeenAt: true,
@@ -40,9 +41,11 @@ export const load: PageServerLoad = async ({ url }) => {
         aproxLikedAt: fromHistoricLiked.estimatedLikedAt,
         url: fromHistoricLiked.url,
       };
+      linkToDate = false;
     }
   }
   return {
     found: match,
+    linkToDate,
   };
 };

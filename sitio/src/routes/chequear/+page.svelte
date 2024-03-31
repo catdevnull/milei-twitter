@@ -44,11 +44,11 @@
       {#if data.found}
         <InfoBox>
           <svelte:fragment slot="title"
-            >Habría sido likeado por Milei el <a
-              class="text-blue-200 underline"
-              href={`/?q=date:${dayjs(data.found.aproxLikedAt).format("YYYY-MM-DD")}`}
-              >{dateFormatter.format(data.found.aproxLikedAt)}</a
-            >
+            >Habría sido likeado por Milei el {#if data.linkToDate}<a
+                class="text-blue-200 underline"
+                href={`/?q=date:${dayjs(data.found.aproxLikedAt).format("YYYY-MM-DD")}`}
+                >{dateFormatter.format(data.found.aproxLikedAt)}</a
+              >{:else}{dateFormatter.format(data.found.aproxLikedAt)}{/if}
             aproximadamente a las {timeFormatter.format(
               data.found.aproxLikedAt,
             )}.</svelte:fragment
