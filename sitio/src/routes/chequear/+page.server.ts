@@ -1,6 +1,6 @@
 import { db } from "$lib/db";
 import { eq, like } from "drizzle-orm";
-import { historicLikedTweets, likedTweets } from "../../schema";
+import { historicLikedTweets, likedTweets, retweets } from "../../schema";
 import type { PageServerLoad } from "../$types";
 import { parsearLinkDeTwitter } from "$lib/consts";
 
@@ -12,11 +12,11 @@ type FoundLikedMatch = {
 export const load: PageServerLoad = async ({ url }) => {
   const query = url.searchParams.get("url");
   if (!query) return {};
-  const parsedTwit = parsearLinkDeTwitter(query);
-  if (!parsedTwit) {
+  const parsedQuery = parsearLinkDeTwitter(query);
+  if (!parsedQuery) {
     return { error: "La URL no es de un tweet" };
-  } else if ("error" in parsedTwit) {
-    return { error: parsedTwit.error };
+  } else if ("error" in parsedQuery) {
+    return { error: parsedQuery.error };
   }
   let match: FoundLikedMatch | null = null;
   let linkToDate = true;
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ url }) => {
       firstSeenAt: true,
       url: true,
     },
-    where: like(likedTweets.url, `%/${parsedTwit.id}`),
+    where: like(likedTweets.url, `%/${parsedQuery.id}`),
   });
   if (fromLiked) {
     match = {
@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ url }) => {
     };
   } else {
     const fromHistoricLiked = await db.query.historicLikedTweets.findFirst({
-      where: eq(historicLikedTweets.postId, parsedTwit.id),
+      where: eq(historicLikedTweets.postId, parsedQuery.id),
     });
     if (fromHistoricLiked) {
       match = {
@@ -51,11 +51,16 @@ export const load: PageServerLoad = async ({ url }) => {
       throw new Error(`error en parsedFound ${parsedFound}`);
     }
 
+    const fromRetweet = await db.query.retweets.findFirst({
+      where: eq(retweets.postId, parsedQuery.id),
+    });
+
     return {
       found: match,
+      retweet: fromRetweet,
       linkToDate,
 
-      parsedQuery: parsedTwit,
+      parsedQuery,
       parsedFound,
     };
   } else {

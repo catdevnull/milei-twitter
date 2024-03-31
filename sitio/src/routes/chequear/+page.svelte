@@ -56,6 +56,22 @@
             >
           </InfoBox>
         </div>
+        {#if data.retweet}
+          <div class="my-2">
+            <InfoBox>
+              <svelte:fragment slot="title"
+                >Habría sido retweeteado por Milei el <a
+                  class="text-blue-200 underline"
+                  href={`/?q=date:${dayjs(data.retweet.retweetAt).format("YYYY-MM-DD")}`}
+                  >{dateFormatter.format(data.retweet.retweetAt)}</a
+                >
+                a las {timeFormatter.format(
+                  data.retweet.retweetAt,
+                )}.</svelte:fragment
+              >
+            </InfoBox>
+          </div>
+        {/if}
         {#if data.parsedFound.username && data.parsedQuery.username && data.parsedFound.username.toLowerCase() !== data.parsedQuery.username.toLowerCase()}
           <div class="my-2">
             <WarnBox>
