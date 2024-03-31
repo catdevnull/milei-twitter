@@ -22,6 +22,7 @@ export const dateFormatter = Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
   weekday: "short",
   month: "short",
+  year: "numeric",
   timeZone: tz,
 });
 
