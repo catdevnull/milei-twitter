@@ -25,6 +25,11 @@
       dayjs(t.retweetAt).isAfter(dayjs("2024-02-19T20:00:00.000-03:00")) &&
       dayjs(t.retweetAt).isBefore(dayjs("2024-02-20T01:00:00.000-03:00")),
   );
+  $: dudosoFailVps = filteredRetweets.some(
+    (t) =>
+      dayjs(t.retweetAt).isAfter(dayjs("2024-03-31T06:25:00.000-03:00")) &&
+      dayjs(t.retweetAt).isBefore(dayjs("2024-03-31T10:05:00.000-03:00")),
+  );
 
   $: filteredTweets = data.tweets;
   $: filteredRetweets = data.retweets;
@@ -206,6 +211,15 @@
         primeras horas del 20 de febrero de 2024 pueden estar levemente mal (se
         acumulan likes en las 00hs que deberían estar en la noche del 19 de
         febrero de 2024)
+      </p>
+    </section>
+  {/if}
+  {#if dudosoFailVps}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de los likes de entre las 6:30am y las 10am del 31 de
+        marzo son imprecisos (los likes se "acumularon" y quedaron más para las
+        10am.)
       </p>
     </section>
   {/if}
