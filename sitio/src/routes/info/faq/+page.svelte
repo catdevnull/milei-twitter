@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Prose from "$lib/components/Prose.svelte";
   import markdownit from "markdown-it";
   import markdownItAnchor from "markdown-it-anchor";
   // @ts-ignore
@@ -41,6 +42,8 @@ Podés mandarme un mensaje por Telegram ([@esoesnulo](https://t.me/esoesnulo)), 
 `);
 </script>
 
-<main class="prose prose-neutral mx-auto px-2 py-7 dark:prose-invert">
-  {@html result}
+<main class="mx-auto px-2 py-7">
+  <Prose>
+    {@html result}
+  </Prose>
 </main>

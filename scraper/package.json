@@ -1,25 +1,28 @@
 {
   "name": "scraper",
+  "type": "module",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "esrun index.ts"
+    "start": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts",
+    "migrate": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts migrate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@libsql/client": "^0.5.2",
+    "@swc/core": "^1.4.11",
     "cmd-ts": "^0.13.0",
     "drizzle-orm": "^0.29.4",
     "nanoid": "^5.0.6",
     "puppeteer": "^22.3.0",
+    "ts-node": "^10.9.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.20",
-    "esrun": "^3.2.26",
     "prettier": "^3.2.5"
   }
 }

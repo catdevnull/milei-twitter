@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import Chart from "./Chart.svelte";
+  import Footer from "./Footer.svelte";
   import {
     calculateScreenTime,
     formatDurationFromMs,
@@ -9,11 +10,9 @@
   } from "$lib/data-processing/screenTime";
   import { sortMost } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
-  import { dayjs } from "$lib/consts";
+  import { dateFormatter, dayjs, timeFormatter, tz } from "$lib/consts";
   import "core-js/es/array/to-reversed";
   import { DatePicker } from "@svelte-plugins/datepicker";
-
-  const tz = "America/Argentina/Buenos_Aires";
 
   export let data: PageData;
 
@@ -41,11 +40,6 @@
 
   $: ultimaSemana = data.ultimaSemana;
 
-  const timeFormatter = Intl.DateTimeFormat("es-AR", {
-    timeStyle: "medium",
-    timeZone: tz,
-  });
-
   const lastUpdatedFormatter = Intl.DateTimeFormat("es-AR", {
     weekday: "short",
     hour: "2-digit",
@@ -58,13 +52,6 @@
     weekday: "short",
     timeZone: tz,
   });
-  const dateFormatter = Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    weekday: "short",
-    month: "short",
-    timeZone: tz,
-  });
-
   function setQuery(query: string) {
     goto(`/?q=${query}`);
   }
@@ -306,28 +293,7 @@
       </tbody>
     </table>
   </section>
-
-  <footer class="flex flex-col gap-4 text-center">
-    <div>
-      Compartir por
-      <a
-        class="rounded bg-green-600 px-3 py-2 font-medium text-white"
-        href={`https://api.whatsapp.com/send?text=${encodeURIComponent("¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas? https://milei.nulo.in/?ref=wsp-link")}`}
-        >WhatsApp</a
-      >
-    </div>
-    <div>
-      hecho por <a
-        class="text-blue-600 underline dark:text-blue-200"
-        href="https://twitter.com/esoesnulo"
-        rel="noreferrer">@esoesnulo</a
-      >
-      -
-      <a class="text-blue-600 underline dark:text-blue-200" href="/info/faq"
-        >preguntas frecuentes</a
-      >
-    </div>
-  </footer>
+  <Footer />
 </div>
 
 <style lang="postcss">

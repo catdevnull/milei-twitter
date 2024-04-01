@@ -1,4 +1,4 @@
-import type { connectDb } from "$lib/connectDb";
+import type { connectDb } from "$lib/db/connectDb";
 import { dayjs, type Dayjs } from "$lib/consts";
 import { calculateScreenTime, totalFromDurations } from "./screenTime";
 import { likedTweets, retweets } from "../../schema";

@@ -28,6 +28,18 @@ export const likedTweetsRelations = relations(likedTweets, ({ one, many }) => ({
     references: [scraps.id],
   }),
 }));
+
+// estos son likes historicos sin timestamp "precisa". vienen de `src/lib/db/historicLikes` y se usan para el chequeador de likes (entre otras cosas?)
+// esta tabla se puede droppear y rearmar porque el dataset es el que está incluido en el repo.
+export const historicLikedTweets = sqliteTable("db_historic_liked_tweets", {
+  postId: text("post_id").primaryKey(),
+  url: text("url").notNull(),
+  postedAt: integer("posted_at", { mode: "timestamp" }).notNull(),
+  estimatedLikedAt: integer("estimated_liked_at", {
+    mode: "timestamp",
+  }).notNull(),
+});
+
 export const retweets = sqliteTable(
   "db_retweets",
   {
