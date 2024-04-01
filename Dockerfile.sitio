@@ -21,7 +21,7 @@ RUN apk add --no-cache nodejs npm jq sqlite
 COPY --from=build /usr/src/app/build .
 COPY --from=build /usr/src/app/package.json package.real.json
 COPY --from=build /usr/src/app/drizzle drizzle
-COPY --from=build /usr/src/app/sitio/src/lib/db/historicLikes/likes.tsv.br src/lib/db/historicLikes/likes.tsv.br
+COPY --from=build /usr/src/app/src/lib/db/historicLikes/likes.tsv.br src/lib/db/historicLikes/likes.tsv.br
 RUN sh -c 'echo {\"name\":\"sitio\",\"type\":\"module\",\"dependencies\":$(jq .dependencies < package.real.json)} > package.json'
 RUN npm install
 
