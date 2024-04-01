@@ -9,12 +9,12 @@ export async function connectDb({
   authToken?: string;
 }) {
   const client = createClient({ url, authToken });
-  await client.execute(`PRAGMA journal_mode = WAL;`);
-  await client.execute(`PRAGMA busy_timeout = 5000;`);
-  await client.execute(`PRAGMA synchronous = NORMAL;`);
-  await client.execute(`PRAGMA cache_size = 1000000000;`);
-  await client.execute(`PRAGMA foreign_keys = true;`);
-  await client.execute(`PRAGMA temp_store = memory;`);
+  // await client.execute(`PRAGMA journal_mode = WAL;`);
+  // await client.execute(`PRAGMA busy_timeout = 5000;`);
+  // await client.execute(`PRAGMA synchronous = NORMAL;`);
+  // await client.execute(`PRAGMA cache_size = 1000000000;`);
+  // await client.execute(`PRAGMA foreign_keys = true;`);
+  // await client.execute(`PRAGMA temp_store = memory;`);
   const db = drizzle(client, { schema });
   return db;
 }
