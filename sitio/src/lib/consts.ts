@@ -34,6 +34,8 @@ export const parsearLinkDeTwitter = (
 ): { error: string } | { id: string; username?: string } | null => {
   let url: URL;
   try {
+    if (s.startsWith("x.com") || s.startsWith("twitter.com"))
+      s = `https://${s}`;
     url = new URL(s);
   } catch {
     return { error: "La URL es inválida" };
