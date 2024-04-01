@@ -5,7 +5,7 @@ import { LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { createClient } from "@libsql/client";
 import { z } from "zod";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { nanoid } from "nanoid";
 import { JMILEI_ID } from "../sitio/src/lib/consts.js";
 
