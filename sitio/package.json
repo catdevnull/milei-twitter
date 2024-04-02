@@ -24,6 +24,7 @@
     "chartjs-plugin-datalabels": "^2.2.0",
     "core-js": "^3.36.1",
     "date-fns": "^3.6.0",
+    "date-fns-tz": "3.0.0-beta.3",
     "dayjs": "^1.11.10",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.29.5",

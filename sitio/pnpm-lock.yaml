@@ -35,6 +35,9 @@ dependencies:
   date-fns:
     specifier: ^3.6.0
     version: 3.6.0
+  date-fns-tz:
+    specifier: 3.0.0-beta.3
+    version: 3.0.0-beta.3(date-fns@3.6.0)
   dayjs:
     specifier: ^1.11.10
     version: 1.11.10
@@ -1769,6 +1772,15 @@ packages:
     engines: {node: '>= 12'}
     dev: false
 
+  /date-fns-tz@3.0.0-beta.3(date-fns@3.6.0):
+    resolution: {integrity: sha512-sE3SUabgHl/le8YL8TxBbBc6VIgDKcqQwyVSMvQwjV3ar3HEKZr+861b4mROpOiK1aU1QUNRCFSm1OptHDR9qg==}
+    peerDependencies:
+      date-fns: ^3.0.0
+    dependencies:
+      date-fns: 3.6.0
+      lodash.clonedeep: 4.5.0
+    dev: false
+
   /date-fns@3.6.0:
     resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
     dev: false
@@ -2493,6 +2505,10 @@ packages:
   /lodash.castarray@4.4.0:
     resolution: {integrity: sha512-aVx8ztPv7/2ULbArGJ2Y42bG1mEQ5mGjpdvrbJcJFU3TbYybe+QlLS4pst9zV52ymy2in1KpFPiZnAOATxD4+Q==}
     dev: true
+
+  /lodash.clonedeep@4.5.0:
+    resolution: {integrity: sha512-H5ZhCF25riFd9uB5UCkVKo61m3S/xZk1x4wA6yp/L3RFP6Z/eHH1ymQcGLo7J3GMPfm0V/7m1tryHuGVxpqEBQ==}
+    dev: false
 
   /lodash.isplainobject@4.0.6:
     resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}

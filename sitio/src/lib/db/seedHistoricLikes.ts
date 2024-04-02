@@ -1,9 +1,10 @@
-import { dayjs, parsearLinkDeTwitter, tz } from "$lib/consts";
+import { parsearLinkDeTwitter } from "$lib/consts";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { brotliDecompress } from "node:zlib";
 import type { connectDb } from "./connectDb";
 import * as schema from "../../schema";
+import { toDate } from "date-fns-tz";
 
 const brotliDecompressP = promisify(brotliDecompress);
 
@@ -22,13 +23,9 @@ export async function seedHistoricLikes(
       postId: parseado.id,
       url,
       postedAt: new Date(tweet_timestamp),
-      estimatedLikedAt: dayjs(
-        estimated_like_timestamp,
-        // 2023-11-29 12:59:46
-        "YYYY-MM-DD HH:mm:ss",
-      )
-        .tz(tz, true)
-        .toDate(),
+      estimatedLikedAt: toDate(
+        `${estimated_like_timestamp.replace(/\s/, "T")}-03:00`,
+      ),
     };
     await db
       .insert(schema.historicLikedTweets)
