@@ -29,6 +29,11 @@
       dayjs(t.retweetAt).isAfter(dayjs("2024-03-31T06:25:00.000-03:00")) &&
       dayjs(t.retweetAt).isBefore(dayjs("2024-03-31T10:05:00.000-03:00")),
   );
+  $: dudosoCorteLuz = filteredRetweets.some(
+    (t) =>
+      dayjs(t.retweetAt).isAfter(dayjs("2024-04-02T05:00:00.000-03:00")) &&
+      dayjs(t.retweetAt).isBefore(dayjs("2024-04-02T10:05:00.000-03:00")),
+  );
 
   $: filteredTweets = data.tweets;
   $: filteredRetweets = data.retweets;
@@ -207,6 +212,15 @@
         ¡Ojo! Los datos de los likes de entre las 6:30am y las 10am del 31 de
         marzo son imprecisos (los likes se "acumularon" y quedaron más para las
         10am.)
+      </p>
+    </section>
+  {/if}
+  {#if dudosoCorteLuz}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de los likes de entre las 5:00am y las 10am del 2 de
+        abril son imprecisos (los likes se "acumularon" y quedaron más para las
+        10am, aunque las interacciones realmente fueron entre ~7:45am-10am.)
       </p>
     </section>
   {/if}
