@@ -1,5 +1,5 @@
 import { command, run, string, option, subcommands } from "cmd-ts";
-import { printLastLikes } from "./scraper.ts";
+import { printLastLikes, saveLikes } from "./scraper.ts";
 import { addAccounts } from "./addAccounts.ts";
 
 const printLikesCmd = command({
@@ -7,6 +7,14 @@ const printLikesCmd = command({
   args: {},
   handler(args) {
     printLastLikes();
+  },
+});
+
+const saveLikesCmd = command({
+  name: "save last likes",
+  args: {},
+  handler(args) {
+    saveLikes();
   },
 });
 
@@ -31,6 +39,7 @@ const cmd = subcommands({
   name: "scraper-manzana",
   cmds: {
     "print-likes": printLikesCmd,
+    "save-likes": saveLikesCmd,
     "add-accounts": addAccountsCmd,
   },
 });

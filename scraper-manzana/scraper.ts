@@ -5,6 +5,9 @@ import { sessions } from "./dbs/accounts/schema.ts";
 import { accountsDb } from "./dbs/index.ts";
 import { isNull, sql } from "drizzle-orm";
 import { Cookie } from "tough-cookie";
+import { LikedTweet, Scrap } from "api/schema.ts";
+import { nanoid } from "nanoid";
+import { pushScrap } from "./dbs/scraps/index.ts";
 
 async function getScraper() {
   let session = (
@@ -38,4 +41,29 @@ export async function printLastLikes() {
   for await (const likedTweet of scraper.getLikedTweets("jmilei")) {
     console.log(`@${likedTweet.username}: ${likedTweet.text}`);
   }
+}
+
+export async function saveLikes() {
+  const scraper = await getScraper();
+
+  let likedTweets: Array<LikedTweet> = [];
+  for await (const likedTweet of scraper.getLikedTweets("jmilei")) {
+    if (!likedTweet.permanentUrl) throw new Error("no permanentUrl");
+    if (likedTweet.text === undefined) throw new Error("no text");
+    likedTweets.push({
+      url: likedTweet.permanentUrl,
+      firstSeenAt: new Date(),
+      text: likedTweet.text,
+    });
+  }
+
+  const scrap: Scrap = {
+    finishedAt: new Date(),
+    likedTweets,
+    retweets: [],
+    totalTweetsSeen: likedTweets.length,
+    uid: nanoid(),
+  };
+
+  await pushScrap(scrap);
 }
