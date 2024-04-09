@@ -64,8 +64,8 @@ export async function saveLikes() {
     totalTweetsSeen: likedTweets.length,
     uid: nanoid(),
   };
-
   await pushScrap(scrap);
+  return scrap;
 }
 
 export async function printLastTweets() {
@@ -115,6 +115,30 @@ export async function saveRetweets() {
     totalTweetsSeen,
     uid: nanoid(),
   };
-
   await pushScrap(scrap);
+  return scrap;
+}
+
+export async function cron() {
+  while (true) {
+    try {
+      const scrap = await saveLikes();
+      console.log(`scrapped likes, seen ${scrap.totalTweetsSeen}`);
+    } catch (error) {
+      console.error(`[error] likedTweets`, error);
+    }
+
+    try {
+      const scrap = await saveRetweets();
+      console.log(`scrapped retweets, seen ${scrap.totalTweetsSeen}`);
+    } catch (error) {
+      console.error(`[error] retweets`, error);
+    }
+
+    await wait(50 * 1000 + Math.random() * 15 * 1000);
+  }
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -1,5 +1,6 @@
 import { command, run, string, option, subcommands } from "cmd-ts";
 import {
+  cron,
   printLastLikes,
   printLastTweets,
   saveLikes,
@@ -39,6 +40,14 @@ const saveRetweetsCmd = command({
   },
 });
 
+const cronCmd = command({
+  name: "cron",
+  args: {},
+  handler(args) {
+    cron();
+  },
+});
+
 const addAccountsCmd = command({
   name: "add accounts",
   args: {
@@ -64,6 +73,7 @@ const cmd = subcommands({
     "print-tweets": printTweetsCmd,
     "save-retweets": saveRetweetsCmd,
     "add-accounts": addAccountsCmd,
+    cron: cronCmd,
   },
 });
 
