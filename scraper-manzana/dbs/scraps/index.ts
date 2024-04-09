@@ -4,11 +4,6 @@ import * as schema from "./schema.ts";
 import { Scrap, zPostScrapRes, zScrap } from "api/schema.ts";
 import { eq, isNull } from "drizzle-orm";
 
-const TOKEN = process.env.API_TOKEN;
-if (!TOKEN) {
-  console.error("Missing API_TOKEN");
-  process.exit(1);
-}
 const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
 console.info(`API_URL=${API_URL}`);
 
@@ -16,6 +11,15 @@ class ScrapsDb {
   db: BunSQLiteDatabase<typeof schema>;
   constructor(db: BunSQLiteDatabase<typeof schema>) {
     this.db = db;
+  }
+
+  get API_TOKEN() {
+    const TOKEN = process.env.API_TOKEN;
+    if (!TOKEN) {
+      console.error("Missing API_TOKEN");
+      process.exit(1);
+    }
+    return TOKEN;
   }
 
   async pushScrap(scrap: Scrap) {
@@ -35,7 +39,7 @@ class ScrapsDb {
     for (const entry of scrapsToSave) {
       try {
         const scrap = zScrap.parse(JSON.parse(entry.json));
-        const { scrapId } = await sendScrapToApi(scrap);
+        const { scrapId } = await sendScrapToApi(scrap, this.API_TOKEN);
         await this.db
           .update(schema.scraps)
           .set({
@@ -54,12 +58,12 @@ const db = new ScrapsDb(scrapsDb);
 
 export const pushScrap = db.pushScrap.bind(db);
 
-async function sendScrapToApi(scrap: Scrap) {
+async function sendScrapToApi(scrap: Scrap, token: string) {
   const res = await fetch(`${API_URL}/api/internal/scraper/scrap`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(scrap),
   });
