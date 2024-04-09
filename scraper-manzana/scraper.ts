@@ -5,7 +5,7 @@ import { sessions } from "./dbs/accounts/schema.ts";
 import { accountsDb } from "./dbs/index.ts";
 import { isNull, sql } from "drizzle-orm";
 import { Cookie } from "tough-cookie";
-import { LikedTweet, Scrap } from "api/schema.ts";
+import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { pushScrap } from "./dbs/scraps/index.ts";
 
@@ -62,6 +62,57 @@ export async function saveLikes() {
     likedTweets,
     retweets: [],
     totalTweetsSeen: likedTweets.length,
+    uid: nanoid(),
+  };
+
+  await pushScrap(scrap);
+}
+
+export async function printLastTweets() {
+  const scraper = await getScraper();
+  for await (const tweet of scraper.getTweets("jmilei")) {
+    console.log(`@${tweet.username}: ${tweet.text}`);
+  }
+}
+
+export async function saveRetweets() {
+  const scraper = await getScraper();
+
+  let totalTweetsSeen = 0;
+  let retweets: Array<Retweet> = [];
+  for await (const tweet of scraper.getTweets("jmilei")) {
+    totalTweetsSeen++;
+    if (!tweet.permanentUrl) throw new Error("no permanentUrl");
+    if (!tweet.timeParsed) throw new Error("no timeParsed");
+    if (tweet.retweetedStatus) {
+      if (tweet.retweetedStatus.id === undefined)
+        throw new Error("no retweetedStatus.id");
+      if (!tweet.retweetedStatus.timeParsed)
+        throw new Error("no retweetedStatus.timeParsed");
+      if (tweet.retweetedStatus.text === undefined)
+        throw new Error("no retweetedStatus.text");
+      if (tweet.retweetedStatus.username === undefined)
+        throw new Error("no retweetedStatus.username");
+      if (tweet.retweetedStatus.userId === undefined)
+        throw new Error("no retweetedStatus.userId");
+      retweets.push({
+        text: tweet.retweetedStatus.text,
+        firstSeenAt: new Date(),
+        postedAt: tweet.retweetedStatus.timeParsed,
+        posterHandle: tweet.retweetedStatus.username,
+        posterId: tweet.retweetedStatus.userId,
+        postId: tweet.retweetedStatus.id,
+        retweetAt: tweet.timeParsed,
+      });
+    }
+    // TODO: subir tweets en formato snscrape
+  }
+
+  const scrap: Scrap = {
+    finishedAt: new Date(),
+    likedTweets: [],
+    retweets,
+    totalTweetsSeen,
     uid: nanoid(),
   };
 

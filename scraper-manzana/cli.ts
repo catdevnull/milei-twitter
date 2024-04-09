@@ -1,5 +1,10 @@
 import { command, run, string, option, subcommands } from "cmd-ts";
-import { printLastLikes, saveLikes } from "./scraper.ts";
+import {
+  printLastLikes,
+  printLastTweets,
+  saveLikes,
+  saveRetweets,
+} from "./scraper.ts";
 import { addAccounts } from "./addAccounts.ts";
 
 const printLikesCmd = command({
@@ -15,6 +20,22 @@ const saveLikesCmd = command({
   args: {},
   handler(args) {
     saveLikes();
+  },
+});
+
+const printTweetsCmd = command({
+  name: "print last tweets",
+  args: {},
+  handler(args) {
+    printLastTweets();
+  },
+});
+
+const saveRetweetsCmd = command({
+  name: "save last retweets",
+  args: {},
+  handler(args) {
+    saveRetweets();
   },
 });
 
@@ -40,6 +61,8 @@ const cmd = subcommands({
   cmds: {
     "print-likes": printLikesCmd,
     "save-likes": saveLikesCmd,
+    "print-tweets": printTweetsCmd,
+    "save-retweets": saveRetweetsCmd,
     "add-accounts": addAccountsCmd,
   },
 });
