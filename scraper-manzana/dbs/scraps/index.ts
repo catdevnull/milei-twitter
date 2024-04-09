@@ -6,6 +6,7 @@ import { eq, isNull } from "drizzle-orm";
 
 const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
 console.info(`API_URL=${API_URL}`);
+if (!process.env.API_TOKEN) console.error("Missing API_TOKEN");
 
 class ScrapsDb {
   db: BunSQLiteDatabase<typeof schema>;
