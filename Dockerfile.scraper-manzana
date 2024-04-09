@@ -1,0 +1,25 @@
+FROM docker.io/node:20 as dependencies
+WORKDIR /app
+COPY . .
+WORKDIR /app/scraper-manzana
+RUN npx pnpm install --prod
+
+FROM docker.io/oven/bun:1 as build
+COPY --from=dependencies /app /app
+WORKDIR /app/scraper-manzana
+RUN bun build cli.ts --target bun --sourcemap=inline > cli.build.js
+
+FROM docker.io/oven/bun:1
+WORKDIR /app
+RUN apt-get update && apt-get install -y tini
+ENTRYPOINT ["tini", "--"]
+COPY --from=build /app/scraper-manzana/cli.build.js /app/cli.js
+COPY --from=build /app/scraper-manzana/dbs/ /app/
+RUN echo '#!/bin/sh\nexec bun /app/cli.js "$@"' > /usr/local/bin/cli \
+ && chmod +x /usr/local/bin/cli
+
+ENV NODE_ENV=production
+ENV DBS_PATH=/db
+VOLUME /db
+
+CMD ["cli", "cron"]
