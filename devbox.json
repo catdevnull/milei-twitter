@@ -14,7 +14,7 @@
       "reset-db-to-prod": [
         "rm -f sqlite.db{,-shm,-wal}",
         "sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;'",
-        "turso db shell http://preciazo-royale:8080 '.dump' | sqlite3 sqlite.db"
+        "turso db shell http://milei-prod:8080 '.dump' | sqlite3 sqlite.db"
       ]
     }
   }
