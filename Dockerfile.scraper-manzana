@@ -11,7 +11,7 @@ RUN bun build cli.ts --target bun --sourcemap=inline > cli.build.js
 
 FROM docker.io/oven/bun:1
 WORKDIR /app
-RUN apt-get update && apt-get install -y tini
+RUN apt-get update && apt-get install -y tini sqlite3
 ENTRYPOINT ["tini", "--"]
 COPY --from=build /app/scraper-manzana/cli.build.js /app/cli.js
 COPY --from=build /app/scraper-manzana/dbs/ /app/
