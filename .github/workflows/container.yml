@@ -64,7 +64,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sitio:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/sitio:buildcache,mode=max
 
-  build-and-push-sitio:
+  build-and-push-scraper:
     name: Compilar contenedor del scraper
     needs: check
     runs-on: ubuntu-latest
