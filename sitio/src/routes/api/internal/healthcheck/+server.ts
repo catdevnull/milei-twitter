@@ -19,6 +19,9 @@ export async function GET() {
     if (delta > 10 * 60 * 1000) {
       errors.push(`último scrap hace ${delta}ms (>10min)`);
     }
+    if (lastScrap.totalTweetsSeen && lastScrap.totalTweetsSeen < 10) {
+      errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);
+    }
   } else errors.push("no hay scraps");
 
   if (errors.length) {
