@@ -22,6 +22,8 @@ export async function GET() {
     if (lastScrap.totalTweetsSeen && lastScrap.totalTweetsSeen < 10) {
       errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);
     }
+    // TODO: especificamente ver el output que nos importa que serían los likes
+    // no tengo claro como se lograría eso, quizás agregar un lastSeenAt en los likes y ver que siempre haya likes con un lastSeenAt reciente?
   } else errors.push("no hay scraps");
 
   if (errors.length) {
