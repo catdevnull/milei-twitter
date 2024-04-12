@@ -13,13 +13,13 @@
     "DEVBOX_PYPROJECT_DIR": "$PWD/scraper-py"
   },
   "shell": {
-    "init_hook": [". $VENV_DIR/bin/activate.fish"],
+    "init_hook": ["test -z $FISH_VERSION || . $VENV_DIR/bin/activate.fish"],
     "scripts": {
       "dev": ["pnpm dev"],
       "reset-db-to-prod": [
         "rm -f sqlite.db{,-shm,-wal}",
         "sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;'",
-        "turso db shell http://preciazo:8080 '.dump' | sqlite3 sqlite.db"
+        "turso db shell http://milei-prod:8080 '.dump' | sqlite3 sqlite.db"
       ]
     }
   }
