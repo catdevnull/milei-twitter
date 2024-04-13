@@ -1,17 +1,14 @@
-FROM docker.io/node:20 as dependencies
+FROM docker.io/node:20
 WORKDIR /app
 COPY . .
 WORKDIR /app/scraper-manzana
-RUN npx pnpm install
+RUN npx pnpm install --filter=scraper-manzana
 
-FROM dependencies as build
-RUN npx pnpm build
+RUN npx pnpm build \
+ && cp -r dbs/* dist/
 
-FROM dependencies
 RUN apt-get update && apt-get install -y tini sqlite3
 ENTRYPOINT ["tini", "--"]
-COPY --from=build /app/scraper-manzana/dist /app/scraper-manzana/
-COPY --from=build /app/scraper-manzana/dbs/ /app/scraper-manzana/dist/
 RUN echo '#!/bin/sh\nexec node /app/scraper-manzana/dist/cli.js "$@"' > /usr/local/bin/cli \
  && chmod +x /usr/local/bin/cli
 
