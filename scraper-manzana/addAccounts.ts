@@ -1,12 +1,13 @@
 import { Scraper } from "@catdevnull/twitter-scraper";
 import { Cookie } from "tough-cookie";
-import { accountsDb } from "./dbs/index.ts";
 import * as accountsSchema from "./dbs/accounts/schema.ts";
 import escapeStringRegexp from "escape-string-regexp";
 import { readFile } from "node:fs/promises";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { openAccountsDb } from "./dbs/index.ts";
 
 export async function addAccounts(format: string) {
+  const accountsDb = await openAccountsDb();
   let regexp = escapeStringRegexp(format)
     .replace("username", `(?<username>.*)`)
     .replace("password", `(?<password>.*)`)

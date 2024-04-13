@@ -1,5 +1,5 @@
-import { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
-import { scrapsDb } from "../index.ts";
+import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { openScrapsDb } from "../index.ts";
 import * as schema from "./schema.ts";
 import { Scrap, zPostScrapRes, zScrap } from "api/schema.ts";
 import { eq, isNull } from "drizzle-orm";
@@ -9,9 +9,9 @@ console.info(`API_URL=${API_URL}`);
 if (!process.env.API_TOKEN) console.error("Missing API_TOKEN");
 
 class ScrapsDb {
-  db: BunSQLiteDatabase<typeof schema>;
-  constructor(db: BunSQLiteDatabase<typeof schema>) {
-    this.db = db;
+  db: Promise<BetterSQLite3Database<typeof schema>>;
+  constructor() {
+    this.db = openScrapsDb();
   }
 
   get API_TOKEN() {
@@ -24,7 +24,7 @@ class ScrapsDb {
   }
 
   async pushScrap(scrap: Scrap) {
-    await this.db.insert(schema.scraps).values({
+    await (await this.db).insert(schema.scraps).values({
       uid: scrap.uid,
       json: JSON.stringify(zScrap.parse(scrap)),
     });
@@ -32,7 +32,9 @@ class ScrapsDb {
   }
 
   async flushScraps() {
-    const scrapsToSave = await this.db.query.scraps.findMany({
+    const scrapsToSave = await (
+      await this.db
+    ).query.scraps.findMany({
       where: isNull(schema.scraps.savedWithId),
     });
     console.info(`[scraps] flushing ${scrapsToSave.length} scraps`);
@@ -40,7 +42,9 @@ class ScrapsDb {
       scrapsToSave.map(async (entry) => {
         try {
           const { scrapId } = await sendScrapToApi(entry.json, this.API_TOKEN);
-          await this.db
+          await (
+            await this.db
+          )
             .update(schema.scraps)
             .set({
               savedWithId: scrapId,
@@ -55,7 +59,7 @@ class ScrapsDb {
   }
 }
 
-const db = new ScrapsDb(scrapsDb);
+const db = new ScrapsDb();
 
 export const pushScrap = db.pushScrap.bind(db);
 

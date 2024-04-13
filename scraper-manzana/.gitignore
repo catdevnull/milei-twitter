@@ -1,2 +1,4 @@
 accounts.db*
 scraps.db*
+
+dist/

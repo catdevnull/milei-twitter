@@ -2,20 +2,17 @@ FROM docker.io/node:20 as dependencies
 WORKDIR /app
 COPY . .
 WORKDIR /app/scraper-manzana
-RUN npx pnpm install --prod
+RUN npx pnpm install
 
-FROM docker.io/oven/bun:1 as build
-COPY --from=dependencies /app /app
-WORKDIR /app/scraper-manzana
-RUN bun build cli.ts --target bun --sourcemap=inline > cli.build.js
+FROM dependencies as build
+RUN npx pnpm build
 
-FROM docker.io/oven/bun:1
-WORKDIR /app
+FROM dependencies
 RUN apt-get update && apt-get install -y tini sqlite3
 ENTRYPOINT ["tini", "--"]
-COPY --from=build /app/scraper-manzana/cli.build.js /app/cli.js
-COPY --from=build /app/scraper-manzana/dbs/ /app/
-RUN echo '#!/bin/sh\nexec bun /app/cli.js "$@"' > /usr/local/bin/cli \
+COPY --from=build /app/scraper-manzana/dist /app/scraper-manzana/
+COPY --from=build /app/scraper-manzana/dbs/ /app/scraper-manzana/dist/
+RUN echo '#!/bin/sh\nexec node /app/scraper-manzana/dist/cli.js "$@"' > /usr/local/bin/cli \
  && chmod +x /usr/local/bin/cli
 
 ENV NODE_ENV=production

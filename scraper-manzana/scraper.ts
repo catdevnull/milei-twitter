@@ -2,7 +2,7 @@
 
 import { Scraper } from "@catdevnull/twitter-scraper";
 import { sessions } from "./dbs/accounts/schema.ts";
-import { accountsDb } from "./dbs/index.ts";
+import { openAccountsDb } from "./dbs/index.ts";
 import { isNull, sql } from "drizzle-orm";
 import { Cookie } from "tough-cookie";
 import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
@@ -10,6 +10,7 @@ import { nanoid } from "nanoid";
 import { pushScrap } from "./dbs/scraps/index.ts";
 
 async function getScraper() {
+  const accountsDb = await openAccountsDb();
   let session = (
     await accountsDb
       .select()
