@@ -36,21 +36,22 @@ class ScrapsDb {
       where: isNull(schema.scraps.savedWithId),
     });
     console.info(`[scraps] flushing ${scrapsToSave.length} scraps`);
-
-    for (const entry of scrapsToSave) {
-      try {
-        const { scrapId } = await sendScrapToApi(entry.json, this.API_TOKEN);
-        await this.db
-          .update(schema.scraps)
-          .set({
-            savedWithId: scrapId,
-          })
-          .where(eq(schema.scraps.uid, entry.uid));
-        console.info(`[scraps] flushed ${entry.uid} into ${scrapId}`);
-      } catch (error) {
-        console.error(`[scraps] failed to upload scrap ${entry.uid}`, error);
-      }
-    }
+    await Promise.all(
+      scrapsToSave.map(async (entry) => {
+        try {
+          const { scrapId } = await sendScrapToApi(entry.json, this.API_TOKEN);
+          await this.db
+            .update(schema.scraps)
+            .set({
+              savedWithId: scrapId,
+            })
+            .where(eq(schema.scraps.uid, entry.uid));
+          console.info(`[scraps] flushed ${entry.uid} into ${scrapId}`);
+        } catch (error) {
+          console.error(`[scraps] failed to upload scrap ${entry.uid}`, error);
+        }
+      })
+    );
   }
 }
 
