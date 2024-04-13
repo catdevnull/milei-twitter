@@ -39,15 +39,14 @@ class ScrapsDb {
 
     for (const entry of scrapsToSave) {
       try {
-        const scrap = zScrap.parse(JSON.parse(entry.json));
-        const { scrapId } = await sendScrapToApi(scrap, this.API_TOKEN);
+        const { scrapId } = await sendScrapToApi(entry.json, this.API_TOKEN);
         await this.db
           .update(schema.scraps)
           .set({
             savedWithId: scrapId,
           })
           .where(eq(schema.scraps.uid, entry.uid));
-        console.info(`[scraps] flushed ${scrap.uid} into ${scrapId}`);
+        console.info(`[scraps] flushed ${entry.uid} into ${scrapId}`);
       } catch (error) {
         console.error(`[scraps] failed to upload scrap ${entry.uid}`, error);
       }
@@ -59,14 +58,14 @@ const db = new ScrapsDb(scrapsDb);
 
 export const pushScrap = db.pushScrap.bind(db);
 
-async function sendScrapToApi(scrap: Scrap, token: string) {
+async function sendScrapToApi(scrapJson: string, token: string) {
   const res = await fetch(`${API_URL}/api/internal/scraper/scrap`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(scrap),
+    body: scrapJson,
   });
   if (!res.ok) {
     throw new Error(`HTTP status response: ${res.status}`);
