@@ -13,6 +13,7 @@
   import { dateFormatter, dayjs, timeFormatter, tz } from "$lib/consts";
   import "core-js/es/array/to-reversed";
   import { DatePicker } from "@svelte-plugins/datepicker";
+  import Meta from "./Meta.svelte";
 
   export let data: PageData;
 
@@ -132,6 +133,8 @@
     }
   }
 </script>
+
+<Meta />
 
 <div
   class="flex min-h-screen flex-col justify-center gap-12 p-2"

@@ -9,11 +9,19 @@
   import { dateFormatter, dayjs, timeFormatter } from "$lib/consts";
   import Footer from "../Footer.svelte";
   import type { PageServerData } from "./$types";
+  import Meta from "../Meta.svelte";
+  import cardPerfil from "$lib/assets/card-perfil-likes.jpg";
 
   export let data: PageServerData;
   $: query = $page.url.searchParams.get("url");
   $: chequeoIntentado = "found" in data;
 </script>
+
+<Meta
+  title="Chequeador de likes de @JMilei"
+  description={'Verifica un "me gusta" de Twitter del presidente'}
+  cardPath={cardPerfil}
+/>
 
 <div class="m-auto flex max-w-2xl flex-col justify-center">
   <form class="px-4 py-6">

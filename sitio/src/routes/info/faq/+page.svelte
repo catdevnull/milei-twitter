@@ -4,6 +4,7 @@
   import markdownItAnchor from "markdown-it-anchor";
   // @ts-ignore
   import markdownItToc from "markdown-it-table-of-contents";
+  import Meta from "../../Meta.svelte";
   const md = markdownit();
   md.use(markdownItAnchor);
   md.use(markdownItToc, {
@@ -45,6 +46,8 @@ Podés mandarme un mensaje por Telegram ([@esoesnulo](https://t.me/esoesnulo)), 
 
 `);
 </script>
+
+<Meta title="Preguntas frecuentes - milei.nulo.in" />
 
 <main class="mx-auto px-2 py-7">
   <Prose>

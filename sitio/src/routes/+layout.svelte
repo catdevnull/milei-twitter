@@ -1,44 +1,10 @@
 <script>
   import "../app.pcss";
 
-  import card from "$lib/assets/card.jpg";
-  import favicon from "$lib/assets/favicon.jpg";
   import { dev } from "$app/environment";
 </script>
 
 <svelte:head>
-  <title>¿Cuántos tweets likeó nuestro Presidente hoy?</title>
-  <meta
-    name="description"
-    content="Mira cuanto usa Twitter el Presidente Javier Milei"
-  />
-  <link rel="icon" href={favicon} />
-
-  <meta property="og:type" content="website" />
-  <meta
-    property="og:title"
-    content="¿Cuántos tweets likeó nuestro Presidente hoy?"
-  />
-  <meta
-    property="og:description"
-    content="Mira cuanto usa Twitter el Presidente Javier Milei"
-  />
-  <meta property="og:url" content="https://milei.nulo.in" />
-  <meta property="og:image" content={card} />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:site" content="@esoesnulo" />
-  <meta
-    name="twitter:title"
-    content="¿Cuántos tweets likeó nuestro Presidente hoy?"
-  />
-  <meta
-    name="twitter:description"
-    content="Mira cuanto usa Twitter el Presidente Javier Milei"
-  />
-  <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
-  <meta name="twitter:image" content={"https://milei.nulo.in" + card} />
-
   {#if !dev}
     <script
       async
