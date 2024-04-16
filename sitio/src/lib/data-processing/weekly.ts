@@ -1,7 +1,7 @@
-import type { connectDb } from "$lib/connectDb";
+import type { connectDb } from "$lib/db/connectDb";
 import { dayjs, type Dayjs } from "../consts.ts";
 import { calculateScreenTime, totalFromDurations } from "./screenTime.ts";
-import { likedTweets, retweets, type MiniLikedTweet } from "../../schema.ts";
+import { likedTweets, retweets } from "../../schema.ts";
 import { and, desc, gte } from "drizzle-orm";
 
 export function getMinDate() {
@@ -18,7 +18,7 @@ type RetweetDate = {
   retweetAt: Date;
 };
 
-function makeMapOfDays<T>(
+export function makeMapOfDays<T>(
   days: Array<Date>,
   array: Array<T>,
   x: (arg: T) => Date,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import Chart from "./Chart.svelte";
+  import Footer from "./Footer.svelte";
   import {
     calculateScreenTime,
     formatDurationFromMs,
@@ -9,9 +10,10 @@
   } from "$lib/data-processing/screenTime";
   import { sortMost } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
-  import { dayjs } from "$lib/consts";
-
-  const tz = "America/Argentina/Buenos_Aires";
+  import { dateFormatter, dayjs, timeFormatter, tz } from "$lib/consts";
+  import "core-js/es/array/to-reversed";
+  import { DatePicker } from "@svelte-plugins/datepicker";
+  import Meta from "./Meta.svelte";
 
   export let data: PageData;
 
@@ -21,6 +23,21 @@
   const crashEnd = dayjs("2024-02-20T01:00:00.000-03:00").toDate();
   $: dudosoCrashScraper = filteredRetweets.some(
     (t) => t.retweetAt > crashStart && t.retweetAt < crashEnd,
+  );
+  $: dudosoFailVps = filteredRetweets.some(
+    (t) =>
+      dayjs(t.retweetAt).isAfter(dayjs("2024-03-31T06:25:00.000-03:00")) &&
+      dayjs(t.retweetAt).isBefore(dayjs("2024-03-31T10:05:00.000-03:00")),
+  );
+  $: dudosoCorteLuz = filteredRetweets.some(
+    (t) =>
+      dayjs(t.retweetAt).isAfter(dayjs("2024-04-02T05:00:00.000-03:00")) &&
+      dayjs(t.retweetAt).isBefore(dayjs("2024-04-02T10:05:00.000-03:00")),
+  );
+  $: dudosoFailVps2 = filteredRetweets.some(
+    (t) =>
+      dayjs(t.retweetAt).isAfter(dayjs("2024-04-04T08:45:00.000-03:00")) &&
+      dayjs(t.retweetAt).isBefore(dayjs("2024-04-04T13:30:00.000-03:00")),
   );
 
   $: filteredTweets = data.tweets;
@@ -32,11 +49,6 @@
   $: masLikeados = sortMost(filteredTweets);
 
   $: ultimaSemana = data.ultimaSemana;
-
-  const timeFormatter = Intl.DateTimeFormat("es-AR", {
-    timeStyle: "medium",
-    timeZone: tz,
-  });
 
   const lastUpdatedFormatter = Intl.DateTimeFormat("es-AR", {
     weekday: "short",
@@ -50,32 +62,119 @@
     weekday: "short",
     timeZone: tz,
   });
-
-  function setQuery(
-    event: Event & { currentTarget: EventTarget & HTMLSelectElement },
-  ) {
-    const query = event.currentTarget.value;
+  function setQuery(query: string) {
     goto(`/?q=${query}`);
+  }
+
+  function generarOpcionesDias(
+    start: Date,
+  ): Array<{ label: string; query: string }> {
+    const hoy = dayjs().tz(tz).startOf("day").toDate();
+    const getWeeklyQuery = (date: Date) =>
+      `date:${dayjs(date).format("YYYY-MM-DD")}`;
+    const weeklyOpcion = (date: Date) => ({
+      label: weekDayFormatter.format(date),
+      query: getWeeklyQuery(date),
+      date,
+    });
+    const opciones = [
+      { label: "las últimas 24hs", query: "last-24h" },
+      {
+        label: `hoy, ${weekDayFormatter.format(hoy)}`,
+        query: getWeeklyQuery(hoy),
+        date: hoy,
+      },
+      ...ultimaSemana
+        .toReversed()
+        .map((d) => dayjs(d.day, "YYYY-MM-DD").tz(tz, true).toDate())
+        .filter((d) => +d !== +hoy)
+        .map((date) => weeklyOpcion(date)),
+    ];
+    if (!opciones.some(({ date }) => date && +start == +date)) {
+      opciones.push({
+        query: getWeeklyQuery(start),
+        label: dateFormatter.format(start),
+        date: start,
+      });
+    }
+    return opciones;
+  }
+  $: opcionesDias = generarOpcionesDias(data.start);
+
+  const dowLabels = ["D", "L", "M", "X", "J", "V", "S"];
+  const monthLabels = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
+  let isDatePickerOpen = false;
+  const toggleDatePicker = () => (isDatePickerOpen = !isDatePickerOpen);
+
+  const onDayClick = (evt: any) =>
+    setQuery(`date:${dayjs(evt.startDate).format("YYYY-MM-DD")}`);
+
+  let duende = false;
+  let easterEggClicks = 0;
+  function easterEggClick() {
+    easterEggClicks++;
+    if (easterEggClicks > 4) {
+      duende = true;
+    }
   }
 </script>
 
-<div class="flex min-h-screen flex-col justify-center gap-12 p-2">
+<Meta />
+
+<div
+  class="flex min-h-screen flex-col justify-center gap-12 p-2"
+  class:milei-duende={duende}
+>
   <section class="my-4 flex flex-col text-center">
     <h1 class="text-4xl font-bold">
-      ¿Cuántos tweets likeó nuestro Presidente
-      <select on:change={setQuery} value={data.query}>
-        <option value="last-24h">las últimas 24hs</option>
-        <option value={`date:${dayjs().tz(tz).format("YYYY-MM-DD")}`}
-          >hoy, {weekDayFormatter.format(new Date())}</option
+      ¿Cuántos tweets likeó nuestro <span on:click={easterEggClick}
+        >{#if duende}presiduende{:else}Presidente{/if}</span
+      >
+      <div class="inline-flex flex-wrap justify-end gap-2">
+        <select
+          on:change={(e) => setQuery(e.currentTarget.value)}
+          value={data.query}
+          class="rounded-md px-2"
         >
-        {#each ultimaSemana.toReversed().slice(1) as { day }}
-          <option value={`date:${day}`}
-            >{weekDayFormatter.format(
-              dayjs(day, "YYYY-MM-DD").tz(tz, true).toDate(),
-            )}</option
+          {#each opcionesDias as { label, query }}
+            <option value={query}>{label}</option>
+          {/each}
+        </select>
+        <DatePicker
+          bind:isOpen={isDatePickerOpen}
+          includeFont={false}
+          align="right"
+          startDate={data.start}
+          {onDayClick}
+          enabledDates={[
+            `${dayjs(data.firstLikedTweet?.firstSeenAt).format("MM/DD/YYYY")}:${dayjs().tz(tz).format("MM/DD/YYYY")}`,
+          ]}
+          {dowLabels}
+          {monthLabels}
+        >
+          <button
+            type="button"
+            class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-950 p-1 font-medium tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-700 dark:hover:bg-neutral-600 dark:focus:ring-neutral-950"
+            on:click={toggleDatePicker}
           >
-        {/each}
-      </select>
+            <span class="icon-[heroicons--calendar-solid]"></span>
+          </button>
+        </DatePicker>
+      </div>
       ?
     </h1>
     <h2 class="text-9xl font-black">{filteredTweets.length}</h2>
@@ -113,6 +212,33 @@
         primeras horas del 20 de febrero de 2024 pueden estar levemente mal (se
         acumulan likes en las 00hs que deberían estar en la noche del 19 de
         febrero de 2024)
+      </p>
+    </section>
+  {/if}
+  {#if dudosoFailVps}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de los likes de entre las 6:30am y las 10am del 31 de
+        marzo son imprecisos (los likes se "acumularon" y quedaron más para las
+        10am.)
+      </p>
+    </section>
+  {/if}
+  {#if dudosoCorteLuz}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de los likes de entre las 5:00am y las 10am del 2 de
+        abril son imprecisos (los likes se "acumularon" y quedaron más para las
+        10am, aunque las interacciones realmente fueron entre ~7:45am-10am.)
+      </p>
+    </section>
+  {/if}
+  {#if dudosoFailVps2}
+    <section class="mx-auto w-full max-w-2xl">
+      <p class="text-center text-sm">
+        ¡Ojo! Los datos de los likes de entre las 8:45hs y las 13:30hs del 4 de
+        abril son imprecisos (los likes entre esas horas se acumularon en las
+        13:30hs)
       </p>
     </section>
   {/if}
@@ -199,26 +325,29 @@
       </tbody>
     </table>
   </section>
-
-  <footer class="flex flex-col gap-4 text-center">
-    <div>
-      Compartir por
-      <a
-        class="rounded bg-green-600 px-3 py-2 font-medium text-white"
-        href={`https://api.whatsapp.com/send?text=${encodeURIComponent("¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas? https://milei.nulo.in/?ref=wsp-link")}`}
-        >WhatsApp</a
-      >
-    </div>
-    <div>
-      hecho por <a
-        class="text-blue-600 underline dark:text-blue-200"
-        href="https://twitter.com/esoesnulo"
-        rel="noreferrer">@esoesnulo</a
-      >
-      -
-      <a class="text-blue-600 underline dark:text-blue-200" href="/info/faq"
-        >preguntas frecuentes</a
-      >
-    </div>
-  </footer>
+  <Footer />
 </div>
+
+<style lang="postcss">
+  :global(.datepicker) {
+    display: inline-flex;
+  }
+  :global(.datepicker) button {
+    @apply text-4xl;
+  }
+
+  .milei-duende {
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
+      center / cover no-repeat url("$lib/assets/milei-duende.webp");
+    background-attachment: fixed;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .milei-duende {
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+        center / cover no-repeat url("$lib/assets/milei-duende.webp");
+    }
+  }
+</style>

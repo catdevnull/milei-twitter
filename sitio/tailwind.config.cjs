@@ -1,4 +1,5 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
+const { addDynamicIconSelectors } = require("@iconify/tailwind");
 
 /** @type {import('tailwindcss').Config}*/
 const config = {
@@ -8,11 +9,20 @@ const config = {
     extend: {
       fontFamily: {
         sans: ['"Inter Variable"', ...defaultTheme.fontFamily.sans],
+        gilroy: [
+          '"Gilroy"',
+          '"Inter Variable"',
+          ...defaultTheme.fontFamily.sans,
+        ],
+      },
+      dropShadow: {
+        opinionPublica: "-12px 19px 0px #d83926",
+        opinionPublicaAzul: "0px 0px 18px #5ea1b4",
       },
     },
   },
 
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [require("@tailwindcss/typography"), addDynamicIconSelectors()],
 };
 
 module.exports = config;

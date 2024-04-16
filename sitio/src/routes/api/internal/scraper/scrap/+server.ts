@@ -1,4 +1,4 @@
-import { db } from "$lib/db.js";
+import { db } from "$lib/db/index.js";
 import { error, json } from "@sveltejs/kit";
 import { eq, gt } from "drizzle-orm";
 import {

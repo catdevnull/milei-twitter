@@ -1,0 +1,4 @@
+.svelte-kit
+drizzle
+pnpm-lock.yaml
+vite.config.ts.*

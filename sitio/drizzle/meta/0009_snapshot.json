@@ -62,9 +62,7 @@
       "indexes": {
         "first_seen_at_idx": {
           "name": "first_seen_at_idx",
-          "columns": [
-            "first_seen_at"
-          ],
+          "columns": ["first_seen_at"],
           "isUnique": false
         }
       },
@@ -135,19 +133,14 @@
       "indexes": {
         "retweet_at_idx": {
           "name": "retweet_at_idx",
-          "columns": [
-            "retweet_at"
-          ],
+          "columns": ["retweet_at"],
           "isUnique": false
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "db_retweets_poster_id_post_id_pk": {
-          "columns": [
-            "post_id",
-            "poster_id"
-          ],
+          "columns": ["post_id", "poster_id"],
           "name": "db_retweets_poster_id_post_id_pk"
         }
       },

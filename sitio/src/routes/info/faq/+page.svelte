@@ -1,8 +1,10 @@
 <script lang="ts">
+  import Prose from "$lib/components/Prose.svelte";
   import markdownit from "markdown-it";
   import markdownItAnchor from "markdown-it-anchor";
   // @ts-ignore
   import markdownItToc from "markdown-it-table-of-contents";
+  import Meta from "../../Meta.svelte";
   const md = markdownit();
   md.use(markdownItAnchor);
   md.use(markdownItToc, {
@@ -20,12 +22,15 @@
 
 Si, [según él mismo](https://twitter.com/somoscorta/status/1761792806702444956) es él el que maneja su cuenta de Twitter.
 
+## ¿Como puedo verificar un like de Milei?
+
+Como ya detecté en varias ocasiones que se generen capturas de pantallas falsas de los likes de Milei, hice [una herramienta](https://milei.nulo.in/chequear) que cualquiera puede usar para verificarlos. Tan solo tiene que copiar el enlace del tweet original y pegarlo en el sitio. ¿Dudas? ¡Contactame!
+
 ## ¿Como calculas el tiempo en Twitter?
 
 Básicamente, la idea es medir las sesiones que tendría Milei en Twitter. Scrapeo el minuto aproximando en que @JMilei likea algo, y después encuentro los grupos de likes consecutivos que distan menos de 3 min entre sí. Agrego 2min a cada grupo ya que se presume que antes de hacer el primer like de la sesión está ~1min, y que después del último like de la sesión está ~1min más. Se suman todos los rangos de tiempo, y así se genera el total. Se pueden ver los rangos de tiempo calculados en la página.
 
-Los valores de 3min entre likes y 2min extra por grupo son arbitrarios y relaJavier Milei y su cuenta de X: quiénes son los tuiteros favoritos del presidente con los que construye su discurso
-tivamente conservadores.
+Los valores de 3min entre likes y 2min extra por grupo son arbitrarios y relativamente conservadores.
 
 ## ¡Quiero saber más sobre el Twitter de Milei!
 
@@ -42,6 +47,10 @@ Podés mandarme un mensaje por Telegram ([@esoesnulo](https://t.me/esoesnulo)), 
 `);
 </script>
 
-<main class="prose prose-neutral mx-auto px-2 py-7 dark:prose-invert">
-  {@html result}
+<Meta title="Preguntas frecuentes - milei.nulo.in" />
+
+<main class="mx-auto px-2 py-7">
+  <Prose>
+    {@html result}
+  </Prose>
 </main>

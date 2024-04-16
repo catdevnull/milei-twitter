@@ -1,12 +1,12 @@
 {
   "name": "scraper",
   "type": "module",
+  "type": "module",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts",
-    "migrate": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts migrate",
     "db:generate": "drizzle-kit generate:sqlite",
     "check": "tsc --noEmit"
   },
@@ -14,9 +14,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@swc/core": "^1.4.2",
     "api": "workspace:^",
     "better-sqlite3": "^9.4.3",
+    "@swc/core": "^1.4.11",
     "cmd-ts": "^0.13.0",
     "drizzle-orm": "^0.29.4",
     "nanoid": "^5.0.6",

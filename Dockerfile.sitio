@@ -18,6 +18,7 @@ RUN apk add --no-cache jq sqlite
 # Sitio
 COPY --from=build /usr/src/app .
 COPY --from=build /usr/src/app/sitio/drizzle /usr/src/app/sitio/build/drizzle
+COPY --from=build /usr/src/app/src/lib/db/historicLikes/likes.tsv.br src/lib/db/historicLikes/likes.tsv.br
 WORKDIR /usr/src/app/sitio
 RUN pnpm install
 WORKDIR /usr/src/app/sitio/build

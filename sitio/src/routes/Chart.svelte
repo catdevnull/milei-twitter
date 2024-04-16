@@ -58,7 +58,7 @@
       console.warn("diferencia de >15min entre like y retweet");
     return {
       url: `https://twitter.com/${userHandle}/status/${tweetId}`,
-      estimated: new Date((+liked.firstSeenAt + +retweet.retweetAt) / 2),
+      estimated: new Date((+liked.firstSeenAt + +retweet.retweetAt * 3) / 4),
     };
   }
 

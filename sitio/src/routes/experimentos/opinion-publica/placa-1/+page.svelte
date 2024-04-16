@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dayjs } from "$lib/consts";
   import { formatTinyDurationFromMs } from "$lib/data-processing/screenTime";
+  import Template from "../Template.svelte";
   import type { PageData } from "./$types";
   import ClearDay from "@bybas/weather-icons/production/fill/all/clear-day.svg";
   import Cloudy from "@bybas/weather-icons/production/fill/all/cloudy.svg";
@@ -21,14 +22,9 @@
   $: screenTime = data.ultimaSemana.map((s) => s.screenTime);
 </script>
 
-<!-- d83926 -->
-
-<div class="min-h-screen w-screen bg-[#5ea1b4] font-bold text-black">
-  <h1 class="px-8 py-24 text-center text-7xl font-extrabold">
-    El pronóstico de Milei en Twitter
-  </h1>
-
-  <table class="mx-auto text-center text-4xl">
+<Template>
+  <svelte:fragment slot="title">El clima en La Rosada</svelte:fragment>
+  <table slot="content" class="text-center">
     <tbody>
       <tr>
         {#each days as day}
@@ -71,4 +67,4 @@
       </tr>
     </tbody>
   </table>
-</div>
+</Template>

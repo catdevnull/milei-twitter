@@ -1,5 +1,5 @@
 name: check and publish container image
-on: [push]
+on: [push, pull_request]
 
 env:
   REGISTRY: ghcr.io
@@ -24,6 +24,8 @@ jobs:
       - run: pnpm install
         working-directory: sitio
       - run: pnpm check
+        working-directory: sitio
+      - run: pnpm run lint
         working-directory: sitio
   check-scraper:
     name: check:sitio
@@ -55,6 +57,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to the Container registry
