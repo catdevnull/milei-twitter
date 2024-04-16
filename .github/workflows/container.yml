@@ -28,7 +28,7 @@ jobs:
       - run: pnpm run lint
         working-directory: sitio
   check-scraper:
-    name: check:sitio
+    name: check:scraper
     runs-on: ubuntu-latest
 
     steps:
