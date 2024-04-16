@@ -12,16 +12,21 @@ RUN pnpm install && \
 
 FROM base
 ENV NODE_ENV=production
-RUN apk add --no-cache jq sqlite
+RUN apk add --no-cache jq sqlite tini
+ENTRYPOINT ["tini", "--"]
 # glib libnss dbus-libs libatk-1.0 libatk-bridge-2.0 cups-libs libdrm libxkbcommon libxcomposite libxdamage libxrandr mesa-gbm pango alsa-lib freetype harfbuzz ca-certificates
 
 # Sitio
-COPY --from=build /usr/src/app .
-COPY --from=build /usr/src/app/sitio/drizzle /usr/src/app/sitio/build/drizzle
-COPY --from=build /usr/src/app/src/lib/db/historicLikes/likes.tsv.br src/lib/db/historicLikes/likes.tsv.br
-WORKDIR /usr/src/app/sitio
-RUN pnpm install
-WORKDIR /usr/src/app/sitio/build
+COPY --from=build /usr/src/app/sitio/build/ /usr/src/sitio
+WORKDIR /usr/src/sitio
+COPY --from=build /usr/src/app/pnpm-lock.yaml /usr/src/
+COPY --from=build /usr/src/app/pnpm-workspace.yaml /usr/src/
+COPY --from=build /usr/src/app/api /usr/src/api
+COPY --from=build /usr/src/app/sitio/package.json package.real.json
+COPY --from=build /usr/src/app/sitio/drizzle/ drizzle
+COPY --from=build /usr/src/app/sitio/src/lib/db/historicLikes/likes.tsv.br src/lib/db/historicLikes/likes.tsv.br
+RUN sh -c 'echo {\"name\":\"sitio\",\"type\":\"module\",\"dependencies\":$(jq .dependencies < package.real.json)} > package.json'
+RUN pnpm install --prod
 
 ENV DB_PATH=/db/db.db
 ENV BODY_SIZE_LIMIT=5242880

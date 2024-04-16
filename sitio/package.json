@@ -34,7 +34,6 @@
     "markdown-it-anchor": "^8.6.7",
     "markdown-it-table-of-contents": "^0.6.0",
     "nanoid": "^5.0.6",
-    "svelte-mq-store": "^2.2.11",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -47,6 +46,7 @@
     "@swc/core": "^1.4.2",
     "@tailwindcss/typography": "^0.5.12",
     "@types/markdown-it": "^13.0.7",
+    "svelte-mq-store": "^2.2.11",
     "@types/node": "^20.12.2",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.20.14",
