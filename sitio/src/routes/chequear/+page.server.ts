@@ -11,12 +11,12 @@ type FoundLikedMatch = {
 
 export const load: PageServerLoad = async ({ url }) => {
   const query = url.searchParams.get("url");
-  if (!query) return {};
+  if (!query) return { chequeoIntentado: false };
   const parsedQuery = parsearLinkDeTwitter(query);
   if (!parsedQuery) {
-    return { error: "La URL no es de un tweet" };
+    return { chequeoIntentado: true, error: "La URL no es de un tweet" };
   } else if ("error" in parsedQuery) {
-    return { error: parsedQuery.error };
+    return { chequeoIntentado: true, error: parsedQuery.error };
   }
   let match: FoundLikedMatch | null = null;
   let linkToDate = true;
@@ -56,6 +56,8 @@ export const load: PageServerLoad = async ({ url }) => {
     });
 
     return {
+      chequeoIntentado: true,
+
       found: match,
       retweet: fromRetweet,
       linkToDate,
@@ -64,6 +66,6 @@ export const load: PageServerLoad = async ({ url }) => {
       parsedFound,
     };
   } else {
-    return {};
+    return { chequeoIntentado: true };
   }
 };
