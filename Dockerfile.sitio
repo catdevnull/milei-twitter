@@ -28,7 +28,7 @@ COPY --from=build /usr/src/app/sitio/src/lib/db/historicLikes/likes.tsv.br src/l
 RUN sh -c 'echo {\"name\":\"sitio\",\"type\":\"module\",\"dependencies\":$(jq .dependencies < package.real.json)} > package.json'
 RUN pnpm install --prod
 
-ENV DB_PATH=/db/db.db
+ENV TURSO_CONNECTION_URL=file:/db/db.db
 ENV BODY_SIZE_LIMIT=5242880
 EXPOSE 3000
 
