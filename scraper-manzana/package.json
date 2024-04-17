@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "check": "tsc --noEmit",
-    "build": "tsup cli.ts"
+    "build": "tsup cli.ts && cp -r dbs/* dist/"
   },
   "keywords": [],
   "author": "",
