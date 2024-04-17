@@ -16,7 +16,6 @@ import {
   saveLikes,
   saveRetweets,
 } from "./scraper.ts";
-import { addAccounts } from "./addAccounts.ts";
 
 const printLikesCmd = command({
   name: "print last likes",
@@ -74,23 +73,6 @@ const cronCmd = command({
   },
 });
 
-const addAccountsCmd = command({
-  name: "add accounts",
-  args: {
-    format: option({
-      type: string,
-      long: "format",
-      short: "f",
-      defaultValue() {
-        return "username:password:email:emailPassword:authToken:twoFactorSecret";
-      },
-    }),
-  },
-  async handler(args) {
-    await addAccounts(args.format);
-  },
-});
-
 const cmd = subcommands({
   name: "scraper-manzana",
   cmds: {
@@ -99,7 +81,6 @@ const cmd = subcommands({
     "print-tweets": printTweetsCmd,
     "save-retweets": saveRetweetsCmd,
     "print-following": printFollowingCmd,
-    "add-accounts": addAccountsCmd,
     cron: cronCmd,
   },
 });

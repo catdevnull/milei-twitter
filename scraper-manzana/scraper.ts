@@ -1,39 +1,65 @@
 // TODO: implementar handleo de rate limits
 
 import { Scraper } from "@catdevnull/twitter-scraper";
-import { sessions } from "./dbs/accounts/schema.ts";
-import { openAccountsDb } from "./dbs/index.ts";
-import { isNull, sql } from "drizzle-orm";
-import { Cookie } from "tough-cookie";
+import { Cookie, CookieJar } from "tough-cookie";
 import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { pushScrap } from "./dbs/scraps/index.ts";
+import { parseAccountList } from "./addAccounts.ts";
 
 async function getScraper() {
-  const accountsDb = await openAccountsDb();
-  let session = (
-    await accountsDb
-      .select()
-      .from(sessions)
-      .where(isNull(sessions.lastFailedAt))
-      .orderBy(sql`random()`)
-  )[0];
-  if (!session) {
-    console.warn(
-      "No accounts with no error available, trying to use one with error"
-    );
-    session = (
-      await accountsDb
-        .select()
-        .from(sessions)
-        .orderBy(sql`random()`)
-    )[0];
-  }
-  if (!session) throw new Error(`No account available`);
-  const scraper = new Scraper();
-  await scraper.setCookies(
-    JSON.parse(session.cookiesJson!).map((c: object) => Cookie.fromJSON(c))
-  );
+  let cookieJar = new CookieJar();
+  let loggedIn = false;
+  const scraper = new Scraper({
+    transform: {
+      async request(input, init) {
+        if (!loggedIn) {
+          const accounts = parseAccountList(
+            `INSERTAR_CUENTAS`,
+            "username:password:email:emailPassword:authToken:twoFactorSecret"
+          );
+          while (!loggedIn) {
+            const account =
+              accounts[Math.floor(Math.random() * accounts.length)];
+            try {
+              const scraper = new Scraper();
+              await scraper.login(
+                account.username,
+                account.password,
+                account.email,
+                account.twoFactorSecret
+              );
+              loggedIn = await scraper.isLoggedIn();
+              if (loggedIn) {
+                console.info(`Logged into @${account.username}`);
+                for (const cookie of await scraper.getCookies()) {
+                  await cookieJar.setCookie(cookie, "https://twitter.com");
+                }
+              }
+            } catch (error) {
+              console.error(`Couldn't login into @${account.username}:`, error);
+            }
+          }
+        }
+
+        const headers = new Headers(init?.headers);
+        headers.set("cookie", cookieJar.getCookieStringSync(input.toString()));
+        {
+          const cookies = await cookieJar.getCookies(input.toString());
+          const xCsrfToken = cookies.find((cookie) => cookie.key === "ct0");
+          if (xCsrfToken) {
+            headers.set("x-csrf-token", xCsrfToken.value);
+          }
+        }
+        return [input, { ...init, headers }];
+      },
+      async response(response) {
+        const cookie = Cookie.parse(response.headers.get("set-cookie") || "");
+        if (cookie) cookieJar.setCookie(cookie, response.url);
+        return response;
+      },
+    },
+  });
   return scraper;
 }
 

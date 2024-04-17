@@ -2,12 +2,11 @@ import Database from "better-sqlite3";
 import { join } from "node:path";
 import { BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import * as accountsSchema from "./accounts/schema.js";
 import * as scrapsSchema from "./scraps/schema.js";
 
 const DBS_PATH = process.env.DBS_PATH ?? ".";
 
-type DbType = "accounts" | "scraps";
+type DbType = "scraps";
 
 async function migrateDb(
   db: BetterSQLite3Database<any>,
@@ -28,11 +27,6 @@ async function openSqliteDb(name: DbType) {
   return sqlite;
 }
 
-export async function openAccountsDb() {
-  return drizzle(await openSqliteDb("accounts"), {
-    schema: accountsSchema,
-  });
-}
 export async function openScrapsDb() {
   return drizzle(await openSqliteDb("scraps"), {
     schema: scrapsSchema,
