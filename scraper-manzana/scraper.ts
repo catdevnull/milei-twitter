@@ -1,5 +1,4 @@
-// TODO: implementar handleo de rate limits
-
+import { readFile } from "node:fs/promises";
 import { Scraper } from "@catdevnull/twitter-scraper";
 import { Cookie, CookieJar } from "tough-cookie";
 import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
@@ -8,58 +7,77 @@ import { pushScrap } from "./dbs/scraps/index.ts";
 import { parseAccountList } from "./addAccounts.ts";
 
 async function getScraper() {
+  const accountsFilePath = process.env.ACCOUNTS_FILE_PATH;
+  if (!accountsFilePath) {
+    console.error("Missing $ACCOUNTS_FILE_PATH");
+    process.exit(1);
+  }
+  const accountsFileFormat =
+    process.env.ACCOUNTS_FILE_FORMAT ??
+    "username:password:email:emailPassword:authToken:twoFactorSecret";
+
   let cookieJar = new CookieJar();
   let loggedIn = false;
-  const scraper = new Scraper({
-    transform: {
-      async request(input, init) {
-        if (!loggedIn) {
-          const accounts = parseAccountList(
-            `INSERTAR_CUENTAS`,
-            "username:password:email:emailPassword:authToken:twoFactorSecret"
+
+  const fetchWithRandomAccount = async (
+    input: string | URL | Request,
+    init: RequestInit | undefined
+  ): Promise<Response> => {
+    if (!loggedIn) {
+      const accountsFile = await readFile(accountsFilePath, "utf-8");
+      const accounts = parseAccountList(accountsFile, accountsFileFormat);
+
+      // Keep trying to log into accounts unless any don't work
+      while (!loggedIn) {
+        const account = accounts[Math.floor(Math.random() * accounts.length)];
+        try {
+          const scraper = new Scraper();
+          await scraper.login(
+            account.username,
+            account.password,
+            account.email,
+            account.twoFactorSecret
           );
-          while (!loggedIn) {
-            const account =
-              accounts[Math.floor(Math.random() * accounts.length)];
-            try {
-              const scraper = new Scraper();
-              await scraper.login(
-                account.username,
-                account.password,
-                account.email,
-                account.twoFactorSecret
-              );
-              loggedIn = await scraper.isLoggedIn();
-              if (loggedIn) {
-                console.info(`Logged into @${account.username}`);
-                for (const cookie of await scraper.getCookies()) {
-                  await cookieJar.setCookie(cookie, "https://twitter.com");
-                }
-              }
-            } catch (error) {
-              console.error(`Couldn't login into @${account.username}:`, error);
+          loggedIn = await scraper.isLoggedIn();
+          if (loggedIn) {
+            console.info(`Logged into @${account.username}`);
+            for (const cookie of await scraper.getCookies()) {
+              await cookieJar.setCookie(cookie, "https://twitter.com");
             }
           }
+        } catch (error) {
+          console.error(`Couldn't login into @${account.username}:`, error);
         }
+      }
+    }
 
-        const headers = new Headers(init?.headers);
-        headers.set("cookie", cookieJar.getCookieStringSync(input.toString()));
-        {
-          const cookies = await cookieJar.getCookies(input.toString());
-          const xCsrfToken = cookies.find((cookie) => cookie.key === "ct0");
-          if (xCsrfToken) {
-            headers.set("x-csrf-token", xCsrfToken.value);
-          }
-        }
-        return [input, { ...init, headers }];
-      },
-      async response(response) {
-        const cookie = Cookie.parse(response.headers.get("set-cookie") || "");
-        if (cookie) cookieJar.setCookie(cookie, response.url);
-        return response;
-      },
-    },
-  });
+    const headers = new Headers(init?.headers);
+    {
+      headers.set("cookie", cookieJar.getCookieStringSync(input.toString()));
+      const cookies = await cookieJar.getCookies(input.toString());
+      const xCsrfToken = cookies.find((cookie) => cookie.key === "ct0");
+      if (xCsrfToken) {
+        headers.set("x-csrf-token", xCsrfToken.value);
+      }
+    }
+
+    const response = await fetch(input, { ...init, headers });
+    {
+      const cookie = Cookie.parse(response.headers.get("set-cookie") || "");
+      if (cookie) cookieJar.setCookie(cookie, response.url);
+    }
+
+    // Rate limit, retry with another account
+    if (response.status === 429) {
+      cookieJar = new CookieJar();
+      loggedIn = false;
+      return await fetchWithRandomAccount(input, init);
+    }
+
+    return response;
+  };
+
+  const scraper = new Scraper({ fetch: fetchWithRandomAccount });
   return scraper;
 }
 
