@@ -120,6 +120,18 @@ export async function saveRetweets() {
   return scrap;
 }
 
+export async function printFollowing(handle: string, jsonl: boolean) {
+  const scraper = await getScraper();
+  const id = await scraper.getUserIdByScreenName(handle);
+  for await (const profile of scraper.getFollowing(id, 10000)) {
+    if (jsonl) {
+      console.log(JSON.stringify(profile));
+    } else {
+      console.log(`@${profile.username}`);
+    }
+  }
+}
+
 export async function cron() {
   while (true) {
     try {

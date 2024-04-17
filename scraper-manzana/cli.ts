@@ -1,6 +1,16 @@
-import { command, run, string, option, subcommands } from "cmd-ts";
+import {
+  command,
+  run,
+  string,
+  option,
+  subcommands,
+  positional,
+  flag,
+  boolean,
+} from "cmd-ts";
 import {
   cron,
+  printFollowing,
   printLastLikes,
   printLastTweets,
   saveLikes,
@@ -40,6 +50,22 @@ const saveRetweetsCmd = command({
   },
 });
 
+const printFollowingCmd = command({
+  name: "print accounts user is following",
+  args: {
+    userHandle: positional({ type: string, displayName: "user handle" }),
+    jsonl: flag({
+      type: boolean,
+      short: "j",
+      long: "jsonl",
+      defaultValue: () => false,
+    }),
+  },
+  handler(args) {
+    printFollowing(args.userHandle, args.jsonl);
+  },
+});
+
 const cronCmd = command({
   name: "cron",
   args: {},
@@ -72,6 +98,7 @@ const cmd = subcommands({
     "save-likes": saveLikesCmd,
     "print-tweets": printTweetsCmd,
     "save-retweets": saveRetweetsCmd,
+    "print-following": printFollowingCmd,
     "add-accounts": addAccountsCmd,
     cron: cronCmd,
   },
