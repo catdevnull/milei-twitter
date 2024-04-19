@@ -11,9 +11,9 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
   const scraps = await db.query.scraps.findMany({
     orderBy: desc(schema.scraps.at),
-    with: {
-      likedTweets: true,
-    },
+    // with: {
+    //   likedTweets: true,
+    // },
   });
   const cuentas = await db.query.cuentas.findMany({});
 

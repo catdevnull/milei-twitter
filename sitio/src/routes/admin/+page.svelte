@@ -173,7 +173,7 @@
                         >{scrap.cuentaId}</td
                       >
                       <td class="whitespace-nowrap px-5 py-2 text-sm"
-                        >{scrap.likedTweets.length}</td
+                        >n/a<!--{scrap.likedTweets.length}--></td
                       >
 
                       <!--
