@@ -14,6 +14,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     // with: {
     //   likedTweets: true,
     // },
+    limit: 200,
   });
   const cuentas = await db.query.cuentas.findMany({});
 
