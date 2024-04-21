@@ -1,9 +1,13 @@
-import { fail, redirect } from "@sveltejs/kit";
+import { error, fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import { env } from "$env/dynamic/private";
 
 export const load: PageServerLoad = async ({ cookies }) => {
-  if (cookies.get("password") === env.ADMIN_PASSWORD) {
+  if ((env.ADMIN_PASSWORD?.length ?? 0) < 3) {
+    return error(500, "no hay contraseña de admin seteada");
+  }
+  const attemptedPassword = cookies.get("password");
+  if (attemptedPassword === env.ADMIN_PASSWORD) {
     redirect(303, "/admin");
   }
 };
