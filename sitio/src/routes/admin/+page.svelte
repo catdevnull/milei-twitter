@@ -7,6 +7,32 @@
   export let data: PageData;
   export let form: ActionData;
 
+  let scrapsChart: EChartsOptions;
+  $: scrapsChart = {
+    toolbox: {},
+    tooltip: {
+      trigger: "axis",
+    },
+    xAxis: {
+      type: "time",
+    },
+    yAxis: {
+      type: "value",
+    },
+    series: [
+      {
+        name: "scraps",
+        symbolSize: 5,
+        data: data.scraps.map((scrap) => [
+          scrap.finishedAt,
+          scrap.totalTweetsSeen,
+        ]),
+        type: "scatter",
+      },
+    ],
+  };
+  $: console.log(scrapsChart);
+
   const dateFormatter = Intl.DateTimeFormat("es-AR", {
     timeStyle: "medium",
     dateStyle: "medium",
@@ -184,29 +210,7 @@
       <h2 class="text-3xl font-black" id="scraps">Scraps</h2>
 
       <div class="h-[500px]">
-        <Chart
-          renderer="svg"
-          options={{
-            toolbox: {},
-            tooltip: {
-              trigger: "axis",
-            },
-            xAxis: {
-              type: "time",
-            },
-            yAxis: {
-              type: "value",
-            },
-            series: data.cuentas.map((cuenta) => ({
-              name: cuenta.id,
-              symbolSize: 5,
-              data: data.scraps
-                .filter((scrap) => scrap.cuentaId === cuenta.id)
-                .map((scrap) => [scrap.at, scrap.totalTweetsSeen]),
-              type: "scatter",
-            })),
-          }}
-        />
+        <Chart renderer="svg" options={scrapsChart} />
       </div>
 
       <div class="flex flex-col">
