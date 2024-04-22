@@ -14,7 +14,7 @@
 
   export let data: PageServerData;
   $: query = $page.url.searchParams.get("url");
-  $: chequeoIntentado = "found" in data;
+  $: chequeoIntentado = data.chequeoIntentado;
 </script>
 
 <Meta
