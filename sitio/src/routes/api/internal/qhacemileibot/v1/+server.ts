@@ -1,50 +1,48 @@
 import { db } from "$lib/db";
-import { desc } from "drizzle-orm";
+import { and, desc, gte, lt } from "drizzle-orm";
 import { likedTweets, retweets } from "../../../../../schema";
-import { lastWeek } from "$lib/data-processing/weekly";
 import {
   calculateScreenTime,
   totalFromDurations,
 } from "$lib/data-processing/screenTime";
 import dayjs from "dayjs";
+import { queryLastWeek } from "$lib/data-processing/queryWeekly";
 
 export async function GET() {
-  const tweets = await db.query.likedTweets.findMany({
-    columns: {
-      firstSeenAt: true,
-      url: true,
-    },
-    orderBy: desc(likedTweets.firstSeenAt),
-  });
-  const retweetss = await db.query.retweets.findMany({
-    columns: {
-      retweetAt: true,
-      posterId: true,
-      postId: true,
-      posterHandle: true,
-    },
-    orderBy: desc(retweets.retweetAt),
-  });
+  const startingFrom = dayjs()
+    .tz("America/Argentina/Buenos_Aires")
+    .startOf("day");
+  const endsAt = startingFrom.add(24, "hour");
 
-  const todayTweets = tweets.filter((t) =>
-    dayjs(t.firstSeenAt).isAfter(
-      dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
-    ),
-  );
-  const todayRetweets = retweetss.filter((t) =>
-    dayjs(t.retweetAt).isAfter(
-      dayjs().tz("America/Argentina/Buenos_Aires").startOf("day"),
-    ),
-  );
+  const [todayTweets, todayRetweets, ultimaSemana] = await Promise.all([
+    db.query.likedTweets.findMany({
+      columns: {
+        firstSeenAt: true,
+        url: true,
+      },
+      where: and(
+        gte(likedTweets.firstSeenAt, startingFrom.toDate()),
+        lt(likedTweets.firstSeenAt, endsAt.toDate()),
+      ),
+      orderBy: desc(likedTweets.firstSeenAt),
+    }),
+    db.query.retweets.findMany({
+      columns: {
+        retweetAt: true,
+        posterId: true,
+        postId: true,
+        posterHandle: true,
+      },
+      where: and(
+        gte(retweets.retweetAt, startingFrom.toDate()),
+        lt(retweets.retweetAt, endsAt.toDate()),
+      ),
+      orderBy: desc(retweets.retweetAt),
+    }),
+    queryLastWeek(),
+  ]);
 
   const totalTime = totalFromDurations(calculateScreenTime(todayTweets));
-
-  const ultimaSemana = lastWeek(tweets, retweetss).map((x) => ({
-    ...x,
-    day: x.day,
-    tweets: x.tweets.length,
-    retweets: x.retweets.length,
-  }));
 
   return new Response(
     JSON.stringify({
@@ -53,7 +51,12 @@ export async function GET() {
         retweets: todayRetweets.length,
         totalTime,
       },
-      ultimaSemana,
+      ultimaSemana: ultimaSemana.map((x) => ({
+        ...x,
+        day: x.day,
+        tweets: x.tweets.length,
+        retweets: x.retweets.length,
+      })),
     }),
     {
       headers: {
