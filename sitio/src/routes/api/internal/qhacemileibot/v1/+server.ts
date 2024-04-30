@@ -14,33 +14,45 @@ export async function GET() {
     .startOf("day");
   const endsAt = startingFrom.add(24, "hour");
 
-  const [todayTweets, todayRetweets, ultimaSemana] = await Promise.all([
-    db.query.likedTweets.findMany({
-      columns: {
-        firstSeenAt: true,
-        url: true,
-      },
-      where: and(
-        gte(likedTweets.firstSeenAt, startingFrom.toDate()),
-        lt(likedTweets.firstSeenAt, endsAt.toDate()),
-      ),
-      orderBy: desc(likedTweets.firstSeenAt),
-    }),
-    db.query.retweets.findMany({
-      columns: {
-        retweetAt: true,
-        posterId: true,
-        postId: true,
-        posterHandle: true,
-      },
-      where: and(
-        gte(retweets.retweetAt, startingFrom.toDate()),
-        lt(retweets.retweetAt, endsAt.toDate()),
-      ),
-      orderBy: desc(retweets.retweetAt),
-    }),
-    queryLastWeek(),
-  ]);
+  const [todayTweets, last12hTweets, todayRetweets, ultimaSemana] =
+    await Promise.all([
+      db.query.likedTweets.findMany({
+        columns: {
+          firstSeenAt: true,
+          url: true,
+        },
+        where: and(
+          gte(likedTweets.firstSeenAt, startingFrom.toDate()),
+          lt(likedTweets.firstSeenAt, endsAt.toDate()),
+        ),
+        orderBy: desc(likedTweets.firstSeenAt),
+      }),
+      db.query.likedTweets.findMany({
+        columns: {
+          firstSeenAt: true,
+          url: true,
+          text: true,
+        },
+        where: and(
+          gte(likedTweets.firstSeenAt, dayjs().subtract(12, "hour").toDate()),
+        ),
+        orderBy: desc(likedTweets.firstSeenAt),
+      }),
+      db.query.retweets.findMany({
+        columns: {
+          retweetAt: true,
+          posterId: true,
+          postId: true,
+          posterHandle: true,
+        },
+        where: and(
+          gte(retweets.retweetAt, startingFrom.toDate()),
+          lt(retweets.retweetAt, endsAt.toDate()),
+        ),
+        orderBy: desc(retweets.retweetAt),
+      }),
+      queryLastWeek(),
+    ]);
 
   const totalTime = totalFromDurations(calculateScreenTime(todayTweets));
 
@@ -57,6 +69,7 @@ export async function GET() {
         tweets: x.tweets.length,
         retweets: x.retweets.length,
       })),
+      last12hTweets,
     }),
     {
       headers: {
