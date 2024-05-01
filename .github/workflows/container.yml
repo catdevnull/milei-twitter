@@ -102,7 +102,6 @@ jobs:
 
   build-and-push-twitter-bot:
     name: Compilar contenedor del twitter-bot
-    needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: read
