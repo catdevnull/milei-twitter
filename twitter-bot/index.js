@@ -172,10 +172,11 @@ async function loop() {
     const data = await MileiTwitter.getData();
     await loopHighActivityLast4h(auth, data);
     await loopHighActivityDogs(auth, data);
+    await new Promise((resolve) => setTimeout(resolve, 45 * 60 * 1000));
   } catch (error) {
     console.error(`Error en loop`, error);
+    await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
   }
-  await new Promise((resolve) => setTimeout(resolve, 45 * 60 * 1000));
 }
 
 await loop();
