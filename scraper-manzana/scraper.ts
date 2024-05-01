@@ -88,9 +88,7 @@ export async function printLastLikes() {
   }
 }
 
-export async function saveLikes() {
-  const scraper = await getScraper();
-
+export async function saveLikes(scraper: Scraper) {
   let likedTweets: Array<LikedTweet> = [];
   for await (const likedTweet of scraper.getLikedTweets("jmilei")) {
     if (!likedTweet.permanentUrl) throw new Error("no permanentUrl");
@@ -120,9 +118,7 @@ export async function printLastTweets() {
   }
 }
 
-export async function saveRetweets() {
-  const scraper = await getScraper();
-
+export async function saveRetweets(scraper: Scraper) {
   let totalTweetsSeen = 0;
   let retweets: Array<Retweet> = [];
   for await (const tweet of scraper.getTweets("jmilei")) {
@@ -177,16 +173,17 @@ export async function printFollowing(handle: string, jsonl: boolean) {
 }
 
 export async function cron() {
+  const scraper = await getScraper();
   while (true) {
     try {
-      const scrap = await saveLikes();
+      const scrap = await saveLikes(scraper);
       console.log(`scrapped likes, seen ${scrap.totalTweetsSeen}`);
     } catch (error) {
       console.error(`[error] likedTweets`, error);
     }
 
     try {
-      const scrap = await saveRetweets();
+      const scrap = await saveRetweets(scraper);
       console.log(`scrapped retweets, seen ${scrap.totalTweetsSeen}`);
     } catch (error) {
       console.error(`[error] retweets`, error);
