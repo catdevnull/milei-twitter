@@ -7,6 +7,7 @@ RUN npm install --global pnpm
 
 COPY sitio/package.json .
 COPY sitio/pnpm-lock.yaml .
+COPY common/ /usr/src/common
 RUN pnpm install
 COPY sitio/ .
 RUN pnpm install && \
