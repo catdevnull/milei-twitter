@@ -1,10 +1,37 @@
 <script lang="ts">
   import type { PageData, ActionData } from "./$types";
+  import { Chart, type EChartsOptions } from "svelte-echarts";
   import Button from "./Button.svelte";
   import Alert from "./Alert.svelte";
 
   export let data: PageData;
   export let form: ActionData;
+
+  let scrapsChart: EChartsOptions;
+  $: scrapsChart = {
+    toolbox: {},
+    tooltip: {
+      trigger: "axis",
+    },
+    xAxis: {
+      type: "time",
+    },
+    yAxis: {
+      type: "value",
+    },
+    series: [
+      {
+        name: "scraps",
+        symbolSize: 5,
+        data: data.scraps.map((scrap) => [
+          scrap.finishedAt,
+          scrap.totalTweetsSeen,
+        ]),
+        type: "scatter",
+      },
+    ],
+  };
+  $: console.log(scrapsChart);
 
   const dateFormatter = Intl.DateTimeFormat("es-AR", {
     timeStyle: "medium",
@@ -12,7 +39,7 @@
   });
 </script>
 
-<div class="mx-auto flex max-w-[900px] flex-col gap-6 py-6 md:flex-row">
+<div class="mx-auto flex flex-col gap-6 py-6 md:flex-row">
   <nav
     class="sticky top-0 mx-auto my-2 self-start bg-neutral-100 dark:bg-neutral-900"
   >
@@ -182,6 +209,10 @@
     <section class="my-4">
       <h2 class="text-3xl font-black" id="scraps">Scraps</h2>
 
+      <div class="h-[500px]">
+        <Chart renderer="svg" options={scrapsChart} />
+      </div>
+
       <div class="flex flex-col">
         <div class="overflow-x-auto">
           <div class="inline-block min-w-full">
@@ -227,7 +258,7 @@
                         >{scrap.cuentaId}</td
                       >
                       <td class="whitespace-nowrap px-5 py-2 text-sm"
-                        >{scrap.likedTweets.length}</td
+                        >n/a<!--{scrap.likedTweets.length}--></td
                       >
 
                       <!--
