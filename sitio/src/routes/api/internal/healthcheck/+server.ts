@@ -1,5 +1,5 @@
 import { db } from "$lib/db";
-import { desc, isNotNull } from "drizzle-orm";
+import { and, desc, gt, isNotNull } from "drizzle-orm";
 import { likedTweets, retweets, scraps } from "../../../../schema";
 import { lastWeek } from "$lib/data-processing/weekly";
 import {
@@ -12,7 +12,10 @@ export async function GET() {
   let errors: Array<string> = [];
   const lastScrap = await db.query.scraps.findFirst({
     orderBy: desc(scraps.at),
-    where: isNotNull(scraps.totalTweetsSeen),
+    where: and(
+      isNotNull(scraps.totalTweetsSeen),
+      gt(scraps.totalTweetsSeen, 0)
+    ),
   });
   if (lastScrap) {
     const delta = +new Date() - +lastScrap.at;
