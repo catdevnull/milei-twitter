@@ -14,7 +14,7 @@ export async function GET() {
     orderBy: desc(scraps.at),
     where: and(
       isNotNull(scraps.totalTweetsSeen),
-      gt(scraps.totalTweetsSeen, 0)
+      gt(scraps.totalTweetsSeen, 0),
     ),
   });
   if (lastScrap) {
