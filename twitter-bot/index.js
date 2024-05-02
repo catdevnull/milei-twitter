@@ -13,7 +13,13 @@ import { parsearLinkDeTwitter } from "../common/parsearLinkDeTwitter.js";
 import { dogsAccounts } from "./consts.js";
 
 // #region Twitter API
-class TwitterBotAuth {
+/**
+ * @typedef TwitterBotAuth
+ * @property {(args: { text: string }) => Promise<void>} sendTweet
+ */
+
+/** @implements {TwitterBotAuth} */
+class TwitterBotAuthReal {
   constructor() {
     this.cfg = z
       .object({
@@ -66,6 +72,16 @@ class TwitterBotAuth {
     console.log(json);
   }
 }
+/** @implements {TwitterBotAuth} */
+class TwitterBotAuthFake {
+  /**
+   * @param {{ text: string; }} msg
+   */
+  async sendTweet(msg) {
+    console.debug("[sendTweet]", msg);
+  }
+}
+
 // #region milei.n API
 class MileiTwitter {
   static v1Schema = z.object({
@@ -101,16 +117,6 @@ class MileiTwitter {
     const json = await res.json();
     return this.v1Schema.parse(json);
   }
-}
-
-async function sendNightlyTweet() {
-  const auth = new TwitterBotAuth();
-  const data = await MileiTwitter.getData();
-  const currentTime = dayjs(new Date()).tz("America/Argentina/Buenos_Aires");
-
-  await auth.sendTweet({
-    text: `Siendo las ${currentTime.format("HH:mm")}, Milei habría likeado ${data.hoy.likes} tweets hoy.`,
-  });
 }
 
 // #region k:high-activity-last-4h
@@ -166,12 +172,19 @@ async function loopHighActivityDogs(auth, data) {
 }
 
 // #region loop
+/**
+ * @param {TwitterBotAuth} auth
+ */
+async function loopCycle(auth) {
+  const data = await MileiTwitter.getData();
+  await loopHighActivityLast4h(auth, data);
+  await loopHighActivityDogs(auth, data);
+}
+
 async function loop() {
-  const auth = new TwitterBotAuth();
+  const auth = new TwitterBotAuthReal();
   try {
-    const data = await MileiTwitter.getData();
-    await loopHighActivityLast4h(auth, data);
-    await loopHighActivityDogs(auth, data);
+    await loopCycle(auth);
     await new Promise((resolve) => setTimeout(resolve, 45 * 60 * 1000));
   } catch (error) {
     console.error(`Error en loop`, error);
@@ -179,4 +192,8 @@ async function loop() {
   }
 }
 
-await loop();
+if (process.argv[2] === "debug") {
+  await loopCycle(new TwitterBotAuthFake());
+} else {
+  await loop();
+}
