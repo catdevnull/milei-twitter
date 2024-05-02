@@ -134,11 +134,28 @@ async function loopHighActivityLast4h(auth, data) {
 
   const nLiked = last4hTweets.length;
 
+  const topUsers = last4hTweets
+    .map((t) => {
+      const link = parsearLinkDeTwitter(t.url);
+      if (!link || "error" in link || !("username" in link) || !link.username)
+        throw false;
+      return link.username;
+    })
+    .reduce((prev, curr) => {
+      prev.set(curr, (prev.get(curr) ?? 0) + 1);
+      return prev;
+    }, new Map());
+
   await auth.sendTweet({
-    text:
-      "🪑🪑🪑 SILLAZO 🪑🪑🪑\n" +
-      `¡Milei no puede soltar el celular!\n` +
+    text: [
+      "🪑🪑🪑 SILLAZO 🪑🪑🪑",
+      `¡Milei no puede soltar el celular!`,
       `Habría likeado ${nLiked} tweets en las últimas 4 horas.`,
+      `Top 3 más likeados:`,
+      ...[...topUsers.entries()]
+        .slice(0, 3)
+        .map(([username, n], index) => `${index + 1}: @${username} (${n}🩷)`),
+    ].join("\n"),
   });
   await justPosted(kind);
 }
