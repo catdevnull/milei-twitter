@@ -17,6 +17,7 @@
     "@bybas/weather-icons": "^2.0.0",
     "@fontsource-variable/inter": "^5.0.17",
     "@libsql/client": "^0.6.0",
+    "@sentry/sveltekit": "^7.113.0",
     "@svelte-plugins/datepicker": "^1.0.9",
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.2",
