@@ -134,7 +134,7 @@ async function loopHighActivityLast4h(auth, data) {
 
   const nLiked = last4hTweets.length;
 
-  const topUsers = last4hTweets
+  const userCounts = last4hTweets
     .map((t) => {
       const link = parsearLinkDeTwitter(t.url);
       if (!link || "error" in link || !("username" in link) || !link.username)
@@ -152,7 +152,8 @@ async function loopHighActivityLast4h(auth, data) {
       `¡Milei no puede soltar el celular!`,
       `Habría likeado ${nLiked} tweets en las últimas 4 horas.`,
       `Top 3 más likeados:`,
-      ...[...topUsers.entries()]
+      ...[...userCounts.entries()]
+        .sort(([, n1], [, n2]) => n2 - n1)
         .slice(0, 3)
         .map(([username, n], index) => `${index + 1}: @${username} (${n}🩷)`),
     ].join("\n"),
