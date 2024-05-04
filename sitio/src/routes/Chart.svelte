@@ -7,6 +7,11 @@
 
   import { listen } from "svelte-mq-store";
   import type { MiniLikedTweet, MiniRetweet } from "../schema";
+  import {
+    zTweet,
+    zTweetsResponse,
+    type Tweet,
+  } from "./api/internal/tweets/types";
   const isDark = listen("(prefers-color-scheme: dark)", false);
 
   type LikedAndRetweeted = { url: string; estimated: Date };
@@ -131,9 +136,7 @@
     };
   }
 
-  function byHour(allDates: Dayjs[], start: Dayjs) {
-    const map = new Map<number, Dayjs[]>();
-
+  function getHours(start: Dayjs) {
     const min = start;
     const hours = new Array(24)
       .fill(0)
@@ -144,6 +147,12 @@
           .set("millisecond", 0)
           .add(index, "hour"),
       );
+    return hours;
+  }
+
+  function byHour(allDates: Dayjs[], start: Dayjs) {
+    const map = new Map<number, Dayjs[]>();
+    const hours = getHours(start);
 
     for (const hour of hours) {
       map.set(
@@ -157,10 +166,7 @@
     return map;
   }
 
-  type Datasets = ChartData<
-    "bar",
-    Array<{ x: string | number; y: number }>
-  >["datasets"];
+  type Datasets = ChartData<"bar", Array<{ x: string; y: number }>>["datasets"];
 
   const datalabelConfig: Datasets[0]["datalabels"] = {
     // anchor: "center",
@@ -215,12 +221,53 @@
       datalabels: datalabelConfig,
     },
   ];
+
+  let tweetsStart: Dayjs | null = null;
+  $: tweetsEnd = tweetsStart?.add(1, "hour");
+
+  let tweetsPreviewingPromise: Promise<Tweet[]>;
+  $: {
+    if (tweetsStart && tweetsEnd) {
+      const url = new URL("/api/internal/tweets", location.href);
+      url.searchParams.set("start", tweetsStart?.toISOString());
+      url.searchParams.set("end", tweetsEnd?.toISOString());
+      tweetsPreviewingPromise = fetch(url)
+        .then((res) => res.json())
+        .then((json) => zTweetsResponse.parse(json).tweets);
+    }
+  }
+  // $: tweetsPreviewing =
+  //   tweetsStart ||
+  //   [
+  //     ...categories.likedAndRetweeted,
+  //     ...categories.liked,
+  //     ...categories.retweets,
+  //   ]
+  //     .map((t) => ({
+  //       ...t,
+  //       sortDate:
+  //         "firstSeenAt" in t
+  //           ? t.firstSeenAt
+  //           : "estimated" in t
+  //             ? t.estimated
+  //             : t.retweetAt,
+  //     }))
+  //     .filter(
+  //       (t) =>
+  //         t.sortDate > tweetsStart!.toDate() &&
+  //         t.sortDate < tweetsEnd!.toDate(),
+  //     );
 </script>
 
 <ChartJs
   type="bar"
   data={{ datasets }}
   options={{
+    onClick(event, elements, chart) {
+      const element = elements[0];
+      if (!element) return;
+      tweetsStart = getHours(start)[element.datasetIndex];
+    },
     responsive: true,
     maintainAspectRatio: false,
     layout: {
@@ -263,3 +310,15 @@
     },
   }}
 />
+
+{#if tweetsPreviewingPromise}
+  {#await tweetsPreviewingPromise}
+    Cargando tweets de las {tweetsStart?.toDate()}...
+  {:then tweets}
+    <ul class="separ">
+      {#each tweets as tweet}
+        <li>{tweet.text}</li>
+      {/each}
+    </ul>
+  {/await}
+{/if}
