@@ -58,7 +58,15 @@
       console.warn("diferencia de >15min entre like y retweet");
     return {
       url: `https://twitter.com/${userHandle}/status/${tweetId}`,
-      estimated: new Date((+liked.firstSeenAt + +retweet.retweetAt * 3) / 4),
+      // XXX: antes usabamos este promedio pesado entre like y retweet, pero
+      // a veces retweetea algo mucho después de que lo likeó, que hacía que
+      // se muestren "like+retweet" en horas que no tuvo actividad (ponele 4am).
+      // por eso por ahora usamos solo la hora del retweet, que es más precisa
+      // (porque viene directo de Twitter). realisticamente no hay una buena
+      // manera de hacer esto de la forma que lo estamos graficando ahora.
+
+      // estimated: new Date((+liked.firstSeenAt + +retweet.retweetAt * 3) / 4),
+      estimated: retweet.retweetAt,
     };
   }
 
