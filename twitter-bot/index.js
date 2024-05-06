@@ -146,6 +146,9 @@ async function loopHighActivityLast4h(auth, data) {
       return prev;
     }, new Map());
 
+  const taggearTopLikeados = process.env.TAGGEAR_TOP_LIKEADOS === "true";
+  const tag = taggearTopLikeados ? "@" : "@/";
+
   await auth.sendTweet({
     text: [
       "🪑🪑🪑 SILLAZO 🪑🪑🪑",
@@ -155,7 +158,9 @@ async function loopHighActivityLast4h(auth, data) {
       ...[...userCounts.entries()]
         .sort(([, n1], [, n2]) => n2 - n1)
         .slice(0, 3)
-        .map(([username, n], index) => `${index + 1}: @${username} (${n}🩷)`),
+        .map(
+          ([username, n], index) => `${index + 1}: ${tag}${username} (${n}🩷)`
+        ),
     ].join("\n"),
   });
   await justPosted(kind);
