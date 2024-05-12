@@ -19,6 +19,9 @@ export const likedTweets = sqliteTable(
   (likedTweets) => {
     return {
       firstSeenAtIdx: index("first_seen_at_idx").on(likedTweets.firstSeenAt),
+      likedTweetsScrapIdIdx: index("liked_tweets_scrap_id_idx").on(
+        likedTweets.scrapId,
+      ),
     };
   },
 );

@@ -1,1 +1,0 @@
-CREATE INDEX `db_scraps_finished_at_idx` ON `db_scraps` (`at`);

@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "ae1e3bc3-7191-4b4c-9dc3-3766bbb08276",
+  "id": "58c6453c-91bb-482c-8bee-a30e9470b9f4",
   "prevId": "4957bd1a-7e52-4c84-9831-bb2fff94f4e0",
   "tables": {
     "db_cuentas": {
@@ -19,6 +19,43 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "db_historic_liked_tweets": {
+      "name": "db_historic_liked_tweets",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "posted_at": {
+          "name": "posted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "estimated_liked_at": {
+          "name": "estimated_liked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -62,7 +99,9 @@
       "indexes": {
         "first_seen_at_idx": {
           "name": "first_seen_at_idx",
-          "columns": ["first_seen_at"],
+          "columns": [
+            "first_seen_at"
+          ],
           "isUnique": false
         }
       },
@@ -133,40 +172,22 @@
       "indexes": {
         "retweet_at_idx": {
           "name": "retweet_at_idx",
-          "columns": ["retweet_at"],
+          "columns": [
+            "retweet_at"
+          ],
           "isUnique": false
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "db_retweets_poster_id_post_id_pk": {
-          "columns": ["post_id", "poster_id"],
+          "columns": [
+            "post_id",
+            "poster_id"
+          ],
           "name": "db_retweets_poster_id_post_id_pk"
         }
       },
-      "uniqueConstraints": {}
-    },
-    "db_scraper_tokens": {
-      "name": "db_scraper_tokens",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "token": {
-          "name": "token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
     "db_scraps": {
@@ -178,13 +199,6 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": true
-        },
-        "uid": {
-          "name": "uid",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         },
         "at": {
           "name": "at",
