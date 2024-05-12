@@ -1,21 +1,19 @@
-FROM cgr.dev/chainguard/wolfi-base AS base
-RUN apk add --no-cache nodejs npm
+FROM node:20 AS base
 RUN npm install --global pnpm
 WORKDIR /usr/src/app
 
 FROM base as build
 
-COPY sitio/package.json .
-COPY sitio/pnpm-lock.yaml .
-COPY common/ /usr/src/common
-RUN pnpm install
-COPY sitio/ .
+COPY . .
+WORKDIR sitio/
 RUN pnpm install && \
     pnpm build
 
 FROM base
 ENV NODE_ENV=production
-RUN apk add --no-cache jq sqlite tini
+RUN apt-get update && \
+    apt-get install -y jq sqlite3 tini && \
+    rm -rf /var/lib/apt/lists/*
 ENTRYPOINT ["tini", "--"]
 # glib libnss dbus-libs libatk-1.0 libatk-bridge-2.0 cups-libs libdrm libxkbcommon libxcomposite libxdamage libxrandr mesa-gbm pango alsa-lib freetype harfbuzz ca-certificates
 
