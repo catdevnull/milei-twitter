@@ -139,7 +139,7 @@
   class="flex min-h-screen flex-col justify-center gap-12 p-2"
   class:milei-duende={duende}
 >
-  <section class="my-4 flex flex-col text-center">
+  <section class="mx-auto my-4 flex max-w-2xl flex-col text-center">
     <h1 class="text-4xl font-bold">
       ¿Cuántos tweets likeó nuestro <span on:click={easterEggClick}
         >{#if duende}presiduende{:else}Presidente{/if}</span

@@ -1,0 +1,26 @@
+{
+  "name": "twitter-bot",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "cron": "^3.1.7",
+    "dayjs": "^1.11.10",
+    "nanoid": "^5.0.7",
+    "oauth": "^0.10.0",
+    "zod": "^3.23.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
+    "@types/node": "^20.12.7",
+    "@types/oauth": "^0.9.4"
+  }
+}

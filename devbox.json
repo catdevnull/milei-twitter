@@ -17,9 +17,9 @@
     "scripts": {
       "dev": ["pnpm dev"],
       "reset-db-to-prod": [
-        "rm -f sqlite.db{,-shm,-wal}",
-        "sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;'",
-        "turso db shell http://milei-prod:8080 '.dump' | sqlite3 sqlite.db"
+        "rm -f sitio/sqlite.db{,-shm,-wal}",
+        "sqlite3 sitio/sqlite.db 'PRAGMA journal_mode=WAL;'",
+        "turso db shell http://milei-prod:8080 '.dump' | sqlite3 sitio/sqlite.db"
       ]
     }
   }
