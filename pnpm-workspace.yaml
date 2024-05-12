@@ -3,3 +3,4 @@ packages:
   - scraper
   - scraper-manzana
   - api
+  - twitter-bot
