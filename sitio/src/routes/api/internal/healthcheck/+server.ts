@@ -36,9 +36,9 @@ export async function GET() {
   } else errors.push("no hay scraps");
   if (lastScrapWithLikes && lastScrapWithLikes.length > 0) {
     const delta = +new Date() - +lastScrapWithLikes[0].finishedAt;
-    if (delta > 1.5 * 60 * 60 * 1000) {
+    if (delta > 12 * 60 * 60 * 1000) {
       errors.push(
-        `último scrap con ${lastScrapWithLikes[0].count} likes hace ${delta}ms (>1:30h)`,
+        `último scrap con ${lastScrapWithLikes[0].count} likes hace ${delta}ms (>12h)`,
       );
     }
   } else errors.push("no hay scraps con likes");
