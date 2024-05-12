@@ -11,6 +11,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check .",
     "format": "prettier --write .",
+    "benchmark:lastWeek": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./benchmarks/lastWeek.ts",
     "db:generate": "drizzle-kit generate:sqlite"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "@libsql/client": "^0.6.0",
     "@sentry/sveltekit": "^7.113.0",
     "@svelte-plugins/datepicker": "^1.0.9",
+    "api": "workspace:^",
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.2",
     "chartjs-adapter-dayjs-4": "^1.0.4",
@@ -44,12 +46,13 @@
     "@sveltejs/adapter-node": "^4.0.1",
     "@sveltejs/kit": "^2.5.5",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@swc/core": "^1.4.2",
     "@tailwindcss/typography": "^0.5.12",
     "@types/markdown-it": "^13.0.7",
+    "svelte-mq-store": "^2.2.11",
     "@types/node": "^20.12.2",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.20.14",
-    "esrun": "^3.2.26",
     "mitata": "^0.1.11",
     "postcss": "^8.4.38",
     "postcss-load-config": "^5.0.3",
@@ -59,6 +62,7 @@
     "svelte": "^4.2.12",
     "svelte-check": "^3.6.9",
     "tailwindcss": "^3.4.3",
+    "ts-node": "^10.9.2",
     "tslib": "^2.6.2",
     "typescript": "^5.4.3",
     "vite": "^5.2.7"

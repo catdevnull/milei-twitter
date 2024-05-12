@@ -19,6 +19,9 @@ export const likedTweets = sqliteTable(
   (likedTweets) => {
     return {
       firstSeenAtIdx: index("first_seen_at_idx").on(likedTweets.firstSeenAt),
+      likedTweetsScrapIdIdx: index("liked_tweets_scrap_id_idx").on(
+        likedTweets.scrapId,
+      ),
     };
   },
 );
@@ -67,6 +70,12 @@ export const retweetsRelations = relations(retweets, ({ one, many }) => ({
   }),
 }));
 
+export const tweets = sqliteTable("db_tweets", {
+  id: text("id").notNull().primaryKey(),
+  snscrapeJson: text("snscrape_json", { mode: "json" }).notNull(),
+  capturedAt: integer("captured_at", { mode: "timestamp" }).notNull(),
+});
+
 export type LikedTweet = typeof likedTweets.$inferInsert;
 export type Retweet = typeof retweets.$inferInsert;
 
@@ -81,12 +90,21 @@ export type MiniRetweet = {
 // guardamos esto para detectar si en algun momento tardamos mucho en volver a scrapear y reportamos incorrectamente muchos likes al mismo tiempo
 // aunque todavia no está implementado
 // TODO: detectar deteccion de gaps en el scrapeo
-export const scraps = sqliteTable("db_scraps", {
-  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  at: integer("at", { mode: "timestamp" }).notNull(),
-  cuentaId: text("cuenta_id"),
-  totalTweetsSeen: integer("total_tweets_seen"),
-});
+export const scraps = sqliteTable(
+  "db_scraps",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    uid: text("uid"),
+    finishedAt: integer("at", { mode: "timestamp" }).notNull(),
+    cuentaId: text("cuenta_id"),
+    totalTweetsSeen: integer("total_tweets_seen"),
+  },
+  (table) => {
+    return {
+      finishedAtIdx: index("db_scraps_finished_at_idx").on(table.finishedAt),
+    };
+  },
+);
 export const scrapsRelations = relations(scraps, ({ many }) => ({
   likedTweets: many(likedTweets),
   retweets: many(retweets),
@@ -100,6 +118,13 @@ export const cuentas = sqliteTable("db_cuentas", {
 });
 
 export type Cuenta = typeof cuentas.$inferInsert;
+
+export const scraperTokens = sqliteTable("db_scraper_tokens", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  token: text("token").notNull(),
+});
+
+export type ScraperToken = typeof scraperTokens.$inferInsert;
 
 export const zTokenAccountData = z.object({
   ct0: z.string(),

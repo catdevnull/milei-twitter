@@ -5,10 +5,15 @@
     "git-lfs@latest",
     "sqlite@latest",
     "turso-cli@latest",
-    "git-filter-repo@latest"
+    "git-filter-repo@latest",
+    "python@latest",
+    "python312Packages.pip@latest"
   ],
+  "env": {
+    "DEVBOX_PYPROJECT_DIR": "$PWD/scraper-py"
+  },
   "shell": {
-    "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
+    "init_hook": ["test -z $FISH_VERSION || . $VENV_DIR/bin/activate.fish"],
     "scripts": {
       "dev": ["pnpm dev"],
       "reset-db-to-prod": [

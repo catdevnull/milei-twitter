@@ -5,10 +5,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
 
-    "lib": ["ES2023", "DOM"],
+    "lib": ["es2023", "dom"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2022",
+    "target": "es2022",
 
     "allowImportingTsExtensions": true,
     "noEmit": true

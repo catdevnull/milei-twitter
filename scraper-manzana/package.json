@@ -1,0 +1,33 @@
+{
+  "name": "scraper-manzana",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check": "tsc --noEmit",
+    "build": "tsup cli.ts && cp -r dbs/* dist/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@catdevnull/twitter-scraper": "^0.12.3",
+    "better-sqlite3": "^9.6.0",
+    "cmd-ts": "^0.13.0",
+    "drizzle-orm": "^0.30.10",
+    "escape-string-regexp": "^5.0.0",
+    "tough-cookie": "^4.1.4",
+    "zod": "^3.23.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
+    "@types/tough-cookie": "^4.0.5",
+    "api": "workspace:^",
+    "drizzle-kit": "^0.20.17",
+    "nanoid": "^5.0.7",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -139,8 +139,8 @@
     };
   }
 
-  function byHour(allDates: Dayjs[], start: Dayjs) {
-    const map = new Map<number, Dayjs[]>();
+  function byHour(allDates: Date[], start: Dayjs) {
+    const map = new Map<number, Date[]>();
 
     const min = start;
     const hours = new Array(24)
@@ -151,14 +151,13 @@
           .set("second", 0)
           .set("millisecond", 0)
           .add(index, "hour"),
-      );
+      )
+      .map((x) => x.toDate());
 
     for (const hour of hours) {
       map.set(
-        +hour.toDate(),
-        allDates.filter(
-          (d) => d.isAfter(hour) && d.isBefore(hour.add(1, "hour")),
-        ),
+        +hour,
+        allDates.filter((d) => d > hour && +d < +hour + 60 * 60 * 1000),
       );
     }
 
@@ -184,7 +183,7 @@
       label: "Retweet+Like",
       data: Array.from(
         byHour(
-          categories.likedAndRetweeted.map((t) => dayjs(t.estimated)),
+          categories.likedAndRetweeted.map((t) => t.estimated),
           start,
         ),
       ).map(([time, tweets]) => {
@@ -198,7 +197,7 @@
       label: "Retweets",
       data: Array.from(
         byHour(
-          categories.retweets.map((t) => dayjs(t.retweetAt)),
+          categories.retweets.map((t) => t.retweetAt),
           start,
         ),
       ).map(([time, tweets]) => {
@@ -212,7 +211,7 @@
       label: "Likes",
       data: Array.from(
         byHour(
-          categories.liked.map((t) => dayjs(t.firstSeenAt)),
+          categories.liked.map((t) => t.firstSeenAt),
           start,
         ),
       ).map(([time, tweets]) => {

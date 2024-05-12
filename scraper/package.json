@@ -1,18 +1,21 @@
 {
   "name": "scraper",
   "type": "module",
+  "type": "module",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts",
-    "migrate": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./index.ts migrate"
+    "db:generate": "drizzle-kit generate:sqlite",
+    "check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@libsql/client": "^0.5.2",
+    "api": "workspace:^",
+    "better-sqlite3": "^9.4.3",
     "@swc/core": "^1.4.11",
     "cmd-ts": "^0.13.0",
     "drizzle-orm": "^0.29.4",
@@ -22,7 +25,11 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.11.20",
-    "prettier": "^3.2.5"
-  }
+    "@types/better-sqlite3": "^7.6.9",
+    "@types/node": "^20.11.24",
+    "drizzle-kit": "^0.20.14",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.15.4+sha256.cea6d0bdf2de3a0549582da3983c70c92ffc577ff4410cbf190817ddc35137c2"
 }

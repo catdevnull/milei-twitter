@@ -17,13 +17,12 @@
 
   export let data: PageData;
 
-  $: dudoso = filteredTweets.some((t) =>
-    dayjs(t.firstSeenAt).isBefore(dayjs("2024-02-12", "YYYY-MM-DD")),
-  );
+  const startOfActivity = dayjs("2024-02-12", "YYYY-MM-DD").toDate();
+  $: dudoso = filteredTweets.some((t) => t.firstSeenAt < startOfActivity);
+  const crashStart = dayjs("2024-02-19T20:00:00.000-03:00").toDate();
+  const crashEnd = dayjs("2024-02-20T01:00:00.000-03:00").toDate();
   $: dudosoCrashScraper = filteredRetweets.some(
-    (t) =>
-      dayjs(t.retweetAt).isAfter(dayjs("2024-02-19T20:00:00.000-03:00")) &&
-      dayjs(t.retweetAt).isBefore(dayjs("2024-02-20T01:00:00.000-03:00")),
+    (t) => t.retweetAt > crashStart && t.retweetAt < crashEnd,
   );
   $: dudosoFailVps = filteredRetweets.some(
     (t) =>
@@ -184,7 +183,9 @@
         href="https://milei.nulo.in"
         class="text-blue-600 underline dark:text-blue-200">milei.nulo.in</a
       >
-      - actualizado {lastUpdatedFormatter.format(data.lastUpdated?.at)}
+      {#if data.lastUpdated}
+        - actualizado {lastUpdatedFormatter.format(data.lastUpdated.finishedAt)}
+      {/if}
     </small>
   </section>
 

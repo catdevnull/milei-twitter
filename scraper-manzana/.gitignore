@@ -1,0 +1,5 @@
+accounts.db*
+scraps.db*
+accounts.txt
+
+dist/

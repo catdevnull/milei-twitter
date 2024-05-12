@@ -15,11 +15,10 @@ ENV DBUS_SESSION_BUS_ADDRESS autolaunch:
 USER pptruser
 WORKDIR /app
 COPY --chown=pptruser:pptruser . .
-WORKDIR /app/sitio/
-RUN npx pnpm install --prod
 WORKDIR /app/scraper/
 RUN npx pnpm install --prod
 
+ENV DB_PATH=/db/db.db
 EXPOSE 3000
 
 ENTRYPOINT ["npm", "start"]

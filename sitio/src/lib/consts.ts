@@ -1,5 +1,4 @@
-export const JMILEI_ID = "4020276615";
-export const JMILEI_HANDLE = "jmilei";
+export { JMILEI_HANDLE, JMILEI_ID } from "api/consts.ts";
 
 import dayjs, { type Dayjs } from "dayjs";
 import CustomParseFormat from "dayjs/plugin/customParseFormat.js";

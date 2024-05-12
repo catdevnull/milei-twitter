@@ -1,7 +1,7 @@
 import type { connectDb } from "$lib/db/connectDb";
-import { dayjs, type Dayjs } from "$lib/consts";
-import { calculateScreenTime, totalFromDurations } from "./screenTime";
-import { likedTweets, retweets } from "../../schema";
+import { dayjs, type Dayjs } from "../consts.ts";
+import { calculateScreenTime, totalFromDurations } from "./screenTime.ts";
+import { likedTweets, retweets } from "../../schema.ts";
 import { and, desc, gte } from "drizzle-orm";
 
 export function getMinDate() {
@@ -27,12 +27,16 @@ export function makeMapOfDays<T>(
   for (const t of array) {
     const day = days.find((day) => {
       const y = x(t);
-      return y > day && +y < +day + 24 * 60 * 60 * 1000;
+      return +y < +day + 24 * 60 * 60 * 1000 && y > day;
     });
     if (day) {
       const key = +day;
-      let oldArray = map.get(key) ?? [];
-      map.set(key, [...oldArray, t]);
+      let array = map.get(key);
+      if (!array) {
+        array = [];
+        map.set(key, array);
+      }
+      array.push(t);
     }
   }
   return map;

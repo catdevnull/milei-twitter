@@ -1,6 +1,7 @@
 import * as schema from "../../schema";
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
+import { migrate } from "drizzle-orm/libsql/migrator";
 export async function connectDb({
   url,
   authToken,
@@ -16,5 +17,6 @@ export async function connectDb({
   // await client.execute(`PRAGMA foreign_keys = true;`);
   // await client.execute(`PRAGMA temp_store = memory;`);
   const db = drizzle(client, { schema });
+  await migrate(db, { migrationsFolder: "drizzle" });
   return db;
 }
