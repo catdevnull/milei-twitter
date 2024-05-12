@@ -58,6 +58,10 @@ export async function POST({ request }) {
           },
           where: gt(likedTweets.firstSeenAt, likedTweet.firstSeenAt),
         });
+      await tx
+        .update(likedTweets)
+        .set({ lastSeenAt: new Date() })
+        .where(eq(likedTweets.url, likedTweet.url));
     }
     for (const retweet of scrap.retweets ?? []) {
       await tx

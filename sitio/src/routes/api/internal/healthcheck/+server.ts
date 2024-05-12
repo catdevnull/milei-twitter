@@ -21,6 +21,9 @@ export async function GET() {
     .groupBy()
     .limit(1)
     .where(sql`c > 0`);
+  const lastLikedTweet = await db.query.likedTweets.findFirst({
+    orderBy: desc(likedTweets.lastSeenAt),
+  });
 
   if (lastScrap) {
     const delta = +new Date() - +lastScrap.finishedAt;
@@ -38,9 +41,13 @@ export async function GET() {
         `último scrap con ${lastScrapWithLikes[0].count} likes hace ${delta}ms (>1:30h)`,
       );
     }
-    // TODO: especificamente ver el output que nos importa que serían los likes
-    // no tengo claro como se lograría eso, quizás agregar un lastSeenAt en los likes y ver que siempre haya likes con un lastSeenAt reciente?
   } else errors.push("no hay scraps con likes");
+  if (lastLikedTweet) {
+    const delta = +new Date() - +(lastLikedTweet.lastSeenAt ?? new Date());
+    if (delta > 10 * 60 * 1000) {
+      errors.push(`último tweet visto hace ${delta}ms (>10min)`);
+    }
+  } else errors.push("no hay ultimo like tweet");
 
   if (errors.length) {
     return new Response(`errors:\n${errors.map((e) => `- ${e}`).join("\n")}`, {

@@ -13,12 +13,16 @@ export const likedTweets = sqliteTable(
   {
     url: text("url").primaryKey(),
     firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull(),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp" }),
     text: text("text"),
     scrapId: integer("scrap_id"),
   },
   (likedTweets) => {
     return {
       firstSeenAtIdx: index("first_seen_at_idx").on(likedTweets.firstSeenAt),
+      likedTweetsLastSeenAtIdx: index("liked_tweets_last_seen_at_idx").on(
+        likedTweets.lastSeenAt,
+      ),
       likedTweetsScrapIdIdx: index("liked_tweets_scrap_id_idx").on(
         likedTweets.scrapId,
       ),
