@@ -73,6 +73,12 @@ async function getScraper() {
       loggedIn = false;
       return await fetchWithRandomAccount(input, init);
     }
+    // Possibly suspended, retry with another account
+    if (response.status === 403) {
+      cookieJar = new CookieJar();
+      loggedIn = false;
+      return await fetchWithRandomAccount(input, init);
+    }
 
     return response;
   };
