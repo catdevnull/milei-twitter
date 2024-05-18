@@ -6,7 +6,7 @@ import { seedHistoricLikes } from "$lib/db/seedHistoricLikes";
 Sentry.init({
   dsn: "https://79b56150c5092cdad5c56c62223a1a5d@o4507188153548800.ingest.de.sentry.io/4507188155646032",
   tracesSampleRate: 1,
-  profilesSampleRate: 0.1
+  profilesSampleRate: 0.1,
 });
 
 await seedHistoricLikes(db);
