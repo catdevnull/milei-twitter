@@ -133,7 +133,7 @@
   }
 </script>
 
-<Meta />
+<Meta keywords={true} />
 
 <div
   class="flex min-h-screen flex-col justify-center gap-12 p-2"

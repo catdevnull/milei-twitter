@@ -7,6 +7,7 @@
   export let description: string =
     "Mira cuanto usa Twitter el Presidente Javier Milei";
   export let cardPath: string = defaultCard;
+  export let keywords: boolean = false;
 </script>
 
 <svelte:head>
@@ -26,4 +27,11 @@
   <meta name="twitter:description" content={description} />
   <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
   <meta name="twitter:image" content={"https://milei.nulo.in" + cardPath} />
+
+  {#if keywords}
+    <meta
+      name="keywords"
+      content="how many tweets has our president liked today, milei, likes, twitter, argentina, president, presidente"
+    />
+  {/if}
 </svelte:head>
