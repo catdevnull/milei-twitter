@@ -8,12 +8,17 @@
     "Mira cuanto usa Twitter el Presidente Javier Milei";
   export let cardPath: string = defaultCard;
   export let keywords: boolean = false;
+  export let canonical: string | undefined = undefined;
 </script>
 
 <svelte:head>
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="icon" href={favicon} />
+
+  {#if canonical}
+    <link rel="canonical" href={canonical} />
+  {/if}
 
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />

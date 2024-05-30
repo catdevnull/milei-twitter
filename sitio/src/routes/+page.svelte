@@ -133,7 +133,7 @@
   }
 </script>
 
-<Meta keywords={true} />
+<Meta keywords={true} canonical={"https://milei.nulo.in"} />
 
 <div
   class="flex min-h-screen flex-col justify-center gap-12 p-2"
