@@ -1,8 +1,7 @@
-import { Scraper } from "@catdevnull/twitter-scraper";
-import { Cookie } from "tough-cookie";
 import escapeStringRegexp from "escape-string-regexp";
-import { readFile } from "node:fs/promises";
-import { and, eq } from "drizzle-orm";
+
+export const defaultAccountListFormat =
+  "username:password:email:emailPassword:authToken:twoFactorSecret";
 
 /**
  * parses an CSV that contains the details of multiple Twitter accounts
@@ -10,7 +9,10 @@ import { and, eq } from "drizzle-orm";
  * @param format the format of each line (ex: "username:password:email:emailPassword:authToken:twoFactorSecret")
  * @returns parsed accounts
  */
-export function parseAccountList(csvish: string, format: string) {
+export function parseAccountList(
+  csvish: string,
+  format: string = defaultAccountListFormat
+) {
   let regexp = escapeStringRegexp(format)
     .replace("username", `(?<username>.*)`)
     .replace("password", `(?<password>.*)`)

@@ -7,14 +7,8 @@ import { pushScrap } from "./dbs/scraps/index.ts";
 import { parseAccountList } from "./addAccounts.ts";
 
 async function getScraper() {
-  const accountsFilePath = process.env.ACCOUNTS_FILE_PATH;
-  if (!accountsFilePath) {
-    console.error("Missing $ACCOUNTS_FILE_PATH");
-    process.exit(1);
-  }
-  const accountsFileFormat =
-    process.env.ACCOUNTS_FILE_FORMAT ??
-    "username:password:email:emailPassword:authToken:twoFactorSecret";
+  const accountsFilePath = process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt";
+  await readFile(accountsFilePath, "utf-8");
 
   let cookieJar = new CookieJar();
   let loggedIn = false;
@@ -25,7 +19,10 @@ async function getScraper() {
   ): Promise<Response> => {
     if (!loggedIn) {
       const accountsFile = await readFile(accountsFilePath, "utf-8");
-      const accounts = parseAccountList(accountsFile, accountsFileFormat);
+      const accounts = parseAccountList(
+        accountsFile,
+        process.env.ACCOUNTS_FILE_FORMAT
+      );
 
       // Keep trying to log into accounts unless any don't work
       while (!loggedIn) {
@@ -42,7 +39,10 @@ async function getScraper() {
           if (loggedIn) {
             console.info(`Logged into @${account.username}`);
             for (const cookie of await scraper.getCookies()) {
-              await cookieJar.setCookie(cookie, "https://twitter.com");
+              await cookieJar.setCookie(
+                cookie.toString(),
+                "https://twitter.com"
+              );
             }
           }
         } catch (error) {
