@@ -7,6 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "check": "tsc --noEmit",
+    "start": "tsx cli.ts",
     "build": "tsup cli.ts && cp -r dbs/* dist/"
   },
   "keywords": [],
@@ -28,6 +29,8 @@
     "drizzle-kit": "^0.20.17",
     "nanoid": "^5.0.7",
     "tsup": "^8.0.2",
+    "tsx": "^4.10.5",
     "typescript": "^5.4.5"
-  }
+  },
+  "packageManager": "pnpm@9.0.6+sha256.0624e30eff866cdeb363b15061bdb7fd9425b17bc1bb42c22f5f4efdea21f6b3"
 }
