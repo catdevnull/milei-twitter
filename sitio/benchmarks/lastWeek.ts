@@ -7,7 +7,7 @@ import {
 } from "../src/lib/data-processing/weekly.ts";
 import { desc, gte, and, lt, isNotNull } from "drizzle-orm";
 import { likedTweets, retweets, scraps } from "../src/schema.ts";
-import { dayjs } from "../src/lib/consts.ts";
+import { dayjs, likesCutoffSql } from "../src/lib/consts.ts";
 
 function getMinDate() {
   return dayjs
@@ -25,7 +25,7 @@ const [liked, retweetss] = await Promise.all([
       firstSeenAt: true,
     },
     orderBy: desc(likedTweets.firstSeenAt),
-    where: and(gte(likedTweets.firstSeenAt, minDate.toDate())),
+    where: and(gte(likedTweets.firstSeenAt, minDate.toDate()), likesCutoffSql),
   }),
   db.query.retweets.findMany({
     columns: {
@@ -52,6 +52,7 @@ bench("query most index", async () => {
       where: and(
         gte(likedTweets.firstSeenAt, startingFrom.toDate()),
         lt(likedTweets.firstSeenAt, endsAt.toDate()),
+        likesCutoffSql,
       ),
       orderBy: desc(likedTweets.firstSeenAt),
     }),
@@ -88,6 +89,7 @@ bench("liked tweets", async () => {
     where: and(
       gte(likedTweets.firstSeenAt, startingFrom.toDate()),
       lt(likedTweets.firstSeenAt, endsAt.toDate()),
+      likesCutoffSql,
     ),
     orderBy: desc(likedTweets.firstSeenAt),
   });
@@ -119,7 +121,7 @@ bench("querylastweek->likedTweets", async () => {
       firstSeenAt: true,
     },
     orderBy: desc(likedTweets.firstSeenAt),
-    where: and(gte(likedTweets.firstSeenAt, minDate.toDate())),
+    where: and(gte(likedTweets.firstSeenAt, minDate.toDate()), likesCutoffSql),
   });
 });
 bench("querylastweek->retweets", async () => {

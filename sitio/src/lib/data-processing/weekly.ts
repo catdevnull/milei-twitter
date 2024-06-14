@@ -1,8 +1,17 @@
 import type { connectDb } from "$lib/db/connectDb";
-import { dayjs, type Dayjs } from "../consts.ts";
-import { calculateScreenTime, totalFromDurations } from "./screenTime.ts";
-import { likedTweets, retweets } from "../../schema.ts";
-import { and, desc, gte } from "drizzle-orm";
+import { dayjs, likesCutoff, likesCutoffSql, type Dayjs } from "../consts.ts";
+import {
+  calculateSessions,
+  getInteractionTimes,
+  totalFromDurations,
+} from "./screenTime.ts";
+import {
+  likedTweets,
+  retweets,
+  type MiniLikedTweet,
+  type MiniRetweet,
+} from "../../schema.ts";
+import { and, desc, gte, lt } from "drizzle-orm";
 
 export function getMinDate() {
   return dayjs
@@ -10,13 +19,6 @@ export function getMinDate() {
     .startOf("day")
     .subtract(7, "day");
 }
-
-type LikedTweetDate = {
-  firstSeenAt: Date;
-};
-type RetweetDate = {
-  retweetAt: Date;
-};
 
 export function makeMapOfDays<T>(
   days: Array<Date>,
@@ -43,8 +45,8 @@ export function makeMapOfDays<T>(
 }
 
 export function lastWeek(
-  allLiked: Array<LikedTweetDate>,
-  allRetweets: Array<RetweetDate>,
+  allLiked: Array<MiniLikedTweet>,
+  allRetweets: Array<MiniRetweet>,
 ) {
   const today = dayjs
     .tz(undefined, "America/Argentina/Buenos_Aires")
@@ -74,7 +76,9 @@ export function lastWeek(
       day: day.format("YYYY-MM-DD"),
       tweets,
       retweets,
-      screenTime: totalFromDurations(calculateScreenTime(tweets)),
+      screenTime: totalFromDurations(
+        calculateSessions(getInteractionTimes(tweets, retweets)),
+      ),
     };
   });
   return x;
@@ -83,18 +87,25 @@ export function lastWeek(
 export async function getDataForLastWeek(
   db: Awaited<ReturnType<typeof connectDb>>,
   minDate: Dayjs,
-): Promise<[Array<{ firstSeenAt: Date }>, Array<{ retweetAt: Date }>]> {
+): Promise<[Array<MiniLikedTweet>, Array<MiniRetweet>]> {
   return await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
         firstSeenAt: true,
+        url: true,
       },
       orderBy: desc(likedTweets.firstSeenAt),
-      where: and(gte(likedTweets.firstSeenAt, minDate.toDate())),
+      where: and(
+        gte(likedTweets.firstSeenAt, minDate.toDate()),
+        likesCutoffSql,
+      ),
     }),
     db.query.retweets.findMany({
       columns: {
         retweetAt: true,
+        postId: true,
+        posterId: true,
+        posterHandle: true,
       },
       orderBy: desc(retweets.retweetAt),
       where: and(gte(retweets.retweetAt, minDate.toDate())),

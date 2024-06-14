@@ -1,8 +1,8 @@
 import { db } from "$lib/db";
-import { eq, like } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import { historicLikedTweets, likedTweets, retweets } from "../../schema";
 import type { PageServerLoad } from "../$types";
-import { parsearLinkDeTwitter } from "$lib/consts";
+import { likesCutoffSql, parsearLinkDeTwitter } from "$lib/consts";
 
 type FoundLikedMatch = {
   aproxLikedAt: Date;
@@ -18,54 +18,75 @@ export const load: PageServerLoad = async ({ url }) => {
   } else if ("error" in parsedQuery) {
     return { chequeoIntentado: true, error: parsedQuery.error };
   }
-  let match: FoundLikedMatch | null = null;
-  let linkToDate = true;
-  const fromLiked = await db.query.likedTweets.findFirst({
-    columns: {
-      firstSeenAt: true,
-      url: true,
-    },
-    where: like(likedTweets.url, `%/${parsedQuery.id}`),
-  });
-  if (fromLiked) {
-    match = {
-      aproxLikedAt: fromLiked.firstSeenAt,
-      url: fromLiked.url,
-    };
-  } else {
-    const fromHistoricLiked = await db.query.historicLikedTweets.findFirst({
-      where: eq(historicLikedTweets.postId, parsedQuery.id),
-    });
-    if (fromHistoricLiked) {
-      match = {
-        aproxLikedAt: fromHistoricLiked.estimatedLikedAt,
-        url: fromHistoricLiked.url,
-      };
-      linkToDate = false;
-    }
-  }
+  const likeMatch = await findLikedTweet(parsedQuery.id);
 
-  if (match) {
-    const parsedFound = parsearLinkDeTwitter(match?.url);
+  const retweetMatch = await db.query.retweets.findFirst({
+    where: eq(retweets.postId, parsedQuery.id),
+  });
+
+  if (likeMatch) {
+    const parsedFound = parsearLinkDeTwitter(likeMatch?.match.url);
     if (!parsedFound || "error" in parsedFound) {
       throw new Error(`error en parsedFound ${parsedFound}`);
     }
 
-    const fromRetweet = await db.query.retweets.findFirst({
-      where: eq(retweets.postId, parsedQuery.id),
-    });
-
     return {
       chequeoIntentado: true,
 
-      found: match,
-      retweet: fromRetweet,
-      linkToDate,
+      like: likeMatch.match,
+      linkToDate: !likeMatch.isfromHistoric,
+      retweet: retweetMatch,
 
       parsedQuery,
       parsedFound,
+    };
+  } else if (retweetMatch) {
+    return {
+      chequeoIntentado: true,
+
+      retweet: retweetMatch,
+
+      parsedQuery,
     };
   } else {
     return { chequeoIntentado: true };
   }
 };
+
+/**
+ * Busca en la base de datos un tweet likeado, también buscando en el dataset
+ * de likes historicos.
+ */
+async function findLikedTweet(id: string) {
+  let match: FoundLikedMatch | null = null;
+  const fromLiked = await db.query.likedTweets.findFirst({
+    columns: {
+      firstSeenAt: true,
+      url: true,
+    },
+    where: and(like(likedTweets.url, `%/${id}`), likesCutoffSql),
+  });
+  if (fromLiked) {
+    return {
+      match: {
+        aproxLikedAt: fromLiked.firstSeenAt,
+        url: fromLiked.url,
+      },
+      isfromHistoric: false,
+    };
+  } else {
+    const fromHistoricLiked = await db.query.historicLikedTweets.findFirst({
+      where: eq(historicLikedTweets.postId, id),
+    });
+    if (fromHistoricLiked) {
+      return {
+        match: {
+          aproxLikedAt: fromHistoricLiked.estimatedLikedAt,
+          url: fromHistoricLiked.url,
+        },
+        isfromHistoric: true,
+      };
+    }
+  }
+  return null;
+}

@@ -3,14 +3,26 @@
   import Chart from "./Chart.svelte";
   import Footer from "./Footer.svelte";
   import {
-    calculateScreenTime,
+    calculateSessions,
     formatDurationFromMs,
     formatTinyDurationFromMs,
+    getInteractionTimes,
     totalFromDurations,
   } from "$lib/data-processing/screenTime";
-  import { sortMost } from "$lib/data-processing/mostLiked";
+  import {
+    sortMost,
+    sortMostLiked,
+    sortMostRetweeted,
+  } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
-  import { dateFormatter, dayjs, timeFormatter, tz } from "$lib/consts";
+  import {
+    dateFormatter,
+    dayjs,
+    likesCutoff,
+    longDateFormatter,
+    timeFormatter,
+    tz,
+  } from "$lib/consts";
   import "core-js/es/array/to-reversed";
   import { DatePicker } from "@svelte-plugins/datepicker";
   import Meta from "./Meta.svelte";
@@ -39,14 +51,22 @@
       dayjs(t.retweetAt).isAfter(dayjs("2024-04-04T08:45:00.000-03:00")) &&
       dayjs(t.retweetAt).isBefore(dayjs("2024-04-04T13:30:00.000-03:00")),
   );
+  $: likesCutoffReached =
+    likesCutoff &&
+    filteredRetweets.some((t) =>
+      dayjs(t.retweetAt).isAfter(likesCutoff?.cutAt),
+    );
 
   $: filteredTweets = data.tweets;
   $: filteredRetweets = data.retweets;
 
-  $: ranges = calculateScreenTime(filteredTweets);
+  $: ranges = calculateSessions(
+    getInteractionTimes(filteredTweets, filteredRetweets),
+  );
   $: totalTime = totalFromDurations(ranges);
 
-  $: masLikeados = sortMost(filteredTweets);
+  $: masLikeados = sortMostLiked(filteredTweets);
+  $: masRetweeteados = sortMostRetweeted(filteredRetweets);
 
   $: ultimaSemana = data.ultimaSemana;
 
@@ -90,7 +110,7 @@
         .filter((d) => +d !== +hoy)
         .map((date) => weeklyOpcion(date)),
     ];
-    if (!opciones.some(({ date }) => date && +start == +date)) {
+    if (!opciones.some((op) => op.date && +start == +op.date)) {
       opciones.push({
         query: getWeeklyQuery(start),
         label: dateFormatter.format(start),
@@ -136,13 +156,16 @@
 <Meta keywords={true} canonical={"https://milei.nulo.in"} />
 
 <div
-  class="flex min-h-screen flex-col justify-center gap-12 p-2"
+  class="flex min-h-screen flex-col justify-center gap-2 p-2"
   class:milei-duende={duende}
 >
   <section class="mx-auto my-4 flex max-w-2xl flex-col text-center">
     <h1 class="text-4xl font-bold">
-      ¿Cuántos tweets likeó nuestro <span on:click={easterEggClick}
-        >{#if duende}presiduende{:else}Presidente{/if}</span
+      ¿Cuántos tweets
+      {#if likesCutoffReached}retweeteo{:else}likeó{/if}
+      nuestro
+      <button on:click={easterEggClick}
+        >{#if duende}presiduende{:else}Presidente{/if}</button
       >
       <div class="inline-flex flex-wrap justify-end gap-2">
         <select
@@ -177,7 +200,13 @@
       </div>
       ?
     </h1>
-    <h2 class="text-9xl font-black">{filteredTweets.length}</h2>
+    <h2 class="text-9xl font-black">
+      {#if likesCutoffReached}
+        {filteredRetweets.length}
+      {:else}
+        {filteredTweets.length}
+      {/if}
+    </h2>
     <small>
       <a
         href="https://milei.nulo.in"
@@ -195,6 +224,40 @@
         ¡Ojo! Los datos de antes del 12 de febrero pueden ser incorrectos a
         nivel hora.
       </p>
+    </section>
+  {/if}
+  {#if likesCutoffReached}
+    <section class="mx-auto w-full max-w-2xl">
+      <div
+        class="[&>svg]:text-foreground relative w-full rounded-lg border border-transparent bg-blue-600 p-4 text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4"
+      >
+        <svg
+          class="h-5 w-5 -translate-y-0.5"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          ><path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+          /></svg
+        >
+        <h5 class="mb-1 font-medium leading-none tracking-tight">
+          Likes no disponibles
+        </h5>
+        <div class="text-sm opacity-80">
+          Desde {longDateFormatter.format(likesCutoff?.cutAt)}, ya no podemos
+          mostrar los 'me gusta' de Milei en Twitter/X porque ahora son
+          privados.
+          <a
+            class=" text-blue-100 underline"
+            href="https://x.com/wanghaofei/status/1793096366132195529"
+            >Más información</a
+          >. Seguiremos mostrando los retweets públicos.
+        </div>
+      </div>
     </section>
   {/if}
 
@@ -251,8 +314,8 @@
           href="https://twitter.com/JMilei"
           class="text-blue-600 underline dark:text-blue-200"
           rel="noreferrer">@JMilei</a
-        >, registro los "me gusta" y genero un estimado de cuanto tiempo habría
-        usado Twitter:
+        >, registro sus interacciones y genero un estimado de cuanto tiempo
+        habría usado Twitter:
       </p>
       <p class="text-4xl font-black">
         {formatDurationFromMs(totalTime)}
@@ -276,19 +339,35 @@
       </details>
     </div>
     <div>
-      <h2 class="text-center text-2xl font-bold">Mas likeados</h2>
-      <ol class="list-decimal pl-8">
-        {#each masLikeados as [persona, n]}
-          <li>
-            <a
-              class="text-medium underline"
-              href={`https://twitter.com/${persona}`}
-              rel="noopener noreferrer"
-              target="_blank">@{persona}</a
-            >: {n}
-          </li>
-        {/each}
-      </ol>
+      {#if likesCutoffReached}
+        <h2 class="text-center text-2xl font-bold">Mas retweeteados</h2>
+        <ol class="list-decimal pl-8">
+          {#each masRetweeteados as [persona, n]}
+            <li>
+              <a
+                class="text-medium underline"
+                href={`https://twitter.com/${persona}`}
+                rel="noopener noreferrer"
+                target="_blank">@{persona}</a
+              >: {n}
+            </li>
+          {/each}
+        </ol>
+      {:else}
+        <h2 class="text-center text-2xl font-bold">Mas likeados</h2>
+        <ol class="list-decimal pl-8">
+          {#each masLikeados as [persona, n]}
+            <li>
+              <a
+                class="text-medium underline"
+                href={`https://twitter.com/${persona}`}
+                rel="noopener noreferrer"
+                target="_blank">@{persona}</a
+              >: {n}
+            </li>
+          {/each}
+        </ol>
+      {/if}
     </div>
   </section>
 
@@ -299,7 +378,7 @@
     </p>
   </section> -->
 
-  <section class="mx-auto flex max-w-2xl flex-col">
+  <section class="mx-auto flex max-w-2xl flex-col py-8">
     <h2 class="text-center text-2xl font-bold">Semanal</h2>
 
     <table>
@@ -325,7 +404,9 @@
       </tbody>
     </table>
   </section>
-  <Footer />
+  <div class="py-8">
+    <Footer />
+  </div>
 </div>
 
 <style lang="postcss">

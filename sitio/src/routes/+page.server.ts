@@ -2,7 +2,7 @@ import { db } from "$lib/db";
 import { and, asc, desc, gte, isNotNull, lt, lte } from "drizzle-orm";
 import { likedTweets, retweets, scraps } from "../schema";
 import type { PageServerLoad } from "./$types";
-import { dayjs } from "$lib/consts";
+import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error } from "@sveltejs/kit";
 import { queryLastWeek } from "$lib/data-processing/queryWeekly";
 
@@ -41,6 +41,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
         where: and(
           gte(likedTweets.firstSeenAt, startingFrom.toDate()),
           lt(likedTweets.firstSeenAt, endsAt.toDate()),
+          likesCutoffSql,
         ),
         orderBy: desc(likedTweets.firstSeenAt),
       }),
@@ -66,6 +67,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
 
       db.query.likedTweets.findFirst({
         orderBy: asc(likedTweets.firstSeenAt),
+        where: likesCutoffSql,
       }),
     ]);
   const t1 = performance.now();

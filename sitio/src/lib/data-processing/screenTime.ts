@@ -2,17 +2,39 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { es } from "date-fns/locale";
+import { parsearLinkDeTwitter } from "../../../../common/parsearLinkDeTwitter";
 
-type LikedTweetDate = {
-  firstSeenAt: Date;
-};
+/**
+ * makes an array of timestamps of interactions, prioritizing retweet
+ * timestamps over like timestamps as they are more precise.
+ * @param likes likes to get interaction times from
+ * @param retweets retweets to get interaction times from (will be prioritized over like timestamps)
+ */
+export function getInteractionTimes(
+  likes: { firstSeenAt: Date; url: string }[],
+  retweets?: { retweetAt: Date; postId: string }[],
+): Date[] {
+  let timestamps = new Map<string, Date>();
+  for (const like of likes) {
+    const parsed = parsearLinkDeTwitter(like.url);
+    if (!parsed) throw new Error(`Not a link ${like.url}`);
+    else if ("error" in parsed) throw new Error(parsed.error);
+    else timestamps.set(parsed.id, like.firstSeenAt);
+  }
+  if (retweets) {
+    for (const retweet of retweets) {
+      timestamps.set(retweet.postId, retweet.retweetAt);
+    }
+  }
+  return Array.from(timestamps.values());
+}
 
 export type Duration = { start: Dayjs; end: Dayjs };
-export function calculateScreenTime(tweets: LikedTweetDate[]): Duration[] {
+export function calculateSessions(interactionTimes: Date[]): Duration[] {
   const n = 3;
-  const durations = tweets.map((d) => ({
-    start: +d.firstSeenAt,
-    end: +d.firstSeenAt + n * 60 * 1000,
+  const durations = interactionTimes.map((d) => ({
+    start: +d,
+    end: +d + n * 60 * 1000,
   }));
 
   type StartEnd = {

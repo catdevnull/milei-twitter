@@ -2,11 +2,13 @@ import { db } from "$lib/db";
 import { and, desc, gte, lt } from "drizzle-orm";
 import { likedTweets, retweets } from "../../../../../schema";
 import {
-  calculateScreenTime,
+  calculateSessions,
+  getInteractionTimes,
   totalFromDurations,
 } from "$lib/data-processing/screenTime";
 import dayjs from "dayjs";
 import { queryLastWeek } from "$lib/data-processing/queryWeekly";
+import { likesCutoffSql } from "$lib/consts";
 
 export async function GET() {
   const startingFrom = dayjs()
@@ -24,6 +26,7 @@ export async function GET() {
         where: and(
           gte(likedTweets.firstSeenAt, startingFrom.toDate()),
           lt(likedTweets.firstSeenAt, endsAt.toDate()),
+          likesCutoffSql,
         ),
         orderBy: desc(likedTweets.firstSeenAt),
       }),
@@ -35,6 +38,7 @@ export async function GET() {
         },
         where: and(
           gte(likedTweets.firstSeenAt, dayjs().subtract(12, "hour").toDate()),
+          likesCutoffSql,
         ),
         orderBy: desc(likedTweets.firstSeenAt),
       }),
@@ -54,7 +58,9 @@ export async function GET() {
       queryLastWeek(),
     ]);
 
-  const totalTime = totalFromDurations(calculateScreenTime(todayTweets));
+  const totalTime = totalFromDurations(
+    calculateSessions(getInteractionTimes(todayTweets, todayRetweets)),
+  );
 
   return new Response(
     JSON.stringify({

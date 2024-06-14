@@ -2,6 +2,7 @@ import { db } from "$lib/db";
 import { desc, isNotNull } from "drizzle-orm";
 import { likedTweets, retweets, scraps } from "../../../schema";
 import type { PageServerLoad } from "./$types";
+import { likesCutoffSql } from "$lib/consts";
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
   const tweets = await db.query.likedTweets.findMany({
@@ -11,6 +12,7 @@ export const load: PageServerLoad = async ({ setHeaders }) => {
       text: true,
     },
     orderBy: desc(likedTweets.firstSeenAt),
+    where: likesCutoffSql,
     limit: 1000,
   });
   // const retweetss = await db.query.retweets.findMany({
