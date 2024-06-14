@@ -171,7 +171,7 @@
         <select
           on:change={(e) => setQuery(e.currentTarget.value)}
           value={data.query}
-          class="rounded-md px-2"
+          class="w-[300px] rounded-md px-2"
         >
           {#each opcionesDias as { label, query }}
             <option value={query}>{label}</option>
@@ -226,40 +226,6 @@
       </p>
     </section>
   {/if}
-  {#if likesCutoffReached}
-    <section class="mx-auto w-full max-w-2xl">
-      <div
-        class="[&>svg]:text-foreground relative w-full rounded-lg border border-transparent bg-blue-600 p-4 text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4"
-      >
-        <svg
-          class="h-5 w-5 -translate-y-0.5"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-          /></svg
-        >
-        <h5 class="mb-1 font-medium leading-none tracking-tight">
-          Likes no disponibles
-        </h5>
-        <div class="text-sm opacity-80">
-          Desde {longDateFormatter.format(likesCutoff?.cutAt)}, ya no podemos
-          mostrar los 'me gusta' de Milei en Twitter/X porque ahora son
-          privados.
-          <a
-            class=" text-blue-100 underline"
-            href="https://x.com/wanghaofei/status/1793096366132195529"
-            >Más información</a
-          >. Seguiremos mostrando los retweets públicos.
-        </div>
-      </div>
-    </section>
-  {/if}
 
   <section class="mx-auto w-full max-w-2xl">
     <Chart
@@ -303,6 +269,41 @@
         abril son imprecisos (los likes entre esas horas se acumularon en las
         13:30hs)
       </p>
+    </section>
+  {/if}
+
+  {#if likesCutoffReached}
+    <section class="mx-auto w-full max-w-2xl">
+      <div
+        class="[&>svg]:text-foreground relative w-full rounded-lg border border-transparent bg-neutral-200 p-4 text-neutral-900 dark:bg-neutral-800 dark:text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4"
+      >
+        <svg
+          class="h-5 w-5 -translate-y-0.5"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          ><path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+          /></svg
+        >
+        <h5 class="mb-1 font-medium leading-none tracking-tight">
+          Likes no disponibles
+        </h5>
+        <div class="text-sm opacity-80">
+          Desde {longDateFormatter.format(likesCutoff?.cutAt)}, ya no podemos
+          mostrar los 'me gusta' de Milei en Twitter/X porque ahora son
+          privados.
+          <a
+            class="text-blue-600 underline dark:text-blue-200"
+            href="https://x.com/wanghaofei/status/1793096366132195529"
+            >Más información</a
+          >. Seguiremos mostrando los retweets públicos.
+        </div>
+      </div>
     </section>
   {/if}
 
