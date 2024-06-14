@@ -4,7 +4,10 @@ import { Cookie, CookieJar } from "tough-cookie";
 import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { pushScrap } from "./dbs/scraps/index.ts";
-import { parseAccountList } from "./addAccounts.ts";
+import { AccountInfo, parseAccountList } from "./addAccounts.ts";
+import PQueue from "p-queue";
+import { addDays, format, formatISO, startOfDay } from "date-fns";
+import pDebounce from "p-debounce";
 
 async function getScraper() {
   const accountsFilePath = process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt";
@@ -13,42 +16,54 @@ async function getScraper() {
   let cookieJar = new CookieJar();
   let loggedIn = false;
 
-  const fetchWithRandomAccount = async (
+  let failedAccountUsernames = new Set<string>();
+  const scraper = new Scraper({ fetch: fetchWithRandomAccount });
+
+  const logIn = pDebounce.promise(async () => {
+    await scraper.logout();
+    const accountsFile = await readFile(accountsFilePath, "utf-8");
+    const accounts = parseAccountList(
+      accountsFile,
+      process.env.ACCOUNTS_FILE_FORMAT
+    );
+
+    // Keep trying to log into accounts unless any don't work
+    while (!loggedIn) {
+      let account: AccountInfo;
+      do {
+        if (failedAccountUsernames.size >= accounts.length)
+          throw new Error("no accounts available");
+        account = accounts[Math.floor(Math.random() * accounts.length)];
+      } while (failedAccountUsernames.has(account.username));
+      try {
+        const scraper = new Scraper();
+        await scraper.login(
+          account.username,
+          account.password,
+          account.email,
+          account.twoFactorSecret
+        );
+        loggedIn = await scraper.isLoggedIn();
+        if (loggedIn) {
+          console.debug(`Logged into @${account.username}`);
+          for (const cookie of await scraper.getCookies()) {
+            await cookieJar.setCookie(cookie.toString(), "https://twitter.com");
+          }
+        }
+      } catch (error) {
+        console.error(`Couldn't login into @${account.username}:`, error);
+        failedAccountUsernames.add(account.username);
+      }
+    }
+  });
+
+  async function fetchWithRandomAccount(
     input: string | URL | Request,
     init: RequestInit | undefined
-  ): Promise<Response> => {
+  ): Promise<Response> {
     if (!loggedIn) {
-      const accountsFile = await readFile(accountsFilePath, "utf-8");
-      const accounts = parseAccountList(
-        accountsFile,
-        process.env.ACCOUNTS_FILE_FORMAT
-      );
-
-      // Keep trying to log into accounts unless any don't work
-      while (!loggedIn) {
-        const account = accounts[Math.floor(Math.random() * accounts.length)];
-        try {
-          const scraper = new Scraper();
-          await scraper.login(
-            account.username,
-            account.password,
-            account.email,
-            account.twoFactorSecret
-          );
-          loggedIn = await scraper.isLoggedIn();
-          if (loggedIn) {
-            console.info(`Logged into @${account.username}`);
-            for (const cookie of await scraper.getCookies()) {
-              await cookieJar.setCookie(
-                cookie.toString(),
-                "https://twitter.com"
-              );
-            }
-          }
-        } catch (error) {
-          console.error(`Couldn't login into @${account.username}:`, error);
-        }
-      }
+      console.debug("Tried to req but wasn't logged in");
+      await logIn();
     }
 
     const headers = new Headers(init?.headers);
@@ -71,19 +86,20 @@ async function getScraper() {
     if (response.status === 429) {
       cookieJar = new CookieJar();
       loggedIn = false;
+      console.warn(`rate limited, retrying with another account`);
       return await fetchWithRandomAccount(input, init);
     }
     // Possibly suspended, retry with another account
     if (response.status === 403) {
       cookieJar = new CookieJar();
       loggedIn = false;
+      console.warn(`403, retrying with another account`);
       return await fetchWithRandomAccount(input, init);
     }
 
     return response;
-  };
+  }
 
-  const scraper = new Scraper({ fetch: fetchWithRandomAccount });
   return scraper;
 }
 
