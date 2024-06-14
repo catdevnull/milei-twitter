@@ -13,7 +13,7 @@ async function migrateDb(
   name: DbType
 ): Promise<void> {
   await migrate(db, {
-    migrationsFolder: join(import.meta.dirname, name, "drizzle"),
+    migrationsFolder: join(import.meta.dirname || __dirname, name, "drizzle"),
   });
 }
 
