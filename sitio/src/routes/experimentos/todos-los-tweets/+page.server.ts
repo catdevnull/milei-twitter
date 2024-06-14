@@ -1,42 +1,26 @@
 import { db } from "$lib/db";
-import { desc, isNotNull } from "drizzle-orm";
-import { likedTweets, retweets, scraps } from "../../../schema";
+import { desc } from "drizzle-orm";
 import type { PageServerLoad } from "./$types";
-import { likesCutoffSql } from "$lib/consts";
+import * as schema from "../../../schema";
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
-  const tweets = await db.query.likedTweets.findMany({
+  const retweets = await db.query.retweets.findMany({
     columns: {
-      firstSeenAt: true,
-      url: true,
+      retweetAt: true,
+      posterId: true,
+      posterHandle: true,
+      postId: true,
       text: true,
     },
-    orderBy: desc(likedTweets.firstSeenAt),
-    where: likesCutoffSql,
+    orderBy: desc(schema.retweets.retweetAt),
     limit: 1000,
   });
-  // const retweetss = await db.query.retweets.findMany({
-  //   columns: {
-  //     retweetAt: true,
-  //     posterId: true,
-  //     postId: true,
-  //     posterHandle: true,
-  //   },
-  //   orderBy: desc(retweets.retweetAt),
-  //   limit: 200,
-  // });
-  //   const lastUpdated = await db.query.scraps.findFirst({
-  //     orderBy: desc(scraps.at),
-  //     where: isNotNull(scraps.totalTweetsSeen),
-  //   });
 
   setHeaders({
     "cache-control": "public, max-age=60",
   });
 
   return {
-    tweets,
-    // retweets: retweetss,
-    //lastUpdated
+    retweets,
   };
 };

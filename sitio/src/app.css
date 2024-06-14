@@ -6,3 +6,7 @@
 :root {
   color-scheme: dark light;
 }
+
+.link {
+  @apply text-blue-600 underline dark:text-blue-200;
+}
