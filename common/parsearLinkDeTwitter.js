@@ -3,7 +3,7 @@ const simpleTwitterPathRegexp = /\/[^/]+\/status\/([0-9]+)\/?/;
 const usernameTwitterPathRegexp = /^\/(\w+)\/status\//i;
 
 /**
- * @param {string} s
+ * @param {string} s URL de tweet a parsear
  * @returns {{ error: string } | { id: string; username?: string } | null }
  */
 export function parsearLinkDeTwitter(s) {
