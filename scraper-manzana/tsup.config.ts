@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  format: "esm",
+  format: "cjs",
   shims: true,
   sourcemap: true,
 });
