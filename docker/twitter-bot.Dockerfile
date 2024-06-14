@@ -1,6 +1,4 @@
 FROM node:22 AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm
 
 # https://pnpm.io/docker
@@ -9,7 +7,7 @@ WORKDIR /app
 
 FROM base AS prod-deps
 WORKDIR /app/twitter-bot
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --filter=twitter-bot --prod --frozen-lockfile
 
 # FROM base AS build
 # WORKDIR /app/twitter-bot
@@ -24,9 +22,8 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
+COPY --from=prod-deps /app /app
 WORKDIR /app/twitter-bot
-COPY --from=prod-deps /app/common /app/common
-COPY --from=prod-deps /app/twitter-bot /app/twitter-bot
 ENV DBS_PATH=/db
 VOLUME [ "/db" ]
 CMD [ "node", "." ]
