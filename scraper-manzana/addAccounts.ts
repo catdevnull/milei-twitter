@@ -3,6 +3,15 @@ import escapeStringRegexp from "escape-string-regexp";
 export const defaultAccountListFormat =
   "username:password:email:emailPassword:authToken:twoFactorSecret";
 
+export type AccountInfo = {
+  username: string;
+  password: string;
+  email: string;
+  emailPassword: string;
+  authToken: string;
+  twoFactorSecret: string;
+};
+
 /**
  * parses an CSV that contains the details of multiple Twitter accounts
  * @param csvish the CSV file to parse
@@ -12,7 +21,7 @@ export const defaultAccountListFormat =
 export function parseAccountList(
   csvish: string,
   format: string = defaultAccountListFormat
-) {
+): AccountInfo[] {
   let regexp = escapeStringRegexp(format)
     .replace("username", `(?<username>.*)`)
     .replace("password", `(?<password>.*)`)
