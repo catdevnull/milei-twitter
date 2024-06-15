@@ -1,15 +1,15 @@
 import {
+  boolean,
   command,
+  flag,
+  positional,
   run,
   string,
-  option,
   subcommands,
-  positional,
-  flag,
-  boolean,
 } from "cmd-ts";
 import {
   cron,
+  newScraper,
   printFollowing,
   printLastLikes,
   printLastTweets,
@@ -20,7 +20,7 @@ import {
 const printLikesCmd = command({
   name: "print last likes",
   args: {},
-  handler(args) {
+  handler() {
     printLastLikes();
   },
 });
@@ -28,15 +28,16 @@ const printLikesCmd = command({
 const saveLikesCmd = command({
   name: "save last likes",
   args: {},
-  handler(args) {
-    saveLikes();
+  async handler() {
+    const scraper = await newScraper();
+    saveLikes(scraper);
   },
 });
 
 const printTweetsCmd = command({
   name: "print last tweets",
   args: {},
-  handler(args) {
+  handler() {
     printLastTweets();
   },
 });
@@ -44,8 +45,9 @@ const printTweetsCmd = command({
 const saveRetweetsCmd = command({
   name: "save last retweets",
   args: {},
-  handler(args) {
-    saveRetweets();
+  async handler() {
+    const scraper = await newScraper();
+    saveRetweets(scraper);
   },
 });
 
@@ -68,7 +70,7 @@ const printFollowingCmd = command({
 const cronCmd = command({
   name: "cron",
   args: {},
-  handler(args) {
+  handler() {
     cron();
   },
 });

@@ -9,7 +9,7 @@ import PQueue from "p-queue";
 import { addDays, format, formatISO, startOfDay } from "date-fns";
 import pDebounce from "p-debounce";
 
-async function getScraper() {
+export async function newScraper() {
   const accountsFilePath = process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt";
   await readFile(accountsFilePath, "utf-8");
 
@@ -105,7 +105,7 @@ async function getScraper() {
 }
 
 export async function printLastLikes() {
-  const scraper = await getScraper();
+  const scraper = await newScraper();
   for await (const likedTweet of scraper.getLikedTweets("jmilei")) {
     console.log(`@${likedTweet.username}: ${likedTweet.text}`);
   }
@@ -135,7 +135,7 @@ export async function saveLikes(scraper: Scraper) {
 }
 
 export async function printLastTweets() {
-  const scraper = await getScraper();
+  const scraper = await newScraper();
   for await (const tweet of scraper.getTweets("jmilei")) {
     console.log(`@${tweet.username}: ${tweet.text}`);
   }
@@ -184,7 +184,7 @@ export async function saveRetweets(scraper: Scraper) {
 }
 
 export async function printFollowing(handle: string, jsonl: boolean) {
-  const scraper = await getScraper();
+  const scraper = await newScraper();
   const id = await scraper.getUserIdByScreenName(handle);
   for await (const profile of scraper.getFollowing(id, 10000)) {
     if (jsonl) {
@@ -196,7 +196,7 @@ export async function printFollowing(handle: string, jsonl: boolean) {
 }
 
 export async function cron() {
-  const scraper = await getScraper();
+  const scraper = await newScraper();
   while (true) {
     try {
       const scrap = await saveLikes(scraper);
