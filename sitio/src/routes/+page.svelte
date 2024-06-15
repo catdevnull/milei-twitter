@@ -371,7 +371,7 @@
               )}</th
             >
             <td class="px-1 text-right">
-              {#if (likesCutoff && dayjs(day, "YYYY-MM-DD").isAfter(likesCutoff.cutAt, "day")) || dayjs(day, "YYYY-MM-DD").isSame(likesCutoff.cutAt, "day")}{:else}
+              {#if !(likesCutoff && (dayjs(day, "YYYY-MM-DD").isAfter(likesCutoff.cutAt, "day") || dayjs(day, "YYYY-MM-DD").isSame(likesCutoff.cutAt, "day")))}
                 {tweets.length}❤️
               {/if}
             </td>
