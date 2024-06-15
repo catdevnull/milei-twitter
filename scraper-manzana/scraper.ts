@@ -141,6 +141,48 @@ export async function printLastTweets() {
   }
 }
 
+export async function printJsonlTweets() {
+  const scraper = await getScraper();
+  for await (const tweet of scraper.getTweets("jmilei", Infinity)) {
+    console.log(JSON.stringify(tweet));
+  }
+}
+
+export async function printAllTweetsEver() {
+  const scraper = await getScraper();
+  const queue = new PQueue({ concurrency: 12 });
+  const profile = await scraper.getProfile("jmilei");
+
+  let seenIds = new Set<string>();
+
+  let min = startOfDay(profile.joined!);
+  let max = startOfDay(new Date());
+  let dates: Date[] = [];
+  for (let date = min; date <= max; date = addDays(date, 1)) {
+    dates.push(date);
+  }
+
+  for (const date of dates) {
+    queue.add(async () => {
+      const search = scraper.searchTweets(
+        `from:jmilei until:${formatISO(addDays(date, 1), { representation: "date" })} since:${formatISO(date, { representation: "date" })}`,
+        999999,
+        SearchMode.Latest,
+      );
+      for await (const result of search) {
+        if (seenIds.has(result.id!)) {
+          console.warn(`Already seen ${result.id}`);
+          continue;
+        }
+        seenIds.add(result.id!);
+        console.log(JSON.stringify(result));
+      }
+    });
+  }
+
+  await queue.onIdle();
+}
+
 export async function saveRetweets(scraper: Scraper) {
   let totalTweetsSeen = 0;
   let retweets: Array<Retweet> = [];

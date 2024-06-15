@@ -10,6 +10,7 @@ import {
 import {
   cron,
   newScraper,
+  printAllTweetsEver,
   printFollowing,
   printLastLikes,
   printLastTweets,
@@ -39,6 +40,14 @@ const printTweetsCmd = command({
   args: {},
   handler() {
     printLastTweets();
+  },
+});
+
+const printAllTweetsEverCmd = command({
+  name: "print all tweets ever without sorting in jsonl",
+  args: {},
+  handler(args) {
+    printAllTweetsEver();
   },
 });
 
@@ -81,6 +90,7 @@ const cmd = subcommands({
     "print-likes": printLikesCmd,
     "save-likes": saveLikesCmd,
     "print-tweets": printTweetsCmd,
+    "print-all-tweets": printAllTweetsEverCmd,
     "save-retweets": saveRetweetsCmd,
     "print-following": printFollowingCmd,
     cron: cronCmd,
