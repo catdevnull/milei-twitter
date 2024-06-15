@@ -198,12 +198,12 @@ export async function printFollowing(handle: string, jsonl: boolean) {
 export async function cron() {
   const scraper = await newScraper();
   while (true) {
-    try {
-      const scrap = await saveLikes(scraper);
-      console.log(`scrapped likes, seen ${scrap.totalTweetsSeen}`);
-    } catch (error) {
-      console.error(`[error] likedTweets`, error);
-    }
+    // try {
+    //   const scrap = await saveLikes(scraper);
+    //   console.log(`scrapped likes, seen ${scrap.totalTweetsSeen}`);
+    // } catch (error) {
+    //   console.error(`[error] likedTweets`, error);
+    // }
 
     try {
       const scrap = await saveRetweets(scraper);
