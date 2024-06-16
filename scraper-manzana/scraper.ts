@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { Scraper, SearchMode } from "@catdevnull/twitter-scraper";
+import { Scraper } from "@catdevnull/twitter-scraper";
 import { Cookie, CookieJar } from "tough-cookie";
 import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
@@ -25,11 +25,10 @@ export async function newScraper() {
 
   const logIn = pDebounce.promise(async () => {
     await scraper.logout();
-    loggedIn = false;
     const accountsFile = await readFile(accountsFilePath, "utf-8");
     const accounts = parseAccountList(
       accountsFile,
-      process.env.ACCOUNTS_FILE_FORMAT,
+      process.env.ACCOUNTS_FILE_FORMAT
     );
 
     // Keep trying to log into accounts unless any don't work
@@ -46,7 +45,7 @@ export async function newScraper() {
           account.username,
           account.password,
           account.email,
-          account.twoFactorSecret,
+          account.twoFactorSecret
         );
         loggedIn = await scraper.isLoggedIn();
         if (loggedIn) {
@@ -64,9 +63,9 @@ export async function newScraper() {
 
   async function fetchWithRandomAccount(
     input: string | URL | Request,
-    init: RequestInit | undefined,
+    init: RequestInit | undefined
   ): Promise<Response> {
-    if (cookieJar.getCookiesSync(input.toString()).length === 0) {
+    if (!loggedIn) {
       console.debug("Tried to req but wasn't logged in");
       await logIn();
     }
@@ -90,14 +89,14 @@ export async function newScraper() {
     // Rate limit, retry with another account
     if (response.status === 429) {
       cookieJar = new CookieJar();
-      await logIn();
+      loggedIn = false;
       console.warn(`rate limited, retrying with another account`);
       return await fetchWithRandomAccount(input, init);
     }
     // Possibly suspended, retry with another account
     if (response.status === 403) {
       cookieJar = new CookieJar();
-      await logIn();
+      loggedIn = false;
       console.warn(`403, retrying with another account`);
       return await fetchWithRandomAccount(input, init);
     }
