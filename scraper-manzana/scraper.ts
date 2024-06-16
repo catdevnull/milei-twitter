@@ -35,8 +35,10 @@ export async function newScraper() {
     while (!loggedIn) {
       let account: AccountInfo;
       do {
-        if (failedAccountUsernames.size >= accounts.length)
-          throw new Error("no accounts available");
+        if (failedAccountUsernames.size >= accounts.length) {
+          console.error("no accounts available");
+          process.exit(1); // crying pissing and shitting
+        }
         account = accounts[Math.floor(Math.random() * accounts.length)];
       } while (failedAccountUsernames.has(account.username));
       try {
