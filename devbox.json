@@ -15,12 +15,7 @@
   "shell": {
     "init_hook": ["test -z $FISH_VERSION || . $VENV_DIR/bin/activate.fish"],
     "scripts": {
-      "dev": ["pnpm dev"],
-      "reset-db-to-prod": [
-        "rm -f sitio/sqlite.db{,-shm,-wal}",
-        "sqlite3 sitio/sqlite.db 'PRAGMA journal_mode=WAL;'",
-        "turso db shell http://milei-prod:8080 '.dump' | sqlite3 sitio/sqlite.db"
-      ]
+      "dev": ["pnpm dev"]
     }
   }
 }

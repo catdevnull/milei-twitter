@@ -12,7 +12,8 @@
     "lint": "prettier --check .",
     "format": "prettier --write .",
     "benchmark:lastWeek": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./benchmarks/lastWeek.ts",
-    "db:generate": "drizzle-kit generate:sqlite"
+    "db:generate": "drizzle-kit generate:sqlite",
+    "db:reset-to-prod": "rm -f sqlite.db sqlite.db-shm sqlite.db-wal && sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;' && turso db shell http://milei-prod:8080 '.dump' | sqlite3 sqlite.db"
   },
   "dependencies": {
     "@bybas/weather-icons": "^2.0.0",
