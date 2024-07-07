@@ -5,13 +5,8 @@
     "git-lfs@latest",
     "sqlite@latest",
     "turso-cli@latest",
-    "git-filter-repo@latest",
-    "python@latest",
-    "python312Packages.pip@latest"
+    "git-filter-repo@latest"
   ],
-  "env": {
-    "DEVBOX_PYPROJECT_DIR": "$PWD/scraper-py"
-  },
   "shell": {
     "init_hook": ["test -z $FISH_VERSION || . $VENV_DIR/bin/activate.fish"],
     "scripts": {
