@@ -8,6 +8,11 @@ import {
 } from "../../schema";
 import { likesCutoffSql } from "$lib/consts";
 import { desc, and, gte, lte } from "drizzle-orm";
+import {
+  calculateSessions,
+  getInteractionTimes,
+  totalFromDurations,
+} from "./screenTime";
 
 export function makeMapOfDays<T>(
   days: Array<Date>,
@@ -65,4 +70,51 @@ export async function getDataForTimePeriod(
       ),
     }),
   ]);
+}
+
+export async function getStatsForDaysInTimePeriod(
+  db: Awaited<ReturnType<typeof connectDb>>,
+  start: Dayjs,
+  end: Dayjs,
+) {
+  const days = getDaysInTimePeriod(start, end);
+  console.time("query getStatsForDaysInTimePeriod");
+  const [likedTweets, retweets] = await getDataForTimePeriod(
+    db,
+    start.startOf("day"),
+    end.endOf("day"),
+  );
+  console.timeEnd("query getStatsForDaysInTimePeriod");
+
+  console.time("process getStatsForDaysInTimePeriod");
+  const dayDates = days.map((d) => d.toDate());
+
+  const likedMap = makeMapOfDays(dayDates, likedTweets, (t) => t.firstSeenAt);
+  const retweetedMap = makeMapOfDays(dayDates, retweets, (t) => t.retweetAt);
+
+  const x = days.map((day) => {
+    const tweets = likedMap.get(+day.toDate()) ?? [];
+    const retweets = retweetedMap.get(+day.toDate()) ?? [];
+    return {
+      day: day.format("YYYY-MM-DD"),
+      tweets,
+      retweets,
+      screenTime: totalFromDurations(
+        calculateSessions(getInteractionTimes(tweets, retweets)),
+      ),
+    };
+  });
+  console.timeEnd("process getStatsForDaysInTimePeriod");
+  return x;
+}
+
+export function getDaysInTimePeriod(start: Dayjs, end: Dayjs) {
+  let days = [];
+  for (
+    let date = start.startOf("day");
+    date.isBefore(end.endOf("day"));
+    date = date.add(1, "day")
+  )
+    days.push(date);
+  return days;
 }
