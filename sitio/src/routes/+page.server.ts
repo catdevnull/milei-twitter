@@ -4,7 +4,7 @@ import { likedTweets, retweets, scraps } from "../schema";
 import type { PageServerLoad } from "./$types";
 import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error } from "@sveltejs/kit";
-import { queryLastWeek } from "$lib/data-processing/queryWeekly";
+import { getLastWeek } from "$lib/data-processing/weekly";
 
 const tz = "America/Argentina/Buenos_Aires";
 
@@ -63,7 +63,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
         where: isNotNull(scraps.totalTweetsSeen),
       }),
 
-      queryLastWeek(),
+      getLastWeek(),
 
       db.query.likedTweets.findFirst({
         orderBy: asc(likedTweets.firstSeenAt),

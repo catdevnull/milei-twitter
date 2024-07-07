@@ -7,8 +7,8 @@ import {
   totalFromDurations,
 } from "$lib/data-processing/screenTime";
 import dayjs from "dayjs";
-import { queryLastWeek } from "$lib/data-processing/queryWeekly";
 import { likesCutoffSql } from "$lib/consts";
+import { getLastWeek } from "$lib/data-processing/weekly";
 
 export async function GET() {
   const startingFrom = dayjs()
@@ -55,7 +55,7 @@ export async function GET() {
         ),
         orderBy: desc(retweets.retweetAt),
       }),
-      queryLastWeek(),
+      getLastWeek(),
     ]);
 
   const totalTime = totalFromDurations(
