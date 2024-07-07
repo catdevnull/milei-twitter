@@ -13,6 +13,7 @@ RUN pnpm build \
     && cp -r dbs/* dist/
 
 FROM base
+ENTRYPOINT ["tini", "--"]
 RUN pnpm install --filter=scraper-manzana --prod
 COPY --from=build /app/scraper-manzana/dist dist
 RUN mkdir -p /usr/local/bin \
