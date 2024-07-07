@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { Scraper } from "@catdevnull/twitter-scraper";
+import { Scraper, SearchMode } from "@catdevnull/twitter-scraper";
 import { Cookie, CookieJar } from "tough-cookie";
 import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
@@ -36,8 +36,8 @@ export async function newScraper() {
       let account: AccountInfo;
       do {
         if (failedAccountUsernames.size >= accounts.length) {
-          console.error("no accounts available");
-          process.exit(1); // crying pissing and shitting
+          console.error("resetting failed accounts list");
+          failedAccountUsernames = new Set();
         }
         account = accounts[Math.floor(Math.random() * accounts.length)];
       } while (failedAccountUsernames.has(account.username));
@@ -54,6 +54,7 @@ export async function newScraper() {
           console.debug(`Logged into @${account.username}`);
           for (const cookie of await scraper.getCookies()) {
             await cookieJar.setCookie(cookie.toString(), "https://twitter.com");
+            // await cookieJar.setCookie(cookie.toString(), "https://x.com");
           }
         }
       } catch (error) {
@@ -146,16 +147,9 @@ export async function printLastTweets() {
   }
 }
 
-export async function printJsonlTweets() {
-  const scraper = await getScraper();
-  for await (const tweet of scraper.getTweets("jmilei", Infinity)) {
-    console.log(JSON.stringify(tweet));
-  }
-}
-
 export async function printAllTweetsEver() {
-  const scraper = await getScraper();
-  const queue = new PQueue({ concurrency: 12 });
+  const scraper = await newScraper();
+  const queue = new PQueue({ concurrency: 4 });
   const profile = await scraper.getProfile("jmilei");
 
   let seenIds = new Set<string>();
@@ -172,7 +166,7 @@ export async function printAllTweetsEver() {
       const search = scraper.searchTweets(
         `from:jmilei until:${formatISO(addDays(date, 1), { representation: "date" })} since:${formatISO(date, { representation: "date" })}`,
         999999,
-        SearchMode.Latest,
+        SearchMode.Latest
       );
       for await (const result of search) {
         if (seenIds.has(result.id!)) {
