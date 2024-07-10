@@ -42,9 +42,15 @@ export const load: PageServerLoad = async ({ setHeaders, params }) => {
     "cache-control": "public, max-age=60",
   });
 
+  const monthData = await getStatsForDaysInTimePeriod(db, start, end);
+
+  if (monthData.every((d) => d.retweets.length == 0 && d.tweets.length == 0)) {
+    error(404, "No tenemos datos para ese mes");
+  }
+
   return {
     start: start.toDate(),
     end: end.toDate(),
-    monthData: await getStatsForDaysInTimePeriod(db, start, end),
+    monthData,
   };
 };
