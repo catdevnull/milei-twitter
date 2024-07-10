@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { dayjs, likesCutoff, longDateFormatter, tz } from "$lib/consts";
+  import { dayjs, likesCutoff } from "$lib/consts";
   import {
-    formatDurationFromMs,
     formatTinyDurationFromMs,
     msToDuration,
   } from "$lib/data-processing/screenTime";
@@ -10,9 +9,7 @@
   import Meta from "$lib/components/Meta.svelte";
   import { formatDuration } from "date-fns";
   import { es } from "date-fns/locale/es";
-  import ChartJs from "../../../../ChartJs.svelte";
   import { listen } from "svelte-mq-store";
-  import type { ChartData } from "chart.js";
 
   const isDark = listen("(prefers-color-scheme: dark)", false);
   export let data: PageData;
@@ -35,38 +32,6 @@
 
   $: minTime = Math.min(...daysWithData.map((day) => day.screenTime));
   $: maxTime = Math.max(...daysWithData.map((day) => day.screenTime));
-
-  // type Datasets = ChartData<
-  //   "bar",
-  //   Array<{ x: string | number; y: number }>
-  // >["datasets"];
-  // let datasets: Datasets;
-  // const datalabelConfig: Datasets[0]["datalabels"] = {
-  //   // anchor: "center",
-  //   align: "center",
-  //   clamp: true,
-  //   // offset: 1,
-  //   color: "#000000",
-
-  //   formatter(value, context) {
-  //     return formatTinyDurationFromMs(value.y);
-  //   },
-  // };
-  // $: datasets = [
-  //   {
-  //     label: "Tiempo en Twitter",
-  //     data: data.monthData.map(({ day, screenTime }) => ({
-  //       x: dayjs(day, "YYYY-MM-DD").tz(tz, true).format("DD"),
-  //       y: screenTime,
-  //     })),
-  //     backgroundColor: $isDark ? "#2563eb" : "#93c5fd",
-  //     stack: "bar",
-  //     datalabels: {
-  //       ...datalabelConfig,
-  //       color: $isDark ? "#ffffff" : "#000000",
-  //     },
-  //   },
-  // ];
 </script>
 
 <Meta
@@ -192,64 +157,4 @@
       >milei.nulo.in</a
     >
   </section>
-
-  <!-- <section class="mx-auto w-full max-w-2xl">
-    <ChartJs
-      type="bar"
-      data={{ datasets }}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        layout: {
-          padding: {
-            top: 10,
-          },
-        },
-        scales: {
-          x: {
-            type: "category",
-            ticks: {
-              autoSkip: true,
-              minRotation: 0,
-              maxRotation: 0,
-              color: $isDark ? "#aaaaaa" : "#000000",
-            },
-            grid: {
-              display: false,
-            },
-          },
-          y: {
-            border: { display: false },
-            ticks: {
-              display: false,
-            },
-            grid: {
-              display: false,
-            },
-          },
-        },
-        plugins: {
-          legend: {
-            position: "bottom",
-          },
-          datalabels: {
-            formatter(value, context) {
-              return value.y === 0 ? "" : value.y;
-            },
-          },
-        },
-      }}
-    />
-  </section> -->
-
-  <!-- <ul class="flex flex-col divide-y divide-neutral-300">
-    {#each data.monthData as day}
-      <li class="break-words py-1 leading-tight">
-        <strong class="font-semibold">{day.day}</strong>:
-        <span class="text-neutral-500"
-          >{formatTinyDurationFromMs(day.screenTime)}</span
-        >
-      </li>
-    {/each}
-  </ul> -->
 </main>

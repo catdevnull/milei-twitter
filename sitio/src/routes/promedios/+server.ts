@@ -4,8 +4,5 @@ import { dayjs } from "$lib/consts";
 import { dateToMonthString } from "./[year]/[month]/months";
 export const GET: RequestHandler = async ({}) => {
   const today = dayjs();
-  redirect(
-    302,
-    `/experimentos/promedios/${today.year()}/${dateToMonthString(today)}`,
-  );
+  redirect(302, `/promedios/${today.year()}/${dateToMonthString(today)}`);
 };

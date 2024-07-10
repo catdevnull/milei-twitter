@@ -27,6 +27,7 @@
   import { DatePicker } from "@svelte-plugins/datepicker";
   import Meta from "$lib/components/Meta.svelte";
   import AlertInfo from "$lib/components/AlertInfo.svelte";
+  import { dateToMonthString } from "./promedios/[year]/[month]/months";
 
   export let data: PageData;
 
@@ -82,6 +83,9 @@
     day: "2-digit",
     weekday: "short",
     timeZone: tz,
+  });
+  const monthFormatter = Intl.DateTimeFormat("es-AR", {
+    month: "long",
   });
   function setQuery(query: string) {
     goto(`/?q=${query}`);
@@ -385,6 +389,12 @@
         {/each}
       </tbody>
     </table>
+
+    <a
+      href={`/promedios/${dayjs(data.start).year()}/${dateToMonthString(dayjs(data.start))}`}
+      class="mt-12 text-2xl text-blue-600 underline dark:text-blue-200"
+      >Ver promedio de {monthFormatter.format(data.start)}</a
+    >
   </section>
   <div class="py-8">
     <Footer />
