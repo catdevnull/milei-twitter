@@ -87,14 +87,14 @@
   <section class="mx-auto w-full max-w-2xl">
     <table class="w-full table-fixed">
       <thead>
-        <tr class="text-sm *:font-light">
-          <th>domingo</th>
-          <th>lunes</th>
-          <th>martes</th>
-          <th>miércoles</th>
-          <th>jueves</th>
-          <th>viernes</th>
-          <th>sábado</th>
+        <tr class="break-words text-sm *:font-light">
+          <th>dom.</th>
+          <th>lun.</th>
+          <th>mar.</th>
+          <th>mié.</th>
+          <th>jue.</th>
+          <th>vie.</th>
+          <th>sáb.</th>
         </tr>
       </thead>
       <tbody>
