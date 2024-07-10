@@ -1,6 +1,6 @@
 import { db } from "$lib/db";
 import type { PageServerLoad } from "./$types";
-import { dayjs } from "$lib/consts";
+import { dayjs, tz } from "$lib/consts";
 import { getStatsForDaysInTimePeriod } from "$lib/data-processing/days";
 import { error } from "@sveltejs/kit";
 
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ setHeaders, params }) => {
     error(400, "invalid date");
   }
 
-  const start = dayjs(`${year}-${month}-01`);
+  const start = dayjs(`${year}-${month}-01`).tz(tz);
   const end = start.endOf("month");
 
   setHeaders({

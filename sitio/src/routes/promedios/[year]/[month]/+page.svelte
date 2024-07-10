@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dayjs, likesCutoff } from "$lib/consts";
+  import { dayjs, likesCutoff, tz } from "$lib/consts";
   import {
     formatTinyDurationFromMs,
     msToDuration,
@@ -34,9 +34,9 @@
   $: minTime = Math.min(...daysWithData.map((day) => day.screenTime));
   $: maxTime = Math.max(...daysWithData.map((day) => day.screenTime));
 
-  $: mesAnterior = dayjs(data.start).subtract(1, "month");
+  $: mesAnterior = dayjs(data.start).tz(tz).subtract(1, "month");
   $: mesAnteriorHref = `/promedios/${mesAnterior.year()}/${dateToMonthString(mesAnterior)}`;
-  $: mesProximo = dayjs(data.start).add(1, "month");
+  $: mesProximo = dayjs(data.start).tz(tz).add(1, "month");
   $: mesProximoHref = `/promedios/${mesProximo.year()}/${dateToMonthString(mesProximo)}`;
 </script>
 
@@ -98,7 +98,7 @@
       </thead>
       <tbody>
         {#if true}
-          {@const firstWeek = dayjs(data.start).startOf("week")}
+          {@const firstWeek = dayjs(data.start).tz(tz).startOf("week")}
           {#each [firstWeek, firstWeek.add(1, "week"), firstWeek.add(2, "week"), firstWeek.add(3, "week"), firstWeek.add(4, "week"), firstWeek.add(5, "week")] as week}
             <tr>
               {#each [week, week.add(1, "day"), week.add(2, "day"), week.add(3, "day"), week.add(4, "day"), week.add(5, "day"), week.add(6, "day")] as weekday}
