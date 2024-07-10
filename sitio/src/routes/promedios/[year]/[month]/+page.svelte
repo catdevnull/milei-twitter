@@ -114,9 +114,9 @@
                 {@const a = $isDark ? "black" : "white"}
                 {@const b = $isDark ? "white" : "black"}
                 <td
-                  class="h-0 border align-super md:px-2 dark:border-neutral-800"
+                  class="border align-super md:px-2 dark:border-neutral-800"
                   style={dayData &&
-                    `background: rgb(from ${$isDark ? "white" : "red"} r g b / ${level}); color: ${level && level > ($isDark ? 0.5 : 10) ? a : b}`}
+                    `background: rgb(${$isDark ? "255 255 255" : "255 0 0"} / ${level}); color: ${level && level > ($isDark ? 0.5 : 10) ? a : b}`}
                 >
                   {#if dayData}
                     <div class="flex h-full flex-col justify-between">
