@@ -18,6 +18,7 @@
   const monthFormatter = Intl.DateTimeFormat("es-AR", {
     month: "long",
     year: "numeric",
+    timeZone: tz,
   });
   $: monthString = monthFormatter.format(data.start);
 
