@@ -9,10 +9,8 @@
   import Meta from "$lib/components/Meta.svelte";
   import { formatDuration } from "date-fns";
   import { es } from "date-fns/locale/es";
-  import { listen } from "svelte-mq-store";
   import { dateToMonthString } from "./months";
 
-  const isDark = listen("(prefers-color-scheme: dark)", false);
   export let data: PageData;
 
   const monthFormatter = Intl.DateTimeFormat("es-AR", {
@@ -100,13 +98,7 @@
             <!-- {@const day = dayjs(data.start).add(index * week, "day")} -->
             {@const dayStr = weekday.format("YYYY-MM-DD")}
             {@const dayData = daysWithData.find((x) => x.day === dayStr)}
-            <!-- {@const level =
-                  dayData &&
-                  (dayData.screenTime - minTime) / (maxTime - minTime) +
-                    ($isDark ? 0.15 : 0.15)} -->
             {@const level = dayData && dayData.screenTime / maxTime}
-            {@const a = $isDark ? "black" : "white"}
-            {@const b = $isDark ? "white" : "black"}
             <div
               class="fancy-colors px-1 align-super md:px-2"
               style={dayData && `--level: ${level}`}
