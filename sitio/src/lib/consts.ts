@@ -35,6 +35,7 @@ export const longDateFormatter = Intl.DateTimeFormat("es-AR", {
 });
 export const monthFormatter = Intl.DateTimeFormat("es-AR", {
   month: "long",
+  timeZone: tz,
 });
 
 export { parsearLinkDeTwitter } from "../../../common/parsearLinkDeTwitter.js";
