@@ -99,7 +99,7 @@
           {#each [week, week.add(1, "day"), week.add(2, "day"), week.add(3, "day"), week.add(4, "day"), week.add(5, "day"), week.add(6, "day")] as weekday}
             <!-- {@const day = dayjs(data.start).add(index * week, "day")} -->
             {@const dayStr = weekday.format("YYYY-MM-DD")}
-            {@const dayData = data.monthData.find((x) => x.day === dayStr)}
+            {@const dayData = daysWithData.find((x) => x.day === dayStr)}
             <!-- {@const level =
                   dayData &&
                   (dayData.screenTime - minTime) / (maxTime - minTime) +
