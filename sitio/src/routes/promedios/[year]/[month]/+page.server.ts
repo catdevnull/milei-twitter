@@ -35,7 +35,10 @@ export const load: PageServerLoad = async ({ setHeaders, params }) => {
     error(400, "invalid date");
   }
 
-  const start = dayjs(`${year}-${month}-01`).tz(tz);
+  const start = dayjs(`${year}-${month.toString().padStart(2, "0")}-01`).tz(
+    tz,
+    true,
+  );
   const end = start.endOf("month");
 
   setHeaders({
