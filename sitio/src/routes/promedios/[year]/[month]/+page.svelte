@@ -108,9 +108,8 @@
             {@const a = $isDark ? "black" : "white"}
             {@const b = $isDark ? "white" : "black"}
             <div
-              class="px-1 align-super md:px-2"
-              style={dayData &&
-                `background: rgb(${$isDark ? "255 255 255" : "255 0 0"} / ${level}); color: ${level && level > ($isDark ? 0.5 : 10) ? a : b}`}
+              class="fancy-colors px-1 align-super md:px-2"
+              style={dayData && `--level: ${level}`}
             >
               {#if dayData}
                 <div class="flex h-full flex-col justify-between">
@@ -171,3 +170,16 @@
     >
   </section>
 </main>
+
+<style>
+  .fancy-colors {
+    --background: light-dark(
+      rgb(255 0 0 / var(--level)),
+      rgb(255 255 255 / var(--level))
+    );
+    background: var(--background);
+  }
+  .fancy-colors > div {
+    color: light-dark(black, black);
+  }
+</style>
