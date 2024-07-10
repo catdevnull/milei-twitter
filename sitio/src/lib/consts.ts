@@ -40,7 +40,7 @@ export { parsearLinkDeTwitter } from "../../../common/parsearLinkDeTwitter.js";
 // Twitter hizo privados los likes[1] de todo el mundo. (Milei podría también
 // en cualquier momento ocultar sus likes, pero nunca lo hizo).
 // [1]: https://x.com/wanghaofei/status/1793096366132195529
-export const likesCutoff: null | { cutAt: Date } = {
+export const likesCutoff: { cutAt: Date } = {
   cutAt: new Date("2024-06-12T18:00:00.000Z"),
 };
 export const likesCutoffSql = likesCutoff

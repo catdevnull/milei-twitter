@@ -25,8 +25,8 @@
   } from "$lib/consts";
   import "core-js/es/array/to-reversed";
   import { DatePicker } from "@svelte-plugins/datepicker";
-  import Meta from "./Meta.svelte";
-  import AlertInfo from "./admin/AlertInfo.svelte";
+  import Meta from "$lib/components/Meta.svelte";
+  import AlertInfo from "$lib/components/AlertInfo.svelte";
 
   export let data: PageData;
 

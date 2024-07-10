@@ -93,15 +93,19 @@ export function totalFromDurations(durations: Duration[]): number {
 
 // https://stackoverflow.com/a/65711327
 export function formatDurationFromMs(ms: number) {
-  const duration = intervalToDuration({ start: 0, end: ms });
+  const duration = msToDuration(ms);
   return formatDuration(duration, {
     locale: es,
     delimiter: ", ",
     format: ["hours", "minutes"],
   });
 }
+export function msToDuration(ms: number) {
+  return intervalToDuration({ start: 0, end: ms });
+}
+
 export function formatTinyDurationFromMs(ms: number) {
-  const duration = intervalToDuration({ start: 0, end: ms });
+  const duration = msToDuration(ms);
   // https://github.com/date-fns/date-fns/issues/2134
   return formatDuration(duration, {
     locale: es,

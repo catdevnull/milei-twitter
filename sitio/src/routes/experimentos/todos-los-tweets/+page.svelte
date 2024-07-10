@@ -1,6 +1,6 @@
 <script lang="ts">
   import { likesCutoff, longDateFormatter } from "$lib/consts";
-  import AlertInfo from "../../admin/AlertInfo.svelte";
+  import AlertInfo from "$lib/components/AlertInfo.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;

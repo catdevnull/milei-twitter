@@ -15,7 +15,7 @@
   } from "$lib/consts";
   import Footer from "../Footer.svelte";
   import type { PageServerData } from "./$types";
-  import Meta from "../Meta.svelte";
+  import Meta from "$lib/components/Meta.svelte";
   import cardPerfil from "$lib/assets/card-perfil-likes.jpg";
 
   export let data: PageServerData;

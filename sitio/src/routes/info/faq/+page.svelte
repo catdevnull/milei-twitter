@@ -4,7 +4,7 @@
   import markdownItAnchor from "markdown-it-anchor";
   // @ts-ignore
   import markdownItToc from "markdown-it-table-of-contents";
-  import Meta from "../../Meta.svelte";
+  import Meta from "$lib/components/Meta.svelte";
   const md = markdownit();
   md.use(markdownItAnchor);
   md.use(markdownItToc, {
