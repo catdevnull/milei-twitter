@@ -5,6 +5,7 @@
 
 :root {
   color-scheme: dark light;
+  @apply bg-neutral-100 dark:bg-neutral-900;
 }
 
 .link {
