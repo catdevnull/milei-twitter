@@ -10,6 +10,7 @@
   import { formatDuration } from "date-fns";
   import { es } from "date-fns/locale/es";
   import { listen } from "svelte-mq-store";
+  import { dateToMonthString } from "./months";
 
   const isDark = listen("(prefers-color-scheme: dark)", false);
   export let data: PageData;
@@ -32,6 +33,11 @@
 
   $: minTime = Math.min(...daysWithData.map((day) => day.screenTime));
   $: maxTime = Math.max(...daysWithData.map((day) => day.screenTime));
+
+  $: mesAnterior = dayjs(data.start).subtract(1, "month");
+  $: mesAnteriorHref = `/promedios/${mesAnterior.year()}/${dateToMonthString(mesAnterior)}`;
+  $: mesProximo = dayjs(data.start).add(1, "month");
+  $: mesProximoHref = `/promedios/${mesProximo.year()}/${dateToMonthString(mesProximo)}`;
 </script>
 
 <Meta
@@ -41,11 +47,29 @@
 />
 
 <main class="mx-auto flex min-h-screen max-w-2xl flex-col gap-12 py-4">
-  <h1 class="p-4 text-5xl font-black leading-[1.1em]">
-    Milei pasó un promedio de
-    <span class="text-red-600 dark:text-red-500">{avgString}</span>
-    diarios en Twitter durante {monthString}.
-  </h1>
+  <section class="mx-auto w-full max-w-2xl p-4">
+    <h1 class="mb-4 text-5xl font-black leading-[1.1em]">
+      Milei pasó un promedio de
+      <span class="text-red-600 dark:text-red-500">{avgString}</span>
+      diarios en Twitter durante {monthString}.
+    </h1>
+    <div class="flex flex-wrap gap-2">
+      <a
+        class="focus:shadow-outline inline-flex items-center justify-center gap-2 rounded-md bg-neutral-950 px-2 py-2 text-sm font-medium leading-none tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-800"
+        href={mesAnteriorHref}
+      >
+        <span class="icon-[heroicons--arrow-left-20-solid] size-5"></span>
+        {monthFormatter.format(mesAnterior.toDate())}
+      </a>
+      <a
+        class="focus:shadow-outline inline-flex items-center justify-center gap-2 rounded-md bg-neutral-950 px-2 py-2 text-sm font-medium leading-none tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-800"
+        href={mesProximoHref}
+      >
+        {monthFormatter.format(mesProximo.toDate())}
+        <span class="icon-[heroicons--arrow-right-20-solid] size-5"></span>
+      </a>
+    </div>
+  </section>
 
   {#if data.end > likesCutoff.cutAt}
     <div class="px-4">

@@ -20,6 +20,7 @@
     dayjs,
     likesCutoff,
     longDateFormatter,
+    monthFormatter,
     timeFormatter,
     tz,
   } from "$lib/consts";
@@ -83,9 +84,6 @@
     day: "2-digit",
     weekday: "short",
     timeZone: tz,
-  });
-  const monthFormatter = Intl.DateTimeFormat("es-AR", {
-    month: "long",
   });
   function setQuery(query: string) {
     goto(`/?q=${query}`);
