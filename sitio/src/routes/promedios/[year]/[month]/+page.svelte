@@ -164,12 +164,18 @@
 </main>
 
 <style>
+  @media (prefers-color-scheme: dark) {
+    .fancy-colors {
+      --background: rgb(255 255 255 / var(--level));
+    }
+  }
+  @media (prefers-color-scheme: light) {
+    .fancy-colors {
+      --background: rgb(255 0 0 / var(--level));
+    }
+  }
   .fancy-colors {
-    --background: light-dark(
-      rgb(255 0 0 / var(--level)),
-      rgb(255 255 255 / var(--level))
-    );
-    background: var(--background);
+    background: var(--background, rgb(255 0 0 / var(--level)));
   }
   .fancy-colors > div {
     color: light-dark(black, black);
