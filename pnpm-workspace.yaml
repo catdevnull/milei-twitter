@@ -1,6 +1,5 @@
 packages:
   - sitio
-  - scraper
   - scraper-manzana
   - api
   - twitter-bot
