@@ -13,9 +13,19 @@ import { randomizeCiphers } from "./randomize-tls.ts";
 randomizeCiphers();
 setInterval(randomizeCiphers, 1000 * 60 * 30); // shuffle ciphers every 30 minutes
 
+async function getAccountList() {
+  if (process.env.ACCOUNTS_LIST) {
+    return process.env.ACCOUNTS_LIST;
+  } else {
+    const accountsFilePath = process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt";
+    const accountsFile = await readFile(accountsFilePath, "utf-8");
+    return accountsFile;
+  }
+}
+
 export async function newScraper() {
-  const accountsFilePath = process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt";
-  await readFile(accountsFilePath, "utf-8");
+  // make sure it's readable
+  await getAccountList();
 
   let cookieJar = new CookieJar();
   let loggedIn = false;
@@ -25,9 +35,9 @@ export async function newScraper() {
 
   const logIn = pDebounce.promise(async () => {
     await scraper.logout();
-    const accountsFile = await readFile(accountsFilePath, "utf-8");
+    const accountsList = await getAccountList();
     const accounts = parseAccountList(
-      accountsFile,
+      accountsList,
       process.env.ACCOUNTS_FILE_FORMAT
     );
 
