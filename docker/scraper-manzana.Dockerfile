@@ -22,6 +22,5 @@ RUN mkdir -p /usr/local/bin \
 
 ENV NODE_ENV=production
 ENV DBS_PATH=/db
-VOLUME /db
 
 CMD ["cli", "cron"]
