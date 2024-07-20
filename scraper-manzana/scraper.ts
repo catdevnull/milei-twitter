@@ -70,6 +70,9 @@ export async function newScraper() {
       } catch (error) {
         console.error(`Couldn't login into @${account.username}:`, error);
         failedAccountUsernames.add(account.username);
+        if (((error as any).toString() as string).includes("ArkoseLogin")) {
+          await wait(30 * 1000);
+        }
       }
     }
   });
@@ -159,37 +162,35 @@ export async function printLastTweets() {
 
 export async function printAllTweetsEver(username: string) {
   const scraper = await newScraper();
-  const queue = new PQueue({ concurrency: 4 });
-  const profile = await scraper.getProfile(username);
 
   let seenIds = new Set<string>();
 
-  let min = startOfDay(profile.joined!);
-  let max = startOfDay(new Date());
-  let dates: Date[] = [];
-  for (let date = min; date <= max; date = addDays(date, 1)) {
-    dates.push(date);
-  }
-
-  for (const date of dates) {
-    queue.add(async () => {
-      const search = scraper.searchTweets(
-        `from:${username} until:${formatISO(addDays(date, 1), { representation: "date" })} since:${formatISO(date, { representation: "date" })}`,
-        999999,
-        SearchMode.Latest
-      );
-      for await (const result of search) {
-        if (seenIds.has(result.id!)) {
-          console.warn(`Already seen ${result.id}`);
-          continue;
-        }
-        seenIds.add(result.id!);
-        console.log(JSON.stringify(result));
+  // https://socialdata.gitbook.io/docs/twitter-tweets/retrieve-search-results-by-keyword#retrieving-large-datasets
+  let max_id: null | string = "";
+  while (true) {
+    const query = `from:${username}` + (max_id ? ` max_id:${max_id}` : "");
+    console.debug("query:", query);
+    const search = scraper.searchTweets(query, 999999, SearchMode.Latest);
+    let lowest: null | bigint = null;
+    for await (const result of search) {
+      if (seenIds.has(result.id!)) {
+        console.warn(`Already seen ${result.id}`);
+        continue;
       }
-    });
+      if (!lowest || BigInt(result.id!) < lowest) {
+        lowest = BigInt(result.id!);
+      }
+      seenIds.add(result.id!);
+      console.log(JSON.stringify(result));
+    }
+    if (!lowest) {
+      break;
+    } else {
+      max_id = lowest.toString();
+    }
   }
 
-  await queue.onIdle();
+  console.debug("donezo");
 }
 
 export async function saveRetweets(scraper: Scraper) {
