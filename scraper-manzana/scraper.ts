@@ -157,10 +157,10 @@ export async function printLastTweets() {
   }
 }
 
-export async function printAllTweetsEver() {
+export async function printAllTweetsEver(username: string) {
   const scraper = await newScraper();
   const queue = new PQueue({ concurrency: 4 });
-  const profile = await scraper.getProfile("jmilei");
+  const profile = await scraper.getProfile(username);
 
   let seenIds = new Set<string>();
 
@@ -174,7 +174,7 @@ export async function printAllTweetsEver() {
   for (const date of dates) {
     queue.add(async () => {
       const search = scraper.searchTweets(
-        `from:jmilei until:${formatISO(addDays(date, 1), { representation: "date" })} since:${formatISO(date, { representation: "date" })}`,
+        `from:${username} until:${formatISO(addDays(date, 1), { representation: "date" })} since:${formatISO(date, { representation: "date" })}`,
         999999,
         SearchMode.Latest
       );

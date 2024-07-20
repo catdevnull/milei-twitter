@@ -2,6 +2,7 @@ import {
   boolean,
   command,
   flag,
+  option,
   positional,
   run,
   string,
@@ -44,10 +45,17 @@ const printTweetsCmd = command({
 });
 
 const printAllTweetsEverCmd = command({
-  name: "print all tweets ever without sorting in jsonl",
-  args: {},
+  name: "print all tweets ever (without retweets) without sorting in jsonl",
+  args: {
+    username: option({
+      type: string,
+      long: "username",
+      defaultValue: () => "jmilei",
+      description: "username of user to scrap all tweets of",
+    }),
+  },
   handler(args) {
-    printAllTweetsEver();
+    printAllTweetsEver(args.username);
   },
 });
 
