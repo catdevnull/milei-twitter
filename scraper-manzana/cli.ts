@@ -2,6 +2,7 @@ import {
   boolean,
   command,
   flag,
+  oneOf,
   option,
   positional,
   run,
@@ -18,6 +19,8 @@ import {
   saveLikes,
   saveRetweets,
 } from "./scraper.ts";
+import OpenAI from "openai";
+import { contradictionCarpeteo, sjwCarpeteo } from "./carpeteo.ts";
 
 const printLikesCmd = command({
   name: "print last likes",
@@ -92,6 +95,40 @@ const cronCmd = command({
   },
 });
 
+const carpetearCmd = command({
+  name: "carpetear",
+  args: {
+    param: positional({
+      type: string,
+      displayName: "param",
+    }),
+    prompt: option({
+      type: oneOf(["contradiction", "sjw"]),
+      short: "p",
+      long: "prompt",
+      defaultValue: () => "contradiction",
+    }),
+  },
+  async handler(args) {
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    if (!OPENROUTER_API_KEY) {
+      console.error("no OPENROUTER_API_KEY");
+      process.exit(1);
+    }
+    const scraper = await newScraper();
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: OPENROUTER_API_KEY,
+    });
+
+    if (args.prompt === "contradiction") {
+      await contradictionCarpeteo(scraper, openai, args.param);
+    } else if (args.prompt === "sjw") {
+      await sjwCarpeteo(scraper, openai, args.param);
+    }
+  },
+});
+
 const cmd = subcommands({
   name: "scraper-manzana",
   cmds: {
@@ -101,6 +138,7 @@ const cmd = subcommands({
     "print-all-tweets": printAllTweetsEverCmd,
     "save-retweets": saveRetweetsCmd,
     "print-following": printFollowingCmd,
+    carpetear: carpetearCmd,
     cron: cronCmd,
   },
 });
