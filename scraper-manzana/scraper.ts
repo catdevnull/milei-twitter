@@ -68,7 +68,10 @@ export async function newScraper() {
           }
         }
       } catch (error) {
-        console.error(`Couldn't login into @${account.username}:`, error);
+        console.error(
+          `Couldn't login into @${account.username}:`,
+          (error as any).toString()
+        );
         failedAccountUsernames.add(account.username);
         if (((error as any).toString() as string).includes("ArkoseLogin")) {
           await wait(30 * 1000);
@@ -160,28 +163,31 @@ export async function printLastTweets() {
   }
 }
 
-export async function printAllTweetsEver(username: string) {
-  const scraper = await newScraper();
-
+/**
+ * Returns an iterator of all tweets (posts and replies, no reposts) for a username.
+ * It uses the search endpoint, so it doesn't find reposts.
+ * Newest to oldest.
+ * @param scraper Scraper to use to get tweets
+ * @param username Username of user to look tweets for
+ */
+export async function* getAllTweetsEver(scraper: Scraper, username: string) {
   let seenIds = new Set<string>();
 
   // https://socialdata.gitbook.io/docs/twitter-tweets/retrieve-search-results-by-keyword#retrieving-large-datasets
   let max_id: null | string = "";
   while (true) {
     const query = `from:${username}` + (max_id ? ` max_id:${max_id}` : "");
-    console.debug("query:", query);
     const search = scraper.searchTweets(query, 999999, SearchMode.Latest);
     let lowest: null | bigint = null;
     for await (const result of search) {
       if (seenIds.has(result.id!)) {
-        console.warn(`Already seen ${result.id}`);
         continue;
       }
       if (!lowest || BigInt(result.id!) < lowest) {
         lowest = BigInt(result.id!);
       }
       seenIds.add(result.id!);
-      console.log(JSON.stringify(result));
+      yield result;
     }
     if (!lowest) {
       break;
@@ -189,6 +195,13 @@ export async function printAllTweetsEver(username: string) {
       max_id = lowest.toString();
     }
   }
+}
+
+export async function printAllTweetsEver(username: string) {
+  const scraper = await newScraper();
+
+  for await (const tweet of getAllTweetsEver(scraper, username))
+    console.log(JSON.stringify(tweet));
 
   console.debug("donezo");
 }
