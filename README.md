@@ -10,7 +10,8 @@ echo 'ADMIN_PASSWORD=contraseña' > .env
 pnpm dev
 ```
 
-anda a `/admin` y logeate con la contraseña. agrega una cuenta de Twitter copiando las cookies `auth_token` y `ct0`.
+~~anda a `/admin` y logeate con la contraseña. agrega una cuenta de Twitter copiando las cookies `auth_token` y `ct0`.~~
+esto está desactualizado
 
 ### scraper
 
