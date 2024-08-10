@@ -49,13 +49,25 @@ export async function newScraper() {
       } while (failedAccountUsernames.has(account.username));
       try {
         const scraper = new Scraper();
-        await scraper.login(
-          account.username,
-          account.password,
-          account.email,
-          account.twoFactorSecret
-        );
-        loggedIn = await scraper.isLoggedIn();
+        try {
+          if (!account.authToken) throw false;
+          await scraper.loginWithToken(account.authToken);
+          loggedIn = await scraper.isLoggedIn();
+        } catch (error) {
+          if (error)
+            console.warn(
+              `Couldn't log in with authToken, logging in with username/password`,
+              error
+            );
+
+          await scraper.login(
+            account.username,
+            account.password,
+            account.email,
+            account.twoFactorSecret
+          );
+          loggedIn = await scraper.isLoggedIn();
+        }
         if (loggedIn) {
           console.debug(`Logged into @${account.username}`);
           for (const cookie of await scraper.getCookies()) {
