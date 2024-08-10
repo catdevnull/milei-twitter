@@ -8,10 +8,6 @@ import { AccountInfo, parseAccountList } from "./addAccounts.ts";
 import PQueue from "p-queue";
 import { addDays, format, formatISO, startOfDay } from "date-fns";
 import pDebounce from "p-debounce";
-import { randomizeCiphers } from "./randomize-tls.ts";
-
-randomizeCiphers();
-setInterval(randomizeCiphers, 1000 * 60 * 30); // shuffle ciphers every 30 minutes
 
 async function getAccountList() {
   if (process.env.ACCOUNTS_LIST) {
