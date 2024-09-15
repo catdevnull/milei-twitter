@@ -49,6 +49,7 @@ export async function newScraper() {
       } while (failedAccountUsernames.has(account.username));
       try {
         const scraper = new Scraper();
+        console.debug(account);
         try {
           if (!account.authToken) throw false;
           await scraper.loginWithToken(account.authToken);
@@ -56,8 +57,8 @@ export async function newScraper() {
         } catch (error) {
           if (error)
             console.warn(
-              `Couldn't log in with authToken, logging in with username/password`,
-              error
+              `Couldn't log in with authToken, logging in with username/password. Error:`,
+              error.toString()
             );
 
           await scraper.login(
@@ -70,6 +71,9 @@ export async function newScraper() {
         }
         if (loggedIn) {
           console.debug(`Logged into @${account.username}`);
+          console.debug(
+            `auth_token: ${(await scraper.getCookies()).find((c) => c.key === "auth_token")?.value}`
+          );
           for (const cookie of await scraper.getCookies()) {
             await cookieJar.setCookie(cookie.toString(), "https://twitter.com");
             // await cookieJar.setCookie(cookie.toString(), "https://x.com");

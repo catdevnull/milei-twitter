@@ -40,8 +40,8 @@ importers:
         version: 3.23.8
     devDependencies:
       '@catdevnull/twitter-scraper':
-        specifier: ^0.14.3
-        version: 0.14.3
+        specifier: ^0.14.4
+        version: 0.14.4
       '@types/better-sqlite3':
         specifier: ^7.6.11
         version: 7.6.11
@@ -291,8 +291,8 @@ packages:
   '@bybas/weather-icons@2.0.0':
     resolution: {integrity: sha512-sUcp8kbQZYoYgTpHkQ1vrxKVSHdc4SxzXLuluVZYa5u8Nqq/GhDYOtWrWLqgN/GhwsZ74dja8TlMvyTll4yl0Q==}
 
-  '@catdevnull/twitter-scraper@0.14.3':
-    resolution: {integrity: sha512-W54VX08JpQBE0d6tP4QmnXpxbEUcqha/n3jBsaxlEKyCDSABdVyHu4qIO+u/bPbGFjiN5qaXygLN19E/38r1qQ==}
+  '@catdevnull/twitter-scraper@0.14.4':
+    resolution: {integrity: sha512-7P9QaUNBh7yYgw3uulzsUUp0dgp9qqSYSPB2qSCYzXLNJOHZ+8Jx1dK/waacW/dzkHVdEB/XiBIFc5EzESVGwA==}
     engines: {node: '>=16'}
 
   '@cspotcode/source-map-support@0.8.1':
@@ -3491,7 +3491,7 @@ snapshots:
 
   '@bybas/weather-icons@2.0.0': {}
 
-  '@catdevnull/twitter-scraper@0.14.3':
+  '@catdevnull/twitter-scraper@0.14.4':
     dependencies:
       '@sinclair/typebox': 0.32.35
       cross-fetch: 4.0.0

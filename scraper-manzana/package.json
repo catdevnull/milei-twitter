@@ -24,7 +24,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@catdevnull/twitter-scraper": "^0.14.3",
+    "@catdevnull/twitter-scraper": "^0.14.4",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.14.15",
     "@types/tough-cookie": "^4.0.5",
