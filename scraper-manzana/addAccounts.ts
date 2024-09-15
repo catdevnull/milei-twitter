@@ -28,7 +28,8 @@ export function parseAccountList(
     .replace("email", `(?<email>.*)`)
     .replace("emailPassword", `(?<emailPassword>.*)`)
     .replace("authToken", `(?<authToken>.*)`)
-    .replace("twoFactorSecret", `(?<twoFactorSecret>.*)`);
+    .replace("twoFactorSecret", `(?<twoFactorSecret>.*)`)
+    .replaceAll("ANY", `.*`);
   const exp = new RegExp(regexp);
   const accounts = csvish
     .split(/\r?\n/g)
