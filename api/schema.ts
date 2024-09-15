@@ -19,7 +19,7 @@ export const zRetweet = z.object({
 export type Retweet = z.infer<typeof zRetweet>;
 export const zTweet = z.object({
   id: z.string(),
-  snscrapeJson: z.string(),
+  twitterScraperJson: z.string(),
   capturedAt: z.coerce.date(),
 });
 export const zScrap = z.object({

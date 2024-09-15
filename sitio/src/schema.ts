@@ -76,7 +76,7 @@ export const retweetsRelations = relations(retweets, ({ one, many }) => ({
 
 export const tweets = sqliteTable("db_tweets", {
   id: text("id").notNull().primaryKey(),
-  snscrapeJson: text("snscrape_json", { mode: "json" }).notNull(),
+  twitterScraperJson: text("twitter_scraper_json", { mode: "json" }).notNull(),
   capturedAt: integer("captured_at", { mode: "timestamp" }).notNull(),
 });
 

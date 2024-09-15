@@ -1,8 +1,8 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "724666fe-448e-4d61-8c30-ace262684d68",
-  "prevId": "7ca740c8-11fb-4dc1-a5dc-fa8dfd6c3ebe",
+  "id": "02981f1d-8716-4fb2-af23-b12c393006f0",
+  "prevId": "724666fe-448e-4d61-8c30-ace262684d68",
   "tables": {
     "db_cuentas": {
       "name": "db_cuentas",
@@ -17,43 +17,6 @@
         "account_data_json": {
           "name": "account_data_json",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "db_following_lists": {
-      "name": "db_following_lists",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "captured_at": {
-          "name": "captured_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "following_ids_buffer": {
-          "name": "following_ids_buffer",
-          "type": "blob",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -333,8 +296,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "snscrape_json": {
-          "name": "snscrape_json",
+        "twitter_scraper_json": {
+          "name": "twitter_scraper_json",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -359,5 +322,8 @@
     "schemas": {},
     "tables": {},
     "columns": {}
+  },
+  "internal": {
+    "indexes": {}
   }
 }

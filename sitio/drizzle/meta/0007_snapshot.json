@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "7c4fca40-f837-4c71-8adc-ff3ef1598afa",
-  "prevId": "5f6d2498-edf2-452d-aa4b-74618649fe7a",
   "tables": {
     "db_cuentas": {
       "name": "db_cuentas",
@@ -185,8 +183,9 @@
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "7c4fca40-f837-4c71-8adc-ff3ef1598afa",
+  "prevId": "5f6d2498-edf2-452d-aa4b-74618649fe7a"
 }

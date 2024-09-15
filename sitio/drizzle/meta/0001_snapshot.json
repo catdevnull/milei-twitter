@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "09131c97-f265-47a3-a565-5d2771471205",
-  "prevId": "b85cbadf-8906-4970-89b6-0d578d84a7fd",
   "tables": {
     "db_liked_tweets": {
       "name": "db_liked_tweets",
@@ -37,8 +35,9 @@
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "09131c97-f265-47a3-a565-5d2771471205",
+  "prevId": "b85cbadf-8906-4970-89b6-0d578d84a7fd"
 }

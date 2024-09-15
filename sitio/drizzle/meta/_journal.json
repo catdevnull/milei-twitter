@@ -85,6 +85,13 @@
       "when": 1715543936309,
       "tag": "0011_new_gladiator",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1726427340015,
+      "tag": "0012_abnormal_prodigy",
+      "breakpoints": true
     }
   ]
 }
