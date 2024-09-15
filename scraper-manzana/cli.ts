@@ -129,6 +129,18 @@ const carpetearCmd = command({
   },
 });
 
+const printTweetCmd = command({
+  name: "print tweet",
+  args: {
+    tweetId: positional({ type: string, displayName: "tweet id" }),
+  },
+  async handler(args) {
+    const scraper = await newScraper();
+    const tweet = await scraper.getTweet(args.tweetId);
+    console.log(tweet);
+  },
+});
+
 const cmd = subcommands({
   name: "scraper-manzana",
   cmds: {
@@ -138,6 +150,7 @@ const cmd = subcommands({
     "print-all-tweets": printAllTweetsEverCmd,
     "save-retweets": saveRetweetsCmd,
     "print-following": printFollowingCmd,
+    "print-tweet": printTweetCmd,
     carpetear: carpetearCmd,
     cron: cronCmd,
   },
