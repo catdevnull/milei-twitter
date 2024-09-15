@@ -12,3 +12,5 @@ vite.config.ts.timestamp-*
 sqlite.db*
 
 qighuerojg/
+
+accounts.db
