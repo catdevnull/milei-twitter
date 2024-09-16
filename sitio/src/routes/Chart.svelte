@@ -23,6 +23,7 @@
 
   const hourFormatter = Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
+    hour12: false,
     timeZone: "America/Argentina/Buenos_Aires",
   });
 
