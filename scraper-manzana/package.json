@@ -20,7 +20,7 @@
     "dataloader": "^2.2.2",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.30.10",
+    "drizzle-orm": "^0.33.0",
     "openai": "^4.55.4",
     "zod": "^3.23.8"
   },
@@ -30,7 +30,7 @@
     "@types/node": "^20.14.15",
     "@types/tough-cookie": "^4.0.5",
     "api": "workspace:^",
-    "drizzle-kit": "^0.20.18",
+    "drizzle-kit": "^0.24.2",
     "escape-string-regexp": "^5.0.0",
     "nanoid": "^5.0.7",
     "p-debounce": "^4.0.0",
