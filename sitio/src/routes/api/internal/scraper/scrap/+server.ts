@@ -77,15 +77,19 @@ export async function POST({ request }) {
         });
     }
     for (const tweet of scrap.tweets ?? []) {
+      const values = {
+        capturedAt: tweet.capturedAt,
+        twitterScraperJson: JSON.parse(tweet.twitterScraperJson),
+      };
       await tx
         .insert(tweets)
-        .values({ ...tweet, snscrapeJson: JSON.parse(tweet.snscrapeJson) })
+        .values({
+          id: tweet.id,
+          ...values,
+        })
         .onConflictDoUpdate({
           target: [tweets.id],
-          set: {
-            snscrapeJson: JSON.parse(tweet.snscrapeJson),
-            capturedAt: tweet.capturedAt,
-          },
+          set: values,
           where: gt(tweets.capturedAt, tweet.capturedAt),
         });
     }

@@ -6,7 +6,8 @@
   import type { ChartData } from "chart.js";
 
   import { listen } from "svelte-mq-store";
-  import type { MiniLikedTweet, MiniRetweet } from "../schema";
+  import type { MiniLikedTweet, MiniRetweet, MiniTweet } from "../schema";
+  import { likesCutoff } from "$lib/consts";
   const isDark = listen("(prefers-color-scheme: dark)", false);
 
   type LikedAndRetweeted = { url: string; estimated: Date };
@@ -14,6 +15,9 @@
   export let start: Dayjs;
   export let likedTweets: Array<MiniLikedTweet>;
   export let retweets: Array<MiniRetweet>;
+  export let tweets: Array<MiniTweet>;
+
+  $: tweetsWithoutRetweets = tweets.filter((t) => !t.isRetweet);
 
   $: categories = byCategories(likedTweets, retweets);
 
@@ -179,20 +183,25 @@
 
   let datasets: Datasets;
   $: datasets = [
-    {
-      label: "Retweet+Like",
-      data: Array.from(
-        byHour(
-          categories.likedAndRetweeted.map((t) => t.estimated),
-          start,
-        ),
-      ).map(([time, tweets]) => {
-        return { x: hourFormatter.format(time) + "hs", y: tweets.length };
-      }),
-      backgroundColor: "#d62828",
-      stack: "bar",
-      datalabels: { ...datalabelConfig, color: "#ffffff" },
-    },
+    ...(categories.likedAndRetweeted.length > 0 &&
+    start.isBefore(likesCutoff.cutAt)
+      ? [
+          {
+            label: "Retweet+Like",
+            data: Array.from(
+              byHour(
+                categories.likedAndRetweeted.map((t) => t.estimated),
+                start,
+              ),
+            ).map(([time, tweets]) => {
+              return { x: hourFormatter.format(time) + "hs", y: tweets.length };
+            }),
+            backgroundColor: "#d62828",
+            stack: "bar",
+            datalabels: { ...datalabelConfig, color: "#ffffff" },
+          },
+        ]
+      : []),
     {
       label: "Retweets",
       data: Array.from(
@@ -207,20 +216,42 @@
       stack: "bar",
       datalabels: datalabelConfig,
     },
-    {
-      label: "Likes",
-      data: Array.from(
-        byHour(
-          categories.liked.map((t) => t.firstSeenAt),
-          start,
-        ),
-      ).map(([time, tweets]) => {
-        return { x: hourFormatter.format(time) + "hs", y: tweets.length };
-      }),
-      backgroundColor: "#fcbf49",
-      stack: "bar",
-      datalabels: datalabelConfig,
-    },
+    ...(categories.liked.length > 0 && start.isBefore(likesCutoff.cutAt)
+      ? [
+          {
+            label: "Likes",
+            data: Array.from(
+              byHour(
+                categories.liked.map((t) => t.firstSeenAt),
+                start,
+              ),
+            ).map(([time, tweets]) => {
+              return { x: hourFormatter.format(time) + "hs", y: tweets.length };
+            }),
+            backgroundColor: "#fcbf49",
+            stack: "bar",
+            datalabels: datalabelConfig,
+          },
+        ]
+      : []),
+    ...(tweetsWithoutRetweets.length > 0 || start.isAfter(dayjs("2024-09-15"))
+      ? [
+          {
+            label: "Tweets",
+            data: Array.from(
+              byHour(
+                tweetsWithoutRetweets.map((t) => t.timestamp),
+                start,
+              ),
+            ).map(([time, tweets]) => {
+              return { x: hourFormatter.format(time) + "hs", y: tweets.length };
+            }),
+            backgroundColor: "#A7D8F7",
+            stack: "bar",
+            datalabels: datalabelConfig,
+          },
+        ]
+      : []),
   ];
 </script>
 

@@ -33,7 +33,7 @@
   export let data: PageData;
 
   const startOfActivity = dayjs("2024-02-12", "YYYY-MM-DD").toDate();
-  $: dudoso = filteredTweets.some((t) => t.firstSeenAt < startOfActivity);
+  $: dudoso = filteredLikedTweets.some((t) => t.firstSeenAt < startOfActivity);
   const crashStart = dayjs("2024-02-19T20:00:00.000-03:00").toDate();
   const crashEnd = dayjs("2024-02-20T01:00:00.000-03:00").toDate();
   $: dudosoCrashScraper = filteredRetweets.some(
@@ -60,15 +60,16 @@
       dayjs(t.retweetAt).isAfter(likesCutoff?.cutAt),
     );
 
-  $: filteredTweets = data.tweets;
+  $: filteredLikedTweets = data.likedTweets;
   $: filteredRetweets = data.retweets;
+  $: filteredTweets = data.tweets;
 
   $: ranges = calculateSessions(
-    getInteractionTimes(filteredTweets, filteredRetweets),
+    getInteractionTimes(filteredLikedTweets, filteredRetweets),
   );
   $: totalTime = totalFromDurations(ranges);
 
-  $: masLikeados = sortMostLiked(filteredTweets);
+  $: masLikeados = sortMostLiked(filteredLikedTweets);
   $: masRetweeteados = sortMostRetweeted(filteredRetweets);
 
   $: ultimaSemana = data.ultimaSemana;
@@ -113,7 +114,7 @@
         .filter((d) => +d !== +hoy)
         .map((date) => weeklyOpcion(date)),
     ];
-    if (!opciones.some((op) => op.date && +start == +op.date)) {
+    if (!opciones.some((op) => "date" in op && op.date && +start == +op.date)) {
       opciones.push({
         query: getWeeklyQuery(start),
         label: dateFormatter.format(start),
@@ -207,7 +208,7 @@
       {#if likesCutoffReached}
         {filteredRetweets.length}
       {:else}
-        {filteredTweets.length}
+        {filteredLikedTweets.length}
       {/if}
     </h2>
     <small>
@@ -232,8 +233,9 @@
 
   <section class="mx-auto w-full max-w-2xl">
     <Chart
-      likedTweets={filteredTweets}
+      likedTweets={filteredLikedTweets}
       retweets={filteredRetweets}
+      tweets={filteredTweets}
       start={dayjs(data.start)}
     />
   </section>

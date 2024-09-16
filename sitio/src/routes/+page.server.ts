@@ -1,6 +1,6 @@
 import { db } from "$lib/db";
-import { and, asc, desc, gte, isNotNull, lt, lte } from "drizzle-orm";
-import { likedTweets, retweets, scraps } from "../schema";
+import { and, asc, desc, gte, isNotNull, lt, lte, sql } from "drizzle-orm";
+import * as schema from "../schema";
 import type { PageServerLoad } from "./$types";
 import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error } from "@sveltejs/kit";
@@ -31,45 +31,77 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   const endsAt = startingFrom.add(24, "hour");
 
   const t0 = performance.now();
-  const [tweets, retweetss, lastUpdated, ultimaSemana, firstLikedTweet] =
-    await Promise.all([
-      db.query.likedTweets.findMany({
-        columns: {
-          firstSeenAt: true,
-          url: true,
-        },
-        where: and(
-          gte(likedTweets.firstSeenAt, startingFrom.toDate()),
-          lt(likedTweets.firstSeenAt, endsAt.toDate()),
-          likesCutoffSql,
+  const [
+    likedTweets,
+    retweets,
+    tweets,
+    lastUpdated,
+    ultimaSemana,
+    firstLikedTweet,
+  ] = await Promise.all([
+    db.query.likedTweets.findMany({
+      columns: {
+        firstSeenAt: true,
+        url: true,
+      },
+      where: and(
+        gte(schema.likedTweets.firstSeenAt, startingFrom.toDate()),
+        lt(schema.likedTweets.firstSeenAt, endsAt.toDate()),
+        likesCutoffSql,
+      ),
+      orderBy: desc(schema.likedTweets.firstSeenAt),
+    }),
+    db.query.retweets.findMany({
+      columns: {
+        retweetAt: true,
+        posterId: true,
+        postId: true,
+        posterHandle: true,
+      },
+      where: and(
+        gte(schema.retweets.retweetAt, startingFrom.toDate()),
+        lt(schema.retweets.retweetAt, endsAt.toDate()),
+      ),
+      orderBy: desc(schema.retweets.retweetAt),
+    }),
+    db.query.tweets.findMany({
+      columns: {},
+      extras: {
+        timestamp:
+          sql<number>`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`.as(
+            "timestamp",
+          ),
+        isRetweet:
+          sql<boolean>`json_extract(${schema.tweets.twitterScraperJson}, '$.isRetweet')`.as(
+            "isRetweet",
+          ),
+      },
+      where: and(
+        gte(
+          sql`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`,
+          +startingFrom / 1000,
         ),
-        orderBy: desc(likedTweets.firstSeenAt),
-      }),
-      db.query.retweets.findMany({
-        columns: {
-          retweetAt: true,
-          posterId: true,
-          postId: true,
-          posterHandle: true,
-        },
-        where: and(
-          gte(retweets.retweetAt, startingFrom.toDate()),
-          lt(retweets.retweetAt, endsAt.toDate()),
+        lt(
+          sql`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`,
+          +endsAt / 1000,
         ),
-        orderBy: desc(retweets.retweetAt),
-      }),
-      db.query.scraps.findFirst({
-        orderBy: desc(scraps.finishedAt),
-        where: isNotNull(scraps.totalTweetsSeen),
-      }),
+      ),
+      orderBy: desc(
+        sql`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`,
+      ),
+    }),
+    db.query.scraps.findFirst({
+      orderBy: desc(schema.scraps.finishedAt),
+      where: isNotNull(schema.scraps.totalTweetsSeen),
+    }),
 
-      getLastWeek(),
+    getLastWeek(),
 
-      db.query.likedTweets.findFirst({
-        orderBy: asc(likedTweets.firstSeenAt),
-        where: likesCutoffSql,
-      }),
-    ]);
+    db.query.likedTweets.findFirst({
+      orderBy: asc(schema.likedTweets.firstSeenAt),
+      where: likesCutoffSql,
+    }),
+  ]);
   const t1 = performance.now();
   console.log("queries", t1 - t0);
 
@@ -78,8 +110,12 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   });
 
   return {
-    tweets,
-    retweets: retweetss,
+    likedTweets,
+    retweets,
+    tweets: tweets.map((t) => ({
+      ...t,
+      timestamp: new Date(t.timestamp * 1000),
+    })),
     lastUpdated,
     start: startingFrom.toDate(),
     ultimaSemana,
