@@ -3,6 +3,7 @@ import { openScrapsDb } from "../index.ts";
 import * as schema from "./schema.ts";
 import { Scrap, zPostScrapRes, zScrap } from "api/schema.ts";
 import { eq, isNull } from "drizzle-orm";
+import "dotenv/config";
 
 const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
 console.info(`API_URL=${API_URL}`);
@@ -59,7 +60,7 @@ class ScrapsDb {
   }
 }
 
-const db = new ScrapsDb();
+export const db = new ScrapsDb();
 
 export const pushScrap = db.pushScrap.bind(db);
 

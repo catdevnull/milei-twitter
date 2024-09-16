@@ -19,6 +19,7 @@
     "cmd-ts": "^0.13.0",
     "dataloader": "^2.2.2",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.30.10",
     "openai": "^4.55.4",
     "zod": "^3.23.8"
