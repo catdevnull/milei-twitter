@@ -17,10 +17,11 @@ import {
   printLastLikes,
   printLastTweets,
   saveLikes,
-  saveRetweets,
+  saveTweetsAndRetweets,
 } from "./scraper.ts";
 import OpenAI from "openai";
 import { contradictionCarpeteo, sjwCarpeteo } from "./carpeteo.ts";
+import { db } from "./dbs/scraps/index.ts";
 
 const printLikesCmd = command({
   name: "print last likes",
@@ -62,12 +63,12 @@ const printAllTweetsEverCmd = command({
   },
 });
 
-const saveRetweetsCmd = command({
-  name: "save last retweets",
+const saveTweetsAndRetweetsCmd = command({
+  name: "save last tweets and retweets",
   args: {},
   async handler() {
     const scraper = await newScraper();
-    saveRetweets(scraper);
+    saveTweetsAndRetweets(scraper);
   },
 });
 
@@ -133,11 +134,29 @@ const printTweetCmd = command({
   name: "print tweet",
   args: {
     tweetId: positional({ type: string, displayName: "tweet id" }),
+    json: flag({
+      type: boolean,
+      short: "j",
+      long: "json",
+      defaultValue: () => false,
+    }),
   },
   async handler(args) {
     const scraper = await newScraper();
     const tweet = await scraper.getTweet(args.tweetId);
-    console.log(tweet);
+    if (args.json) {
+      console.log(JSON.stringify(tweet));
+    } else {
+      console.log(tweet);
+    }
+  },
+});
+
+const flushCmd = command({
+  name: "flush scraps",
+  args: {},
+  async handler() {
+    await db.flushScraps();
   },
 });
 
@@ -148,9 +167,10 @@ const cmd = subcommands({
     "save-likes": saveLikesCmd,
     "print-tweets": printTweetsCmd,
     "print-all-tweets": printAllTweetsEverCmd,
-    "save-retweets": saveRetweetsCmd,
+    "save-tweets": saveTweetsAndRetweetsCmd,
     "print-following": printFollowingCmd,
     "print-tweet": printTweetCmd,
+    flush: flushCmd,
     carpetear: carpetearCmd,
     cron: cronCmd,
   },

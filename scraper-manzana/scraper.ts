@@ -1,13 +1,12 @@
 import { readFile } from "node:fs/promises";
-import { Scraper, SearchMode } from "@catdevnull/twitter-scraper";
+import { Scraper, SearchMode, Tweet } from "@catdevnull/twitter-scraper";
 import { Cookie, CookieJar } from "tough-cookie";
-import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
+import { LikedTweet, Retweet, Scrap, zTweet } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { pushScrap } from "./dbs/scraps/index.ts";
 import { AccountInfo, parseAccountList } from "./addAccounts.ts";
-import PQueue from "p-queue";
-import { addDays, format, formatISO, startOfDay } from "date-fns";
 import pDebounce from "p-debounce";
+import { z } from "zod";
 
 async function getAccountList() {
   if (process.env.ACCOUNTS_LIST) {
@@ -218,11 +217,18 @@ export async function printAllTweetsEver(username: string) {
   console.debug("donezo");
 }
 
-export async function saveRetweets(scraper: Scraper) {
+export async function saveTweetsAndRetweets(scraper: Scraper) {
   let totalTweetsSeen = 0;
   let retweets: Array<Retweet> = [];
+  // XXX: por ahora, estamos guardando los retweets tambien como tweets
+  let tweets: Array<z.infer<typeof zTweet>> = [];
   for await (const tweet of scraper.getTweets("jmilei")) {
     totalTweetsSeen++;
+    tweets.push({
+      id: tweet.id!,
+      twitterScraperJson: JSON.stringify(tweet),
+      capturedAt: new Date(),
+    });
     if (!tweet.permanentUrl) throw new Error("no permanentUrl");
     if (!tweet.timeParsed) throw new Error("no timeParsed");
     if (tweet.retweetedStatus) {
@@ -246,13 +252,13 @@ export async function saveRetweets(scraper: Scraper) {
         retweetAt: tweet.timeParsed,
       });
     }
-    // TODO: subir tweets en formato snscrape
   }
 
   const scrap: Scrap = {
     finishedAt: new Date(),
     likedTweets: [],
     retweets,
+    tweets,
     totalTweetsSeen,
     uid: nanoid(),
   };
@@ -283,10 +289,12 @@ export async function cron() {
     // }
 
     try {
-      const scrap = await saveRetweets(scraper);
-      console.log(`scrapped retweets, seen ${scrap.totalTweetsSeen}`);
+      const scrap = await saveTweetsAndRetweets(scraper);
+      console.log(
+        `scrapped tweets and retweets, seen ${scrap.totalTweetsSeen}`
+      );
     } catch (error) {
-      console.error(`[error] retweets`, error);
+      console.error(`[error] tweets and retweets`, error);
     }
 
     await wait(50 * 1000 + Math.random() * 15 * 1000);
