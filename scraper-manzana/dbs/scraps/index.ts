@@ -2,7 +2,7 @@ import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { openScrapsDb } from "../index.ts";
 import * as schema from "./schema.ts";
 import { Scrap, zPostScrapRes, zScrap } from "api/schema.ts";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNotNull, isNull } from "drizzle-orm";
 import "dotenv/config";
 
 const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
@@ -39,24 +39,40 @@ class ScrapsDb {
       where: isNull(schema.scraps.savedWithId),
     });
     console.info(`[scraps] flushing ${scrapsToSave.length} scraps`);
-    await Promise.all(
-      scrapsToSave.map(async (entry) => {
-        try {
-          const { scrapId } = await sendScrapToApi(entry.json, this.API_TOKEN);
-          await (
-            await this.db
-          )
-            .update(schema.scraps)
-            .set({
-              savedWithId: scrapId,
-            })
-            .where(eq(schema.scraps.uid, entry.uid));
-          console.info(`[scraps] flushed ${entry.uid} into ${scrapId}`);
-        } catch (error) {
-          console.error(`[scraps] failed to upload scrap ${entry.uid}`, error);
-        }
-      })
-    );
+    const allSaved = (
+      await Promise.all(
+        scrapsToSave.map(async (entry) => {
+          try {
+            const { scrapId } = await sendScrapToApi(
+              entry.json,
+              this.API_TOKEN
+            );
+            await (
+              await this.db
+            )
+              .update(schema.scraps)
+              .set({
+                savedWithId: scrapId,
+              })
+              .where(eq(schema.scraps.uid, entry.uid));
+            console.info(`[scraps] flushed ${entry.uid} into ${scrapId}`);
+            return true;
+          } catch (error) {
+            console.error(
+              `[scraps] failed to upload scrap ${entry.uid}`,
+              error
+            );
+            return false;
+          }
+        })
+      )
+    ).every(Boolean);
+    if (allSaved) {
+      console.info(`[scraps] deleting already pushed scraps`);
+      await (await this.db)
+        .delete(schema.scraps)
+        .where(isNotNull(schema.scraps.savedWithId));
+    }
   }
 }
 
