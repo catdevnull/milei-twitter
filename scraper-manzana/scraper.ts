@@ -7,6 +7,14 @@ import { pushScrap } from "./dbs/scraps/index.ts";
 import { AccountInfo, parseAccountList } from "./addAccounts.ts";
 import pDebounce from "p-debounce";
 import { z } from "zod";
+import {
+  fetch,
+  Headers,
+  ProxyAgent,
+  Request,
+  RequestInit,
+  Response,
+} from "undici";
 
 async function getAccountList() {
   if (process.env.ACCOUNTS_LIST) {
@@ -18,6 +26,19 @@ async function getAccountList() {
   }
 }
 
+async function fetchWithProxy(
+  input: string | URL | Request,
+  init: RequestInit | undefined
+) {
+  const proxyUrl = process.env.PROXY_URL;
+  if (!proxyUrl) {
+    return fetch(input, init);
+  }
+
+  const proxyAgent = new ProxyAgent(proxyUrl);
+  return fetch(input, { ...init, dispatcher: proxyAgent });
+}
+
 export async function newScraper() {
   // make sure it's readable
   await getAccountList();
@@ -26,7 +47,10 @@ export async function newScraper() {
   let loggedIn = false;
 
   let failedAccountUsernames = new Set<string>();
-  const scraper = new Scraper({ fetch: fetchWithRandomAccount });
+  const scraper = new Scraper({
+    // we are using any because of undici types mismatch
+    fetch: fetchWithRandomAccount as any,
+  });
 
   const logIn = pDebounce.promise(async () => {
     await scraper.logout();
@@ -110,7 +134,7 @@ export async function newScraper() {
       }
     }
 
-    const response = await fetch(input, { ...init, headers });
+    const response = await fetchWithProxy(input, { ...init, headers });
     {
       const cookie = Cookie.parse(response.headers.get("set-cookie") || "");
       if (cookie) cookieJar.setCookie(cookie, response.url);
