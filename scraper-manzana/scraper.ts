@@ -167,7 +167,23 @@ export async function newScraper() {
       return await fetchWithRandomAccount(input, init);
     }
 
-    return response;
+    const json = await response.json();
+    if (
+      "errors" in (json as any) &&
+      (json as any).errors != null &&
+      (json as any).errors.length > 0
+    ) {
+      cookieJar = new CookieJar();
+      loggedIn = false;
+      console.warn(`error in response, retrying with another account`);
+      return await fetchWithRandomAccount(input, init);
+    }
+
+    return new Response(JSON.stringify(json), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
   }
 
   return scraper;
