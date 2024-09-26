@@ -46,8 +46,8 @@ importers:
         version: 3.23.8
     devDependencies:
       '@catdevnull/twitter-scraper':
-        specifier: ^0.14.4
-        version: 0.14.4
+        specifier: ^0.14.5
+        version: 0.14.5
       '@types/better-sqlite3':
         specifier: ^7.6.11
         version: 7.6.11
@@ -297,8 +297,8 @@ packages:
   '@bybas/weather-icons@2.0.0':
     resolution: {integrity: sha512-sUcp8kbQZYoYgTpHkQ1vrxKVSHdc4SxzXLuluVZYa5u8Nqq/GhDYOtWrWLqgN/GhwsZ74dja8TlMvyTll4yl0Q==}
 
-  '@catdevnull/twitter-scraper@0.14.4':
-    resolution: {integrity: sha512-7P9QaUNBh7yYgw3uulzsUUp0dgp9qqSYSPB2qSCYzXLNJOHZ+8Jx1dK/waacW/dzkHVdEB/XiBIFc5EzESVGwA==}
+  '@catdevnull/twitter-scraper@0.14.5':
+    resolution: {integrity: sha512-3gBhi4q8By2JNMk1lGnN1SdJUfSXYpVKS7yUHJ5XFlaZliorkqUtK6aHrBa7FuaHeuzXm/SJTVYOi+pZVwAizw==}
     engines: {node: '>=16'}
 
   '@cspotcode/source-map-support@0.8.1':
@@ -1104,9 +1104,9 @@ packages:
   '@neon-rs/load@0.0.4':
     resolution: {integrity: sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw==}
 
-  '@noble/hashes@1.4.0':
-    resolution: {integrity: sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==}
-    engines: {node: '>= 16'}
+  '@noble/hashes@1.5.0':
+    resolution: {integrity: sha512-1j6kQFb7QRru7eKN3ZDvRcP13rugwdxZqCjbiAVZfIJwgj2A65UmT4TgARXGlXgnRkORLTDTrO19ZErt7+QXgA==}
+    engines: {node: ^14.21.3 || >=16}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2674,8 +2674,8 @@ packages:
       zod:
         optional: true
 
-  otpauth@9.3.2:
-    resolution: {integrity: sha512-KixtXWN9RGdS8WHPfDo7qsOYiivCbl+VeLBT+7HBTtJebBO6aXr/bpZXr+TwY2COecdY82VeBghm31mLYQVZlQ==}
+  otpauth@9.3.3:
+    resolution: {integrity: sha512-4w8X5BqWsnt/w0knrr94Eho+gY0m6Wr2J1lfi2J0GnJkF/iauqZ2X3QA4wou7efhzT590jcZBRW8Y9EdQPGFRw==}
 
   p-debounce@4.0.0:
     resolution: {integrity: sha512-4Ispi9I9qYGO4lueiLDhe4q4iK5ERK8reLsuzH6BPaXn53EGaua8H66PXIFGrW897hwjXp+pVLrm/DLxN0RF0A==}
@@ -2989,9 +2989,6 @@ packages:
     resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
     engines: {node: '>=10'}
     hasBin: true
-
-  set-cookie-parser@2.6.0:
-    resolution: {integrity: sha512-RVnVQxTXuerk653XfuliOxBP81Sf0+qfQE73LIYKcyMYHG94AuH0kgrQpRDuTZnSmjpysHmzxJXKNfa6PjFhyQ==}
 
   set-cookie-parser@2.7.0:
     resolution: {integrity: sha512-lXLOiqpkUumhRdFF3k1osNXCy9akgx/dyPZ5p8qAg9seJzXr5ZrlqZuWIMuY6ejOsVLE6flJ5/h3lsn57fQ/PQ==}
@@ -3448,16 +3445,16 @@ snapshots:
 
   '@bybas/weather-icons@2.0.0': {}
 
-  '@catdevnull/twitter-scraper@0.14.4':
+  '@catdevnull/twitter-scraper@0.14.5':
     dependencies:
       '@sinclair/typebox': 0.32.35
       cross-fetch: 4.0.0
       headers-polyfill: 3.3.0
       json-stable-stringify: 1.1.1
-      otpauth: 9.3.2
-      set-cookie-parser: 2.6.0
+      otpauth: 9.3.3
+      set-cookie-parser: 2.7.0
       tough-cookie: 4.1.4
-      tslib: 2.6.3
+      tslib: 2.7.0
     transitivePeerDependencies:
       - encoding
 
@@ -3928,7 +3925,7 @@ snapshots:
 
   '@neon-rs/load@0.0.4': {}
 
-  '@noble/hashes@1.4.0': {}
+  '@noble/hashes@1.5.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -5430,9 +5427,9 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  otpauth@9.3.2:
+  otpauth@9.3.3:
     dependencies:
-      '@noble/hashes': 1.4.0
+      '@noble/hashes': 1.5.0
 
   p-debounce@4.0.0: {}
 
@@ -5703,8 +5700,6 @@ snapshots:
       rimraf: 2.7.1
 
   semver@7.6.3: {}
-
-  set-cookie-parser@2.6.0: {}
 
   set-cookie-parser@2.7.0: {}
 
