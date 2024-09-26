@@ -17,7 +17,10 @@ import {
 } from "undici";
 
 async function getAccountList() {
-  if (process.env.ACCOUNTS_LIST) {
+  if (process.env.AUTH_TOKEN) {
+    process.env.ACCOUNTS_FILE_FORMAT = "authToken";
+    return `${process.env.AUTH_TOKEN}`;
+  } else if (process.env.ACCOUNTS_LIST) {
     return process.env.ACCOUNTS_LIST;
   } else {
     const accountsFilePath = process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt";
@@ -78,11 +81,20 @@ export async function newScraper() {
           await scraper.loginWithToken(account.authToken);
           loggedIn = await scraper.isLoggedIn();
         } catch (error) {
-          if (error)
-            console.warn(
-              `Couldn't log in with authToken, logging in with username/password. Error:`,
-              error.toString()
-            );
+          if (error) {
+            if (account.username && account.password) {
+              console.warn(
+                `Couldn't log in with authToken, logging in with username/password. Error:`,
+                error.toString()
+              );
+            } else {
+              console.warn(
+                `Couldn't log in with authToken, and no username/password provided. Error:`,
+                error.toString()
+              );
+              throw error;
+            }
+          }
 
           await scraper.login(
             account.username,
