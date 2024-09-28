@@ -12,8 +12,9 @@ import {
 } from "./schemas.ts";
 import type { Tweet } from "@catdevnull/twitter-scraper";
 import { db } from "../dbs/scraps/index.ts";
-import type { Retweet, zTweet } from "api/schema.ts";
+import type { Retweet, Scrap, zTweet } from "api/schema.ts";
 import { nanoid } from "nanoid";
+import { fetch } from "undici";
 
 function headers() {
   const SOCIALDATA_API_KEY = process.env.SOCIALDATA_API_KEY;
@@ -27,8 +28,11 @@ function headers() {
 }
 
 async function get(url: string): Promise<unknown> {
+  console.debug(`--> ${url}`);
   const response = await fetch(url, { headers: headers() });
-  const json = await response.json();
+  console.debug(`--> ${response.status} ${response.statusText}`);
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  const json = (await response.json()) as any;
   if (json.status === "error") {
     throw new Error(json.message);
   }
@@ -131,7 +135,9 @@ export function intoTwitterScraperTweet(
     thread: [], // TODO: check
     timeParsed: new Date(tweet.tweet_created_at),
     timestamp: new Date(tweet.tweet_created_at).getTime() / 1000,
-    urls: tweet.entities.urls.map((url) => url.expanded_url), // Assuming urls have an expanded_url property
+    urls: tweet.entities.urls
+      .map((url) => url.expanded_url)
+      .filter((url): url is string => typeof url === "string"),
     userId: tweet.user.id_str,
     username: tweet.user.screen_name,
     videos: [], // Would need to parse entities.media for videos
@@ -141,57 +147,72 @@ export function intoTwitterScraperTweet(
   };
 }
 
+export function tweetIntoRetweet(tweet: Tweet): Retweet {
+  if (!tweet.retweetedStatus) {
+    throw new Error("tweet is not a retweet");
+  }
+  return {
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    text: tweet.retweetedStatus.text!,
+    firstSeenAt: new Date(),
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    postedAt: tweet.retweetedStatus.timeParsed!,
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    posterHandle: tweet.retweetedStatus.username!,
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    posterId: tweet.retweetedStatus.userId!,
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    postId: tweet.retweetedStatus.id!,
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    retweetAt: tweet.timeParsed!,
+  };
+}
+
+export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
+  const tweets: Array<z.infer<typeof zTweet>> = [];
+  const retweets: Array<Retweet> = [];
+  try {
+    for await (const tweet of getTweetsAndRepliesIterator("jmilei")) {
+      tweets.push({
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        id: tweet.id!,
+        twitterScraperJson: JSON.stringify(tweet),
+        capturedAt: new Date(),
+      });
+
+      if (tweet.retweetedStatus) {
+        retweets.push(tweetIntoRetweet(tweet));
+      }
+
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      if (lastTweetIds?.includes(tweet.id!)) {
+        break;
+      }
+      if (tweets.length > (lastTweetIds?.length || 199)) {
+        break;
+      }
+    }
+  } catch (error) {
+    console.error("[error] tweets and retweets", error);
+  }
+  console.info(`--> ${tweets.length} tweets`);
+  return {
+    finishedAt: new Date(),
+    likedTweets: [],
+    retweets,
+    tweets,
+    totalTweetsSeen: tweets.length,
+    uid: nanoid(),
+  };
+}
+
 export async function cron() {
   while (true) {
     const lastScrap = await db.getLastScrap();
-    const tweets: Array<z.infer<typeof zTweet>> = [];
-    const retweets: Array<Retweet> = [];
-    try {
-      for await (const tweet of getTweetsAndRepliesIterator("jmilei")) {
-        tweets.push({
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          id: tweet.id!,
-          twitterScraperJson: JSON.stringify(tweet),
-          capturedAt: new Date(),
-        });
-
-        if (tweet.retweetedStatus) {
-          retweets.push({
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            text: tweet.retweetedStatus.text!,
-            firstSeenAt: new Date(),
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            postedAt: tweet.retweetedStatus.timeParsed!,
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            posterHandle: tweet.retweetedStatus.username!,
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            posterId: tweet.retweetedStatus.userId!,
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            postId: tweet.retweetedStatus.id!,
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            retweetAt: tweet.timeParsed!,
-          });
-        }
-
-        if (lastScrap?.tweets?.find((t) => t.id === tweet.id)) {
-          break;
-        }
-        if (tweets.length > (lastScrap?.tweets?.length || 199)) {
-          break;
-        }
-      }
-    } catch (error) {
-      console.error("[error] tweets and retweets", error);
-    }
-    console.info(`--> ${tweets.length} tweets`);
-    await db.pushScrap({
-      finishedAt: new Date(),
-      likedTweets: [],
-      retweets,
-      tweets,
-      totalTweetsSeen: tweets.length,
-      uid: nanoid(),
-    });
+    const scrap = await scrapNewTweets(
+      lastScrap?.tweets?.map((t) => t.id) || []
+    );
+    await db.pushScrap(scrap);
     await new Promise((resolve) => setTimeout(resolve, 30 * 60 * 1000));
   }
 }

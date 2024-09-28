@@ -108,7 +108,7 @@ export const db = new ScrapsDb();
 
 export const pushScrap = db.pushScrap.bind(db);
 
-async function sendScrapToApi(scrapJson: string, token: string) {
+export async function sendScrapToApi(scrapJson: string, token: string) {
   const res = await fetch(`${API_URL}/api/internal/scraper/scrap`, {
     method: "POST",
     headers: {
