@@ -22,6 +22,12 @@ import {
 import OpenAI from "openai";
 import { contradictionCarpeteo, sjwCarpeteo } from "./carpeteo.ts";
 import { db } from "./dbs/scraps/index.ts";
+import {
+  getTweet,
+  getTweetsAndRepliesIterator,
+  intoTwitterScraperTweet,
+  cron as cronSocialdata,
+} from "./socialdata/scraper.ts";
 
 const printLikesCmd = command({
   name: "print last likes",
@@ -96,6 +102,14 @@ const cronCmd = command({
   },
 });
 
+const cronSocialdataCmd = command({
+  name: "cron-socialdata",
+  args: {},
+  handler() {
+    cronSocialdata();
+  },
+});
+
 const carpetearCmd = command({
   name: "carpetear",
   args: {
@@ -160,6 +174,49 @@ const flushCmd = command({
   },
 });
 
+const printTweetsAndRepliesSocialdataCmd = command({
+  name: "print tweets and replies via socialdata",
+  args: {
+    username: positional({ type: string, displayName: "username" }),
+  },
+  async handler(args) {
+    let i = 0;
+    for await (const tweet of getTweetsAndRepliesIterator(args.username)) {
+      console.log(tweet);
+      i++;
+      if (i > 39) {
+        console.log(`--> ${i} tweets`);
+        process.exit(0);
+      }
+    }
+  },
+});
+
+const printTweetSocialdataCmd = command({
+  name: "print tweet via socialdata",
+  args: {
+    tweetId: positional({ type: string, displayName: "tweet id" }),
+    json: flag({
+      type: boolean,
+      short: "j",
+      long: "json",
+      defaultValue: () => false,
+    }),
+  },
+  async handler(args) {
+    const tweet = await getTweet(args.tweetId);
+    if ("status" in tweet) {
+      console.error(tweet);
+      process.exit(1);
+    }
+    if (args.json) {
+      console.log(JSON.stringify(intoTwitterScraperTweet(tweet)));
+    } else {
+      console.log(intoTwitterScraperTweet(tweet));
+    }
+  },
+});
+
 const cmd = subcommands({
   name: "scraper-manzana",
   cmds: {
@@ -170,9 +227,12 @@ const cmd = subcommands({
     "save-tweets": saveTweetsAndRetweetsCmd,
     "print-following": printFollowingCmd,
     "print-tweet": printTweetCmd,
+    "print-tweet-socialdata": printTweetSocialdataCmd,
+    "print-tweets-and-replies-socialdata": printTweetsAndRepliesSocialdataCmd,
     flush: flushCmd,
     carpetear: carpetearCmd,
     cron: cronCmd,
+    "cron-socialdata": cronSocialdataCmd,
   },
 });
 

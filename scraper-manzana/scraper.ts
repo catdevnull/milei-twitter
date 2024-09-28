@@ -271,12 +271,13 @@ export async function printAllTweetsEver(username: string) {
 
 export async function saveTweetsAndRetweets(scraper: Scraper) {
   let totalTweetsSeen = 0;
-  let retweets: Array<Retweet> = [];
+  const retweets: Array<Retweet> = [];
   // XXX: por ahora, estamos guardando los retweets tambien como tweets
-  let tweets: Array<z.infer<typeof zTweet>> = [];
+  const tweets: Array<z.infer<typeof zTweet>> = [];
   for await (const tweet of scraper.getTweets("jmilei")) {
     totalTweetsSeen++;
     tweets.push({
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       id: tweet.id!,
       twitterScraperJson: JSON.stringify(tweet),
       capturedAt: new Date(),
@@ -346,7 +347,7 @@ export async function cron() {
         `scrapped tweets and retweets, seen ${scrap.totalTweetsSeen}`
       );
     } catch (error) {
-      console.error(`[error] tweets and retweets`, error);
+      console.error("[error] tweets and retweets", error);
     }
 
     await wait(50 * 1000 + Math.random() * 15 * 1000);

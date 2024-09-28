@@ -1,8 +1,8 @@
-import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { openScrapsDb } from "../index.ts";
 import * as schema from "./schema.ts";
-import { Scrap, zPostScrapRes, zScrap } from "api/schema.ts";
-import { eq, isNotNull, isNull } from "drizzle-orm";
+import { type Scrap, zPostScrapRes } from "api/schema.ts";
+import { and, desc, eq, inArray, isNotNull, isNull, not } from "drizzle-orm";
 import "dotenv/config";
 
 const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
@@ -27,7 +27,7 @@ class ScrapsDb {
   async pushScrap(scrap: Scrap) {
     await (await this.db).insert(schema.scraps).values({
       uid: scrap.uid,
-      json: JSON.stringify(zScrap.parse(scrap)),
+      json: JSON.stringify(scrap),
     });
     this.flushScraps();
   }
@@ -68,11 +68,39 @@ class ScrapsDb {
       )
     ).every(Boolean);
     if (allSaved) {
-      console.info(`[scraps] deleting already pushed scraps`);
-      await (await this.db)
-        .delete(schema.scraps)
-        .where(isNotNull(schema.scraps.savedWithId));
+      console.info(
+        "[scraps] deleting already pushed scraps except latest three"
+      );
+      const latestThree = await (await this.db)
+        .select({ uid: schema.scraps.uid })
+        .from(schema.scraps)
+        .where(isNotNull(schema.scraps.savedWithId))
+        .orderBy(desc(schema.scraps.savedWithId))
+        .limit(3);
+
+      await (await this.db).delete(schema.scraps).where(
+        and(
+          isNotNull(schema.scraps.savedWithId),
+          not(
+            inArray(
+              schema.scraps.uid,
+              latestThree.map((s) => s.uid)
+            )
+          )
+        )
+      );
     }
+  }
+
+  async getLastScrap(): Promise<Scrap | null> {
+    const scrap = await (await this.db)
+      .select({ json: schema.scraps.json })
+      .from(schema.scraps)
+      .where(isNotNull(schema.scraps.savedWithId))
+      .orderBy(desc(schema.scraps.savedWithId))
+      .limit(1);
+    if (!scrap[0]) return null;
+    return JSON.parse(scrap[0]?.json);
   }
 }
 
