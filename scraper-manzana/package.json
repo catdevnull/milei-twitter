@@ -17,7 +17,7 @@
   "dependencies": {
     "@trigger.dev/sdk": "^3.0.8",
     "async-mutex": "^0.5.0",
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^11.3.0",
     "cmd-ts": "^0.13.0",
     "dataloader": "^2.2.2",
     "date-fns": "^3.6.0",

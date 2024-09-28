@@ -21,8 +21,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       better-sqlite3:
-        specifier: ^9.6.0
-        version: 9.6.0
+        specifier: ^11.3.0
+        version: 11.3.0
       cmd-ts:
         specifier: ^0.13.0
         version: 0.13.0
@@ -37,7 +37,7 @@ importers:
         version: 16.4.5
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@libsql/client@0.7.0)(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@9.6.0)
+        version: 0.33.0(@libsql/client@0.7.0)(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)
       openai:
         specifier: ^4.55.4
         version: 4.55.4(zod@3.23.8)
@@ -1933,6 +1933,9 @@ packages:
 
   better-sqlite3@11.1.2:
     resolution: {integrity: sha512-gujtFwavWU4MSPT+h9B+4pkvZdyOUkH54zgLdIrMmmmd4ZqiBIrRNBzNzYVFO417xo882uP5HBu4GjOfaSrIQw==}
+
+  better-sqlite3@11.3.0:
+    resolution: {integrity: sha512-iHt9j8NPYF3oKCNOO5ZI4JwThjt3Z6J6XrcwG85VNMVzv1ByqrHWv5VILEbCMFWDsoHhXvQ7oC8vgRXFAKgl9w==}
 
   better-sqlite3@9.6.0:
     resolution: {integrity: sha512-yR5HATnqeYNVnkaUTf4bOP2dJSnyhP4puJN/QPRyx4YkBEEUxib422n2XzPqDEHjQQqazoYoADdAm5vE15+dAQ==}
@@ -5223,6 +5226,11 @@ snapshots:
       prebuild-install: 7.1.2
     optional: true
 
+  better-sqlite3@11.3.0:
+    dependencies:
+      bindings: 1.5.0
+      prebuild-install: 7.1.2
+
   better-sqlite3@9.6.0:
     dependencies:
       bindings: 1.5.0
@@ -5482,12 +5490,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.33.0(@libsql/client@0.7.0)(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@9.6.0):
+  drizzle-orm@0.33.0(@libsql/client@0.7.0)(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0):
     optionalDependencies:
       '@libsql/client': 0.7.0
       '@opentelemetry/api': 1.9.0
       '@types/better-sqlite3': 7.6.11
-      better-sqlite3: 9.6.0
+      better-sqlite3: 11.3.0
 
   drizzle-orm@0.33.0(@libsql/client@0.7.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.1.2):
     optionalDependencies:
