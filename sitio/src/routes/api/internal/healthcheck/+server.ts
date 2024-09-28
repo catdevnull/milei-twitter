@@ -4,7 +4,7 @@ import { likedTweets, retweets, scraps } from "../../../../schema";
 import { likesCutoffSql } from "$lib/consts";
 
 export async function GET() {
-  let errors: Array<string> = [];
+  const errors: Array<string> = [];
   const lastScrap = await db.query.scraps.findFirst({
     orderBy: desc(scraps.finishedAt),
     where: and(
@@ -39,8 +39,8 @@ export async function GET() {
 
   if (lastScrap) {
     const delta = +new Date() - +lastScrap.finishedAt;
-    if (delta > 10 * 60 * 1000) {
-      errors.push(`último scrap hace ${delta}ms (>10min)`);
+    if (delta > 31 * 60 * 1000) {
+      errors.push(`último scrap hace ${delta}ms (>31min)`);
     }
     if (lastScrap.totalTweetsSeen && lastScrap.totalTweetsSeen < 10) {
       errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);
@@ -65,7 +65,6 @@ export async function GET() {
     return new Response(`errors:\n${errors.map((e) => `- ${e}`).join("\n")}`, {
       status: 500,
     });
-  } else {
-    return new Response(`ok (last scrap at ${lastScrap?.finishedAt})`);
   }
+  return new Response(`ok (last scrap at ${lastScrap?.finishedAt})`);
 }
