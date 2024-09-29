@@ -181,12 +181,14 @@ const printTweetsAndRepliesSocialdataCmd = command({
   },
   async handler(args) {
     let i = 0;
-    for await (const tweet of getTweetsAndRepliesIterator(args.username)) {
-      console.log(tweet);
-      i++;
-      if (i > 39) {
-        console.log(`--> ${i} tweets`);
-        process.exit(0);
+    for await (const tweets of getTweetsAndRepliesIterator(args.username)) {
+      for (const tweet of tweets) {
+        console.log(tweet);
+        i++;
+        if (i > 39) {
+          console.log(`--> ${i} tweets`);
+          process.exit(0);
+        }
       }
     }
   },

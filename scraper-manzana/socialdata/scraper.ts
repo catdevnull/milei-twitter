@@ -85,9 +85,7 @@ export async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
       throw new Error(JSON.stringify(_res));
     }
     res = _res;
-    for (const tweet of res.tweets) {
-      yield intoTwitterScraperTweet(tweet);
-    }
+    yield res.tweets.map(intoTwitterScraperTweet);
     if (!res.next_cursor) {
       break;
     }
@@ -172,24 +170,29 @@ export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
   const tweets: Array<z.infer<typeof zTweet>> = [];
   const retweets: Array<Retweet> = [];
   try {
-    for await (const tweet of getTweetsAndRepliesIterator("jmilei")) {
-      tweets.push({
+    let finished = false;
+    for await (const scrappedTweets of getTweetsAndRepliesIterator("jmilei")) {
+      if (finished) break;
+
+      for (const tweet of scrappedTweets) {
+        tweets.push({
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          id: tweet.id!,
+          twitterScraperJson: JSON.stringify(tweet),
+          capturedAt: new Date(),
+        });
+
+        if (tweet.retweetedStatus) {
+          retweets.push(tweetIntoRetweet(tweet));
+        }
+
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
-        id: tweet.id!,
-        twitterScraperJson: JSON.stringify(tweet),
-        capturedAt: new Date(),
-      });
-
-      if (tweet.retweetedStatus) {
-        retweets.push(tweetIntoRetweet(tweet));
-      }
-
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      if (lastTweetIds?.includes(tweet.id!)) {
-        break;
-      }
-      if (tweets.length > (lastTweetIds?.length || 199)) {
-        break;
+        if (lastTweetIds?.includes(tweet.id!)) {
+          finished = true;
+        }
+        if (tweets.length > (lastTweetIds?.length || 199)) {
+          finished = true;
+        }
       }
     }
   } catch (error) {
