@@ -5,7 +5,8 @@ on:
     branches:
       - master
     paths:
-      - "scraper-manzana/trigger/**"
+      - "scraper-manzana/**"
+  workflow_dispatch:
 
 jobs:
   deploy:
