@@ -5,7 +5,9 @@
   // @ts-ignore
   import markdownItToc from "markdown-it-table-of-contents";
   import Meta from "$lib/components/Meta.svelte";
-  const md = markdownit();
+  const md = markdownit({
+    html: true,
+  });
   md.use(markdownItAnchor);
   md.use(markdownItToc, {
     includeLevel: [2],
@@ -39,6 +41,19 @@ Eso no es una pregunta, pero fijate los análisis de LA NACION y Chequeado:
 - [Javier Milei y su cuenta de X: quiénes son los tuiteros favoritos del presidente con los que construye su discurso - Chequeado](https://chequeado.com/investigaciones/javier-milei-y-su-cuenta-de-x-quienes-son-los-tuiteros-favoritos-del-presidente-con-los-que-construye-su-discurso/)
 
 Si estás haciendo algo similar, ¡contactame!
+
+## ¿Donde puedo descargar los datos?
+
+Podés descargar los últimos datos de likes y retweets en formato CSV:
+
+<a href="/api/datasets/likes.csv" class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-800 px-4 py-2 mr-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 dark:hover:bg-neutral-800/50 hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2">
+  likes.csv
+</a>  
+<a href="/api/datasets/retweets.csv" class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-800 px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 dark:hover:bg-neutral-800/50 hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2">
+  retweets.csv
+</a>
+
+Tené en cuenta que solo contempla los datos que pudimos capturar.
 
 ## ¿Donde puedo contactarte?
 

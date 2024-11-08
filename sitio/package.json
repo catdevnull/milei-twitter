@@ -27,6 +27,7 @@
     "chartjs-adapter-dayjs-4": "^1.0.4",
     "chartjs-plugin-datalabels": "^2.2.0",
     "core-js": "^3.38.1",
+    "csv-stringify": "^6.5.1",
     "date-fns": "^3.6.0",
     "date-fns-tz": "3.0.0-beta.3",
     "dayjs": "^1.11.13",
