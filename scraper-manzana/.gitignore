@@ -6,3 +6,5 @@ token.txt
 
 dist/
 .trigger
+
+*_tweet.json
