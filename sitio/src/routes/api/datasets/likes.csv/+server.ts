@@ -32,6 +32,9 @@ export async function GET() {
     headers: {
       "Content-Type": "text/csv",
       "Content-Disposition": `attachment; filename=liked-tweets-milei.nulo.in-${new Date().toISOString()}.csv`,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET",
+      "Access-Control-Allow-Headers": "Content-Type",
     },
   });
 }

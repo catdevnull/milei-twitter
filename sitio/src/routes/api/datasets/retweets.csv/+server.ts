@@ -2,8 +2,9 @@ import { db } from "$lib/db";
 import { desc, lt } from "drizzle-orm";
 import { retweets } from "../../../../schema";
 import { stringify } from "csv-stringify/sync";
+import type { RequestHandler } from "@sveltejs/kit";
 
-export async function GET() {
+export const GET: RequestHandler = async () => {
   console.time("retweets-csv");
 
   const BATCH_SIZE = 1000;
@@ -56,6 +57,9 @@ export async function GET() {
     headers: {
       "Content-Type": "text/csv",
       "Content-Disposition": `attachment; filename=retweets-milei.nulo.in-${new Date().toISOString()}.csv`,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET",
+      "Access-Control-Allow-Headers": "Content-Type",
     },
   });
-}
+};
