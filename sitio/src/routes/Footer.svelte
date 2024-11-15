@@ -3,7 +3,7 @@
     Compartir por
     <a
       class="rounded bg-green-600 px-3 py-2 font-medium text-white"
-      href={`https://api.whatsapp.com/send?text=${encodeURIComponent("¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas? https://milei.nulo.in/?ref=wsp-link")}`}
+      href={`https://api.whatsapp.com/send?text=${encodeURIComponent("¿Cuántos tweets likeó nuestro Presidente las últimas 24 horas? https://milei.nulo.lol/?ref=wsp-link")}`}
       >WhatsApp</a
     >
   </div>

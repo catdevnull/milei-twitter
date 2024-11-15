@@ -14,7 +14,7 @@
   });
 
   const result = md.render(`
-[milei.nulo.in](https://milei.nulo.in)
+[milei.nulo.lol](https://milei.nulo.lol)
 
 # Preguntas frequentes
 
@@ -26,7 +26,7 @@ Si, [según él mismo](https://twitter.com/somoscorta/status/1761792806702444956
 
 ## ¿Como puedo verificar un like de Milei?
 
-Como ya detecté en varias ocasiones que se generen capturas de pantallas falsas de los likes de Milei, hice [una herramienta](https://milei.nulo.in/chequear) que cualquiera puede usar para verificarlos. Tan solo tiene que copiar el enlace del tweet original y pegarlo en el sitio. ¿Dudas? ¡Contactame!
+Como ya detecté en varias ocasiones que se generen capturas de pantallas falsas de los likes de Milei, hice [una herramienta](https://milei.nulo.lol/chequear) que cualquiera puede usar para verificarlos. Tan solo tiene que copiar el enlace del tweet original y pegarlo en el sitio. ¿Dudas? ¡Contactame!
 
 ## ¿Como calculas el tiempo en Twitter?
 
@@ -62,7 +62,7 @@ Podés mandarme un mensaje por Telegram ([@esoesnulo](https://t.me/esoesnulo)), 
 `);
 </script>
 
-<Meta title="Preguntas frecuentes - milei.nulo.in" />
+<Meta title="Preguntas frecuentes - milei.nulo.lol" />
 
 <main class="mx-auto px-2 py-7">
   <Prose>

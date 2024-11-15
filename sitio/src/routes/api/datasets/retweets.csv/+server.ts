@@ -56,7 +56,7 @@ export const GET: RequestHandler = async () => {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename=retweets-milei.nulo.in-${new Date().toISOString()}.csv`,
+      "Content-Disposition": `attachment; filename=retweets-milei.nulo.lol-${new Date().toISOString()}.csv`,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET",
       "Access-Control-Allow-Headers": "Content-Type",

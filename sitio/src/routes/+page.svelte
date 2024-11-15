@@ -157,7 +157,7 @@
   }
 </script>
 
-<Meta keywords={true} canonical={"https://milei.nulo.in"} />
+<Meta keywords={true} canonical={"https://milei.nulo.lol"} />
 
 <div
   class="flex min-h-screen flex-col justify-center gap-2 p-2"
@@ -213,8 +213,8 @@
     </h2>
     <small>
       <a
-        href="https://milei.nulo.in"
-        class="text-blue-600 underline dark:text-blue-200">milei.nulo.in</a
+        href="https://milei.nulo.lol"
+        class="text-blue-600 underline dark:text-blue-200">milei.nulo.lol</a
       >
       {#if data.lastUpdated}
         - actualizado {lastUpdatedFormatter.format(data.lastUpdated.finishedAt)}

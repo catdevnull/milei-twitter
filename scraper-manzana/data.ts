@@ -1,4 +1,4 @@
-// top 100 retuiteados as of 2024-04-17 (solo datos de milei.nulo.in)
+// top 100 retuiteados as of 2024-04-17 (solo datos de milei.nulo.lol)
 export const trackeados = [
   "986255022949269504", // DiegoMac227|612
   "1169664359628509184", // laderechadiario|320

@@ -9,7 +9,7 @@ export const saveNewTweetsTask = schedules.task({
   run: async (payload, { ctx }) => {
     const API_TOKEN = process.env.API_TOKEN;
     if (!API_TOKEN) throw new Error("Missing API_TOKEN");
-    const API_URL = process.env.API_URL ?? "https://milei.nulo.in";
+    const API_URL = process.env.API_URL ?? "https://milei.nulo.lol";
 
     const lastTweetIds: string[] = await (
       await fetch(`${API_URL}/api/internal/scraper/last-ids`)

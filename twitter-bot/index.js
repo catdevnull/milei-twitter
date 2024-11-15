@@ -109,7 +109,7 @@ class MileiTwitter {
   /** @typedef {z.infer<typeof this.v1Schema>} V1 */
 
   static get endpoint() {
-    return process.env.ENDPOINT ?? "https://milei.nulo.in";
+    return process.env.ENDPOINT ?? "https://milei.nulo.lol";
   }
 
   static async getData() {

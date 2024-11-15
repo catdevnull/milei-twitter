@@ -158,7 +158,7 @@
 
   <section class="mx-auto w-full max-w-2xl text-center text-xl">
     <a href="/" class="text-blue-700 underline dark:text-blue-200"
-      >milei.nulo.in</a
+      >milei.nulo.lol</a
     >
   </section>
 </main>

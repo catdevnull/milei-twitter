@@ -31,7 +31,7 @@
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   <!-- twitter requiere url completa https://leimao.github.io/blog/Missing-Image-Twitter-Card/ -->
-  <meta name="twitter:image" content={"https://milei.nulo.in" + cardPath} />
+  <meta name="twitter:image" content={"https://milei.nulo.lol" + cardPath} />
 
   {#if keywords}
     <meta
