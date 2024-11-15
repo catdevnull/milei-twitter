@@ -9,13 +9,13 @@
     "check": "tsc --noEmit",
     "start": "tsx cli.ts",
     "build": "tsup cli.ts && cp -r dbs/* dist/",
-    "deploy:trigger-prod": "pnpx trigger.dev@3.0.8 deploy"
+    "deploy:trigger-prod": "pnpx trigger.dev@3.1.2 deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@trigger.dev/sdk": "^3.0.8",
+    "@trigger.dev/sdk": "^3.1.2",
     "async-mutex": "^0.5.0",
     "better-sqlite3": "^11.3.0",
     "cmd-ts": "^0.13.0",
@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@catdevnull/twitter-scraper": "^0.14.5",
-    "@trigger.dev/build": "^3.0.8",
+    "@trigger.dev/build": "^3.1.2",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.14.15",
     "@types/tough-cookie": "^4.0.5",
