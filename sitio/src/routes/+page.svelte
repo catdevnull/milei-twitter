@@ -396,6 +396,24 @@
       >Ver promedio de {monthFormatter.format(data.start)}</a
     >
   </section>
+
+  <section class="mx-auto flex w-full max-w-[800px] flex-col py-8">
+    <h2 class="mb-4 text-center text-2xl font-bold md:text-4xl">
+      💞 Los favoritos de Milei 💞
+    </h2>
+    <iframe
+      class="aspect-[800/876] dark:invert"
+      width="100%"
+      frameborder="0"
+      src="https://observablehq.com/embed/@rusosnith/retuits-milei?cells=chart_1"
+    ></iframe>
+    <p class="my-4 text-center text-sm">
+      gracias a <a
+        href="https://observablehq.com/@rusosnith"
+        class="text-blue-600 underline dark:text-blue-200">el ruso</a
+      > por la visualización 🫶
+    </p>
+  </section>
   <div class="py-8">
     <Footer />
   </div>
