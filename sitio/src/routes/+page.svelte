@@ -159,6 +159,7 @@
 
   onMount(() => {
     window.dispatchEvent(new Event("mounted"));
+    window.mounted = true;
   });
 </script>
 
@@ -423,8 +424,7 @@
         Inspector,
       } from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js";
       import define from "https://api.observablehq.com/@rusosnith/retuits-milei@261.js?v=4";
-
-      window.addEventListener("mounted", () => {
+      const observable = () => {
         new Runtime().module(define, (name) => {
           if (name === "title")
             return new Inspector(
@@ -440,7 +440,9 @@
             );
           return ["tuiteroMensual"].includes(name);
         });
-      });
+      };
+      if (window.mounted) observable();
+      else window.addEventListener("mounted", observable);
     </script>
     <!-- <iframe
       class="aspect-[800/876] dark:invert"
