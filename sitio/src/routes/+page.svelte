@@ -159,7 +159,7 @@
 
   onMount(() => {
     window.dispatchEvent(new Event("mounted"));
-    window.mounted = true;
+    (window as any).mounted = true;
   });
 </script>
 
