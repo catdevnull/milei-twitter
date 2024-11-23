@@ -30,6 +30,7 @@
   import AlertInfo from "$lib/components/AlertInfo.svelte";
   import { dateToMonthString } from "./promedios/[year]/[month]/months";
   import { onMount } from "svelte";
+  import AsSeenIn from "./AsSeenIn.svelte";
 
   export let data: PageData;
 
@@ -458,6 +459,14 @@
       >
     </p>
   </section>
+
+  <section class="mx-auto flex w-full flex-col py-8">
+    <h2 class="mb-4 text-center text-2xl font-bold md:text-4xl">
+      Como lo viste en la prensa
+    </h2>
+    <AsSeenIn />
+  </section>
+
   <div class="py-8">
     <Footer />
   </div>

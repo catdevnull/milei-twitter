@@ -19,6 +19,22 @@ const config = {
         opinionPublica: "-12px 19px 0px #d83926",
         opinionPublicaAzul: "0px 0px 18px #5ea1b4",
       },
+
+      animation: {
+        marquee: "marquee var(--duration, 25s) linear infinite",
+        "marquee-vertical":
+          "marquee-vertical var(--duration, 25s) linear infinite",
+      },
+      keyframes: {
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(calc(-100% - var(--gap)))" },
+        },
+        "marquee-vertical": {
+          from: { transform: "translateY(0)" },
+          to: { transform: "translateY(calc(-100% - var(--gap)))" },
+        },
+      },
     },
   },
 
