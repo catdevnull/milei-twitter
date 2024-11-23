@@ -2,7 +2,7 @@ import { parsearLinkDeTwitter } from "$lib/consts";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { brotliDecompress } from "node:zlib";
-import type { connectDb } from "./connectDb";
+import { connectDb } from "./connectDb";
 import * as schema from "../../schema";
 import { toDate } from "date-fns-tz";
 
@@ -34,3 +34,9 @@ export async function seedHistoricLikes(
   }
   console.timeEnd("seedHistoricLikes");
 }
+
+await seedHistoricLikes(
+  await connectDb({
+    url: process.env.TURSO_CONNECTION_URL!,
+  }),
+);
