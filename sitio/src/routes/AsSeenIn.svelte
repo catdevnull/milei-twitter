@@ -104,7 +104,7 @@
           <img
             src={ref.img}
             alt={ref.alt}
-            class={`h-8 dark:invert ${ref.imgClass ?? ""}`}
+            class={`h-8 md:h-16 dark:invert ${ref.imgClass ?? ""}`}
           />
         </a>
       {/each}
