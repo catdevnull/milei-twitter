@@ -37,6 +37,9 @@
   $: mesAnteriorHref = `/promedios/${mesAnterior.year()}/${dateToMonthString(mesAnterior)}`;
   $: mesProximo = dayjs(data.start).tz(tz).add(1, "month");
   $: mesProximoHref = `/promedios/${mesProximo.year()}/${dateToMonthString(mesProximo)}`;
+
+  const linkClass =
+    "focus:shadow-outline inline-flex items-center justify-center gap-2 rounded-md bg-neutral-950 px-2 py-2 text-sm font-medium leading-none tracking-wide text-white transition-colors duration-200 hover:bg-neutral-800/60 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:bg-neutral-600 dark:bg-neutral-800 data-[disabled=true]:dark:bg-neutral-700";
 </script>
 
 <Meta
@@ -54,15 +57,19 @@
     </h1>
     <div class="flex flex-wrap gap-2">
       <a
-        class="focus:shadow-outline inline-flex items-center justify-center gap-2 rounded-md bg-neutral-950 px-2 py-2 text-sm font-medium leading-none tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-800"
-        href={mesAnteriorHref}
+        class={linkClass}
+        href={mesAnterior.isBefore(dayjs("2024-02-01"))
+          ? undefined
+          : mesAnteriorHref}
+        data-disabled={mesAnterior.isBefore(dayjs("2024-02-01"))}
       >
         <span class="icon-[heroicons--arrow-left-20-solid] size-5"></span>
         {monthFormatter.format(mesAnterior.toDate())}
       </a>
       <a
-        class="focus:shadow-outline inline-flex items-center justify-center gap-2 rounded-md bg-neutral-950 px-2 py-2 text-sm font-medium leading-none tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-800"
-        href={mesProximoHref}
+        class={linkClass}
+        href={data.hasNextMonth ? mesProximoHref : undefined}
+        data-disabled={!data.hasNextMonth}
       >
         {monthFormatter.format(mesProximo.toDate())}
         <span class="icon-[heroicons--arrow-right-20-solid] size-5"></span>

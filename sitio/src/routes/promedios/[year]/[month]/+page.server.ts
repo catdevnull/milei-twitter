@@ -3,6 +3,8 @@ import type { PageServerLoad } from "./$types";
 import { dayjs, tz } from "$lib/consts";
 import { getStatsForDaysInTimePeriod } from "$lib/data-processing/days";
 import { error } from "@sveltejs/kit";
+import { retweets } from "../../../../schema";
+import { gte } from "drizzle-orm";
 
 const map = new Map([
   ["enero", 1],
@@ -31,7 +33,7 @@ export const load: PageServerLoad = async ({ setHeaders, params }) => {
     error(400, "mes inválido");
   }
 
-  if (year < 2000 || month < 0 || year > 2090 || month > 11) {
+  if (year < 2000 || month < 0 || year > 2090 || month > 12) {
     error(400, "invalid date");
   }
 
@@ -51,9 +53,14 @@ export const load: PageServerLoad = async ({ setHeaders, params }) => {
     error(404, "No tenemos datos para ese mes");
   }
 
+  const hasNextMonth = await db.query.retweets.findFirst({
+    where: gte(retweets.retweetAt, start.add(1, "month").toDate()),
+  });
+
   return {
     start: start.toDate(),
     end: end.toDate(),
     monthData,
+    hasNextMonth: !!hasNextMonth,
   };
 };
