@@ -31,6 +31,7 @@
       href: "https://www.perfil.com/noticias/politica/milei-el-presidente-tuitero-trolls-libertarios-y-periodistas-entre-sus-favoritos.phtml",
       img: perfilImg,
       alt: "Perfil",
+      imgClass: "dark:invert",
     },
     {
       href: "https://www.clarin.com/tecnologia/tuits-likeo-presidente-funciona-robot-creo-chico-18-anos-tomar-frenetico-pulso-javier-milei-twitter_0_WCBrRbDqs6.html",
@@ -41,16 +42,19 @@
       href: "https://www.eldestapeweb.com/atr/javier-milei/cuanto-tiempo-pasa-javier-milei-en-las-redes-crearon-una-pagina-que-expone-al-presidente-20242161370",
       img: pagina12Img,
       alt: "Página 12",
+      imgClass: "dark:invert",
     },
     {
       href: "https://www.lapoliticaonline.com/politica/analisis-de-los-favoritos-de-milei-en-twitter-trolls-libertarios-y-majul/",
       img: lpoImg,
       alt: "La Política Online",
+      imgClass: "dark:invert",
     },
     {
       href: "https://www.lagaceta.com.ar/nota/1024699/politica/cuanto-tiempo-dedica-javier-milei-redes-sociales.html",
       img: elPaisImg,
       alt: "El País",
+      imgClass: "dark:invert",
     },
     {
       href: "https://x.com/ertenembaum/status/1761938342772343260",
@@ -66,6 +70,7 @@
       href: "https://www.eldestapeweb.com/atr/javier-milei/cuanto-tiempo-pasa-javier-milei-en-las-redes-crearon-una-pagina-que-expone-al-presidente-20242161370",
       img: elDestapeImg,
       alt: "El Destape",
+      imgClass: "dark:drop-shadow-[0_0_4px_rgba(255,255,255,1)]",
     },
     // {
     //   href: "https://corta.com/politica/cuanto-tiempo-pasa-milei-x-pagina-creo-usuario-contar-sus-me-gusta-n22260",
@@ -104,16 +109,16 @@
           <img
             src={ref.img}
             alt={ref.alt}
-            class={`h-8 dark:invert ${ref.imgClass ?? ""}`}
+            class={`h-8 ${ref.imgClass ?? ""}`}
           />
         </a>
       {/each}
     </div>
   {/each}
   <div
-    class="dark:from-background pointer-events-none absolute inset-x-0 -top-1 h-1/3 bg-gradient-to-b from-neutral-100 md:hidden"
+    class="dark:from-background pointer-events-none absolute inset-x-0 -top-1 h-1/3 bg-gradient-to-b from-neutral-100 md:hidden dark:from-neutral-900"
   ></div>
   <div
-    class="dark:from-background pointer-events-none absolute inset-x-0 -bottom-1 h-1/3 bg-gradient-to-t from-neutral-100 md:hidden"
+    class="dark:from-background pointer-events-none absolute inset-x-0 -bottom-1 h-1/3 bg-gradient-to-t from-neutral-100 md:hidden dark:from-neutral-900"
   ></div>
 </div>
