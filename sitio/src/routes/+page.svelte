@@ -167,7 +167,7 @@
 <Meta keywords={true} canonical={"https://milei.nulo.lol"} />
 
 <div
-  class="flex min-h-screen flex-col justify-center gap-2 p-2"
+  class="flex min-h-screen flex-col justify-center gap-2"
   class:milei-duende={duende}
 >
   <section class="mx-auto my-4 flex max-w-2xl flex-col text-center">
@@ -282,19 +282,6 @@
         13:30hs)
       </p>
     </section>
-  {/if}
-
-  {#if likesCutoffReached}
-    <AlertInfo>
-      <svelte:fragment slot="title">Likes no disponibles</svelte:fragment>
-      Desde {longDateFormatter.format(likesCutoff?.cutAt)}, ya no podemos
-      mostrar los 'me gusta' de Milei en Twitter/X porque ahora son privados.
-      <a
-        class="text-blue-600 underline dark:text-blue-200"
-        href="https://x.com/wanghaofei/status/1793096366132195529"
-        >Más información</a
-      >. Seguiremos mostrando los retweets públicos.
-    </AlertInfo>
   {/if}
 
   <section class="mx-auto flex flex-col items-start gap-16 px-8 md:flex-row">
@@ -466,6 +453,19 @@
     </h2>
     <AsSeenIn />
   </section>
+
+  {#if likesCutoffReached}
+    <AlertInfo>
+      <svelte:fragment slot="title">Likes no disponibles</svelte:fragment>
+      Desde {longDateFormatter.format(likesCutoff?.cutAt)}, ya no podemos
+      mostrar los 'me gusta' de Milei en Twitter/X porque ahora son privados.
+      <a
+        class="text-blue-600 underline dark:text-blue-200"
+        href="https://x.com/wanghaofei/status/1793096366132195529"
+        >Más información</a
+      >. Seguiremos mostrando los retweets públicos.
+    </AlertInfo>
+  {/if}
 
   <div class="py-8">
     <Footer />
