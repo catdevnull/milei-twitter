@@ -1,4 +1,4 @@
-import { dayjs } from "../consts.ts";
+import { dayjs, type Dayjs } from "../consts.ts";
 import {
   calculateSessions,
   getInteractionTimes,
@@ -7,10 +7,12 @@ import {
 import { getDataForTimePeriod, makeMapOfDays } from "./days.ts";
 import { db } from "$lib/db/index.ts";
 
-export async function getLastWeek() {
-  const today = dayjs
-    .tz(undefined, "America/Argentina/Buenos_Aires")
-    .startOf("day");
+export function getToday() {
+  return dayjs.tz(undefined, "America/Argentina/Buenos_Aires").startOf("day");
+}
+
+export async function getLastWeek(today?: Dayjs) {
+  today = today ?? getToday();
   const days = [
     // también cambiar en getMinDate
     today.subtract(7, "day"),

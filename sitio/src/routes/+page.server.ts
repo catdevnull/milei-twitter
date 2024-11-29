@@ -95,7 +95,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       where: isNotNull(schema.scraps.totalTweetsSeen),
     }),
 
-    getLastWeek(),
+    getLastWeek(startingFrom.startOf("day")),
 
     db.query.likedTweets.findFirst({
       orderBy: asc(schema.likedTweets.firstSeenAt),
