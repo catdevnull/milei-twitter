@@ -33,10 +33,17 @@
   import Button from "@/components/ui/button/button.svelte";
   import { cn } from "@/utils";
   import Calendar from "@/components/ui/calendar/calendar.svelte";
-  import { CalendarIcon, ClockIcon, HeartIcon, Repeat2 } from "lucide-svelte";
+  import {
+    CalendarIcon,
+    ClockIcon,
+    HeartIcon,
+    LinkIcon,
+    Repeat2,
+  } from "lucide-svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
   import StatsCalendar from "@/StatsCalendar.svelte";
   import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
+  import timeCover from "$lib/assets/time-cover-milei.png";
 
   export let data: PageData;
 
@@ -321,6 +328,36 @@
     <h2 class="mb-4 text-center text-2xl font-bold md:text-4xl">
       Como lo viste en la prensa
     </h2>
+    <div
+      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg"
+    >
+      <img
+        class="w-[300px] rounded-lg"
+        src={timeCover}
+        alt="Milei en la prensa"
+      />
+      <div class="flex flex-col items-start gap-2">
+        <blockquote class="max-w-[400px]">
+          <span class="text-muted-foreground">[..]</span> The President often
+          stays up until the early morning hours, scrolling on X, formerly
+          Twitter.
+          <strong
+            >He’s so prolific on the platform that an Argentine programmer set
+            up a popular website called “How many tweets has our President liked
+            today?” On the day we spoke, he liked or retweeted 336 posts, much
+            of it delirious all-caps praise of himself.</strong
+          >
+          <span class="text-muted-foreground">[..]</span>
+        </blockquote>
+        <Button
+          variant="outline"
+          href="https://time.com/6980600/javier-milei-argentina-interview/#:~:text=He%E2%80%99s%20so%20prolific%20on%20the%20platform%20that%20an%20Argentine%20programmer%20set%20up%20a%20popular%20website%20called%20%E2%80%9CHow%20many%20tweets%20has%20our%20President%20liked%20today%3F%E2%80%9D%20On%20the%20day%20we%20spoke%2C%20he%20liked%20or%20retweeted%20336%20posts%2C%20much%20of%20it%20delirious%20all%2Dcaps%20praise%20of%20himself."
+        >
+          <LinkIcon class="mr-2 h-4 w-4" />
+          Fuente
+        </Button>
+      </div>
+    </div>
     <AsSeenIn />
   </section>
 
