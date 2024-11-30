@@ -92,13 +92,6 @@
       "when": 1726427340015,
       "tag": "0012_abnormal_prodigy",
       "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1732984665591,
-      "tag": "0013_massive_jean_grey",
-      "breakpoints": true
     }
   ]
 }

@@ -64,7 +64,6 @@ export const retweets = sqliteTable(
     return {
       pk: primaryKey({ columns: [table.posterId, table.postId] }),
       retweetAtIdx: index("retweet_at_idx").on(table.retweetAt),
-      postedAtIdx: index("retweets_posted_at_idx").on(table.postedAt),
     };
   },
 );
