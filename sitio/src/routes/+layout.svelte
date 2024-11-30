@@ -1,5 +1,6 @@
 <script>
   import "../app.css";
+  import { ModeWatcher } from "mode-watcher";
 
   import { dev } from "$app/environment";
 </script>
@@ -13,6 +14,8 @@
     ></script>
   {/if}
 </svelte:head>
+
+<ModeWatcher />
 
 <!-- toca poncho? ( ͡° ͜ʖ ͡°) -->
 <!-- <link

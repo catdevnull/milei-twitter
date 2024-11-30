@@ -25,12 +25,17 @@
     tz,
   } from "$lib/consts";
   import "core-js/es/array/to-reversed";
-  import { DatePicker } from "@svelte-plugins/datepicker";
   import Meta from "$lib/components/Meta.svelte";
   import AlertInfo from "$lib/components/AlertInfo.svelte";
   import { dateToMonthString } from "./promedios/[year]/[month]/months";
   import { onMount } from "svelte";
   import AsSeenIn from "./AsSeenIn.svelte";
+  import * as Popover from "$lib/components/ui/popover";
+  import Button from "@/components/ui/button/button.svelte";
+  import { cn } from "@/utils";
+  import Calendar from "@/components/ui/calendar/calendar.svelte";
+  import { CalendarIcon, ClockIcon } from "lucide-svelte";
+  import { CalendarDate, parseDate } from "@internationalized/date";
 
   export let data: PageData;
 
@@ -92,63 +97,6 @@
     goto(`/?q=${query}`);
   }
 
-  function generarOpcionesDias(
-    start: Date,
-  ): Array<{ label: string; query: string }> {
-    const hoy = dayjs().tz(tz).startOf("day").toDate();
-    const getWeeklyQuery = (date: Date) =>
-      `date:${dayjs(date).format("YYYY-MM-DD")}`;
-    const weeklyOpcion = (date: Date) => ({
-      label: weekDayFormatter.format(date),
-      query: getWeeklyQuery(date),
-      date,
-    });
-    const opciones = [
-      { label: "las últimas 24hs", query: "last-24h" },
-      {
-        label: `hoy, ${weekDayFormatter.format(hoy)}`,
-        query: getWeeklyQuery(hoy),
-        date: hoy,
-      },
-      ...ultimaSemana
-        .toReversed()
-        .map((d) => dayjs(d.day, "YYYY-MM-DD").tz(tz, true).toDate())
-        .filter((d) => +d !== +hoy)
-        .map((date) => weeklyOpcion(date)),
-    ];
-    if (!opciones.some((op) => "date" in op && op.date && +start == +op.date)) {
-      opciones.push({
-        query: getWeeklyQuery(start),
-        label: dateFormatter.format(start),
-        date: start,
-      });
-    }
-    return opciones;
-  }
-  $: opcionesDias = generarOpcionesDias(data.start);
-
-  const dowLabels = ["D", "L", "M", "X", "J", "V", "S"];
-  const monthLabels = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-  ];
-
-  let isDatePickerOpen = false;
-  const toggleDatePicker = () => (isDatePickerOpen = !isDatePickerOpen);
-
-  const onDayClick = (evt: any) =>
-    setQuery(`date:${dayjs(evt.startDate).format("YYYY-MM-DD")}`);
-
   let duende = false;
   let easterEggClicks = 0;
   function easterEggClick() {
@@ -162,6 +110,26 @@
     window.dispatchEvent(new Event("mounted"));
     (window as any).mounted = true;
   });
+
+  // let calendarDate: CalendarDate | undefined;
+  // $: calendarDate =
+  //   data.query === "last-24h"
+  //     ? undefined
+  //     : parseDate(dayjs(data.start).format("YYYY-MM-DD"));
+
+  // $: calendarDate = {
+  //   subscribe: (fn: (value: CalendarDate | undefined) => void) => {
+  //     fn(
+  //       data.query === "last-24h"
+  //         ? undefined
+  //         : parseDate(dayjs(data.start).format("YYYY-MM-DD")),
+  //     );
+  //     return () => {};
+  //   },
+  //   set: (value: CalendarDate | undefined) => {
+  //     setQuery(value ? `date:${value.toString()}` : "last-24h");
+  //   },
+  // };
 </script>
 
 <Meta keywords={true} canonical={"https://milei.nulo.lol"} />
@@ -171,45 +139,61 @@
   class:milei-duende={duende}
 >
   <section class="mx-auto my-4 flex max-w-2xl flex-col text-center">
-    <h1 class="text-4xl font-bold">
-      ¿Cuántos tweets
-      {#if likesCutoffReached}retweeteo{:else}likeó{/if}
-      nuestro
-      <button on:click={easterEggClick}
-        >{#if duende}presiduende{:else}Presidente{/if}</button
+    <h1
+      class="flex flex-wrap items-center justify-center space-x-2 text-4xl font-bold"
+    >
+      <span>¿Cuántos tweets</span>
+      <span
+        >{#if likesCutoffReached}retweeteo{:else}likeó{/if}</span
       >
-      <div class="inline-flex flex-wrap justify-end gap-2">
-        <select
-          on:change={(e) => setQuery(e.currentTarget.value)}
-          value={data.query}
-          class="w-[300px] rounded-md px-2"
-        >
-          {#each opcionesDias as { label, query }}
-            <option value={query}>{label}</option>
-          {/each}
-        </select>
-        <DatePicker
-          bind:isOpen={isDatePickerOpen}
-          includeFont={false}
-          align="right"
-          startDate={data.start}
-          {onDayClick}
-          enabledDates={[
-            `${dayjs(data.firstLikedTweet?.firstSeenAt).format("MM/DD/YYYY")}:${dayjs().tz(tz).format("MM/DD/YYYY")}`,
-          ]}
-          {dowLabels}
-          {monthLabels}
-        >
-          <button
-            type="button"
-            class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-950 p-1 font-medium tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 dark:bg-neutral-700 dark:hover:bg-neutral-600 dark:focus:ring-neutral-950"
-            on:click={toggleDatePicker}
+      <span>nuestro</span>
+      <button on:click={easterEggClick}
+        >{#if duende}presiduende{:else}presidente{/if}</button
+      >
+      <Popover.Root openFocus>
+        <Popover.Trigger asChild let:builder>
+          <Button
+            variant="outline"
+            class={cn(
+              "justify-start text-left text-xl font-bold",
+              !data.query && "text-muted-foreground",
+            )}
+            builders={[builder]}
           >
-            <span class="icon-[heroicons--calendar-solid]"></span>
-          </button>
-        </DatePicker>
-      </div>
-      ?
+            <CalendarIcon class="mr-2 h-4 w-4" />
+            {data.query
+              ? data.query === "last-24h"
+                ? "las últimas 24hs"
+                : dateFormatter.format(data.start)
+              : "Seleccionar período"}
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content class="w-auto p-0">
+          <div class="mx-2 mt-2 flex justify-center">
+            <Button
+              variant={data.query === "last-24h" ? "default" : "outline"}
+              on:click={() => setQuery("last-24h")}
+            >
+              <ClockIcon class="mr-2 h-4 w-4" />
+              Últimas 24hs
+            </Button>
+          </div>
+
+          <Calendar
+            onValueChange={(value) =>
+              setQuery(value ? `date:${value.toString()}` : "last-24h")}
+            value={data.query === "last-24h"
+              ? undefined
+              : parseDate(dayjs(data.start).format("YYYY-MM-DD"))}
+            initialFocus
+            minValue={parseDate(
+              dayjs(data.firstLikedTweet?.firstSeenAt).format("YYYY-MM-DD"),
+            )}
+            maxValue={parseDate(dayjs().tz(tz).format("YYYY-MM-DD"))}
+          />
+        </Popover.Content>
+      </Popover.Root>
+      <span>?</span>
     </h1>
     <h2 class="text-9xl font-black">
       {#if likesCutoffReached}
