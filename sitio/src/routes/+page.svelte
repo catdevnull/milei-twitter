@@ -160,14 +160,18 @@
     </Popover.Root>
 
     <div class="grid gap-4 text-left md:grid-cols-2">
-      <div class="flex flex-col rounded-lg bg-neutral-100 p-4">
+      <div
+        class="flex flex-col rounded-lg bg-neutral-100 p-4 dark:bg-neutral-800"
+      >
         <span class="text-xl">Milei estuvo aproximadamente</span>
         <span class="text-4xl font-black leading-none">
           {formatDurationFromMs(totalTime)}
         </span>
         <span class="text-xl">en Twitter.</span>
       </div>
-      <div class="flex items-center gap-4 rounded-lg bg-neutral-100 p-4">
+      <div
+        class="flex items-center gap-4 rounded-lg bg-neutral-100 p-4 dark:bg-neutral-800"
+      >
         {#if likesCutoffReached}
           <Repeat2 class="size-12" />
         {:else}
@@ -247,7 +251,7 @@
   {/if}
 
   <section
-    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg"
+    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
   >
     <h2 class=" my-2 text-center text-xl font-bold md:text-4xl">
       Su actividad en {dayjs(data.start).isAfter(dayjs().startOf("month"))
@@ -329,7 +333,7 @@
       Como lo viste en la prensa
     </h2>
     <div
-      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg"
+      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg dark:bg-neutral-800"
     >
       <img
         class="w-[300px] rounded-lg"
