@@ -159,7 +159,7 @@
       </Popover.Content>
     </Popover.Root>
 
-    <div class="grid gap-4 text-left md:grid-cols-2">
+    <div class="grid gap-4 px-2 text-left md:grid-cols-2">
       <div
         class="flex flex-col rounded-lg bg-neutral-100 p-4 dark:bg-neutral-800"
       >
