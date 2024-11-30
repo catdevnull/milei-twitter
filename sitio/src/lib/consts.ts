@@ -35,6 +35,7 @@ export const longDateFormatter = Intl.DateTimeFormat("es-AR", {
 });
 export const monthFormatter = Intl.DateTimeFormat("es-AR", {
   month: "long",
+  year: "numeric",
   timeZone: tz,
 });
 

@@ -27,15 +27,16 @@
   import "core-js/es/array/to-reversed";
   import Meta from "$lib/components/Meta.svelte";
   import AlertInfo from "$lib/components/AlertInfo.svelte";
-  import { dateToMonthString } from "./promedios/[year]/[month]/months";
   import { onMount } from "svelte";
   import AsSeenIn from "./AsSeenIn.svelte";
   import * as Popover from "$lib/components/ui/popover";
   import Button from "@/components/ui/button/button.svelte";
   import { cn } from "@/utils";
   import Calendar from "@/components/ui/calendar/calendar.svelte";
-  import { CalendarIcon, ClockIcon } from "lucide-svelte";
+  import { CalendarIcon, ClockIcon, HeartIcon, Repeat2 } from "lucide-svelte";
   import { CalendarDate, parseDate } from "@internationalized/date";
+  import StatsCalendar from "@/StatsCalendar.svelte";
+  import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
 
   export let data: PageData;
 
@@ -79,8 +80,6 @@
   $: masLikeados = sortMostLiked(filteredLikedTweets);
   $: masRetweeteados = sortMostRetweeted(filteredRetweets);
 
-  $: ultimaSemana = data.ultimaSemana;
-
   const lastUpdatedFormatter = Intl.DateTimeFormat("es-AR", {
     weekday: "short",
     hour: "2-digit",
@@ -97,120 +96,92 @@
     goto(`/?q=${query}`);
   }
 
-  let duende = false;
-  let easterEggClicks = 0;
-  function easterEggClick() {
-    easterEggClicks++;
-    if (easterEggClicks > 4) {
-      duende = true;
-    }
-  }
-
   onMount(() => {
     window.dispatchEvent(new Event("mounted"));
     (window as any).mounted = true;
   });
-
-  // let calendarDate: CalendarDate | undefined;
-  // $: calendarDate =
-  //   data.query === "last-24h"
-  //     ? undefined
-  //     : parseDate(dayjs(data.start).format("YYYY-MM-DD"));
-
-  // $: calendarDate = {
-  //   subscribe: (fn: (value: CalendarDate | undefined) => void) => {
-  //     fn(
-  //       data.query === "last-24h"
-  //         ? undefined
-  //         : parseDate(dayjs(data.start).format("YYYY-MM-DD")),
-  //     );
-  //     return () => {};
-  //   },
-  //   set: (value: CalendarDate | undefined) => {
-  //     setQuery(value ? `date:${value.toString()}` : "last-24h");
-  //   },
-  // };
 </script>
 
 <Meta keywords={true} canonical={"https://milei.nulo.lol"} />
 
-<div
-  class="flex min-h-screen flex-col justify-center gap-2"
-  class:milei-duende={duende}
->
-  <section class="mx-auto my-4 flex max-w-2xl flex-col text-center">
-    <h1
-      class="flex flex-wrap items-center justify-center space-x-2 text-4xl font-bold"
-    >
-      <span>¿Cuántos tweets</span>
-      <span
-        >{#if likesCutoffReached}retweeteo{:else}likeó{/if}</span
-      >
-      <span>nuestro</span>
-      <button on:click={easterEggClick}
-        >{#if duende}presiduende{:else}presidente{/if}</button
-      >
-      <Popover.Root openFocus>
-        <Popover.Trigger asChild let:builder>
+<div class="flex min-h-screen flex-col justify-center gap-2">
+  <section
+    class="mx-auto my-4 flex max-w-2xl flex-col items-center gap-4 text-center"
+  >
+    <Popover.Root openFocus>
+      <Popover.Trigger asChild let:builder>
+        <Button
+          variant="outline"
+          class={cn(
+            "justify-start text-left text-xl font-bold",
+            !data.query && "text-muted-foreground",
+          )}
+          builders={[builder]}
+        >
+          <CalendarIcon class="mr-2 h-4 w-4" />
+          {data.query
+            ? data.query === "last-24h"
+              ? "las últimas 24hs"
+              : dateFormatter.format(data.start)
+            : "Seleccionar período"}
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content class="w-auto p-0">
+        <div class="mx-2 mt-2 flex justify-center">
           <Button
-            variant="outline"
-            class={cn(
-              "justify-start text-left text-xl font-bold",
-              !data.query && "text-muted-foreground",
-            )}
-            builders={[builder]}
+            variant={data.query === "last-24h" ? "default" : "outline"}
+            on:click={() => setQuery("last-24h")}
           >
-            <CalendarIcon class="mr-2 h-4 w-4" />
-            {data.query
-              ? data.query === "last-24h"
-                ? "las últimas 24hs"
-                : dateFormatter.format(data.start)
-              : "Seleccionar período"}
+            <ClockIcon class="mr-2 h-4 w-4" />
+            Últimas 24hs
           </Button>
-        </Popover.Trigger>
-        <Popover.Content class="w-auto p-0">
-          <div class="mx-2 mt-2 flex justify-center">
-            <Button
-              variant={data.query === "last-24h" ? "default" : "outline"}
-              on:click={() => setQuery("last-24h")}
-            >
-              <ClockIcon class="mr-2 h-4 w-4" />
-              Últimas 24hs
-            </Button>
-          </div>
+        </div>
 
-          <Calendar
-            onValueChange={(value) =>
-              setQuery(value ? `date:${value.toString()}` : "last-24h")}
-            value={data.query === "last-24h"
-              ? undefined
-              : parseDate(dayjs(data.start).format("YYYY-MM-DD"))}
-            initialFocus
-            minValue={parseDate(
-              dayjs(data.firstLikedTweet?.firstSeenAt).format("YYYY-MM-DD"),
-            )}
-            maxValue={parseDate(dayjs().tz(tz).format("YYYY-MM-DD"))}
-          />
-        </Popover.Content>
-      </Popover.Root>
-      <span>?</span>
-    </h1>
-    <h2 class="text-9xl font-black">
-      {#if likesCutoffReached}
-        {filteredRetweets.length}
-      {:else}
-        {filteredLikedTweets.length}
-      {/if}
-    </h2>
-    <small>
-      <a
-        href="https://milei.nulo.lol"
-        class="text-blue-600 underline dark:text-blue-200">milei.nulo.lol</a
-      >
-      {#if data.lastUpdated}
-        - actualizado {lastUpdatedFormatter.format(data.lastUpdated.finishedAt)}
-      {/if}
-    </small>
+        <Calendar
+          onValueChange={(value) =>
+            setQuery(value ? `date:${value.toString()}` : "last-24h")}
+          value={data.query === "last-24h"
+            ? undefined
+            : parseDate(dayjs(data.start).format("YYYY-MM-DD"))}
+          initialFocus
+          minValue={parseDate(
+            dayjs(data.firstLikedTweet?.firstSeenAt).format("YYYY-MM-DD"),
+          )}
+          maxValue={parseDate(dayjs().tz(tz).format("YYYY-MM-DD"))}
+        />
+      </Popover.Content>
+    </Popover.Root>
+
+    <div class="grid gap-4 text-left md:grid-cols-2">
+      <div class="flex flex-col rounded-lg bg-neutral-100 p-4">
+        <span class="text-xl">Milei estuvo aproximadamente</span>
+        <span class="text-4xl font-black leading-none">
+          {formatDurationFromMs(totalTime)}
+        </span>
+        <span class="text-xl">en Twitter.</span>
+      </div>
+      <div class="flex items-center gap-4 rounded-lg bg-neutral-100 p-4">
+        {#if likesCutoffReached}
+          <Repeat2 class="size-12" />
+        {:else}
+          <HeartIcon class="size-12" />
+        {/if}
+        <div class="flex flex-col">
+          <span class="text-xl"> Milei dio </span>
+          <span class="text-4xl font-black leading-none">
+            {#if likesCutoffReached}
+              {filteredRetweets.length}
+            {:else}
+              {filteredLikedTweets.length}
+            {/if}
+          </span>
+          <span class="text-xl">
+            {#if likesCutoffReached}retweeteos{:else}me gusta{/if}
+            en Twitter.
+          </span>
+        </div>
+      </div>
+    </div>
   </section>
 
   {#if dudoso}
@@ -268,111 +239,26 @@
     </section>
   {/if}
 
-  <section class="mx-auto flex flex-col items-start gap-16 px-8 md:flex-row">
-    <div class="max-w-[400px]">
-      <h2 class="text-2xl font-bold">Tiempo en Twitter</h2>
-      <p>
-        🤖 Reviso la cuenta <a
-          href="https://twitter.com/JMilei"
-          class="text-blue-600 underline dark:text-blue-200"
-          rel="noreferrer">@JMilei</a
-        >, registro sus interacciones y genero un estimado de cuanto tiempo
-        habría usado Twitter:
-      </p>
-      <p class="text-4xl font-black">
-        {formatDurationFromMs(totalTime)}
-      </p>
-      <!-- <p class="my-1 text-sm leading-tight">
-        * Esto es un experimento que automáticamente revisa los momentos en
-        donde Milei le da "me gusta" a cosas y genera un estimado de cuanto
-        tiempo estuvo usando Twitter.
-      </p> -->
-      <details>
-        <summary>Rangos de tiempo estimados</summary>
-        <ol class="list-decimal pl-8">
-          {#each ranges as { start, end }}
-            <li>
-              {timeFormatter.format(start.toDate())} - {timeFormatter.format(
-                end.toDate(),
-              )}
-            </li>
-          {/each}
-        </ol>
-      </details>
-    </div>
-    <div>
-      {#if likesCutoffReached}
-        <h2 class="text-center text-2xl font-bold">Mas retweeteados</h2>
-        <ol class="list-decimal pl-8">
-          {#each masRetweeteados as [persona, n]}
-            <li>
-              <a
-                class="text-medium underline"
-                href={`https://twitter.com/${persona}`}
-                rel="noopener noreferrer"
-                target="_blank">@{persona}</a
-              >: {n}
-            </li>
-          {/each}
-        </ol>
-      {:else}
-        <h2 class="text-center text-2xl font-bold">Mas likeados</h2>
-        <ol class="list-decimal pl-8">
-          {#each masLikeados as [persona, n]}
-            <li>
-              <a
-                class="text-medium underline"
-                href={`https://twitter.com/${persona}`}
-                rel="noopener noreferrer"
-                target="_blank">@{persona}</a
-              >: {n}
-            </li>
-          {/each}
-        </ol>
-      {/if}
-    </div>
-  </section>
+  <section
+    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg"
+  >
+    <h2 class=" my-2 text-center text-xl font-bold md:text-4xl">
+      Su actividad en {dayjs(data.start).isAfter(dayjs().startOf("month"))
+        ? "lo que va de"
+        : ""}
+      {monthFormatter.format(dayjs(data.start).toDate())}
+    </h2>
 
-  <!-- <section class="mx-auto flex max-w-2xl flex-col">
-    <p class="px-4">
-      Esta página web revisa automáticamente la cuenta , registra los "me gusta" y genera un estimado de cuanto tiempo estuvo el
-      presidente usando Twitter.
-    </p>
-  </section> -->
+    <StatsCalendar
+      monthData={data.monthData}
+      start={dayjs(data.start).startOf("month").toDate()}
+    />
 
-  <section class="mx-auto flex max-w-2xl flex-col py-8">
-    <h2 class="text-center text-2xl font-bold">Semanal</h2>
-
-    <table>
-      <tbody>
-        {#each ultimaSemana as { day, tweets, retweets, screenTime }}
-          <tr>
-            <th class="px-1 text-right"
-              >{weekDayFormatter.format(
-                dayjs(day, "YYYY-MM-DD").tz(tz, true).toDate(),
-              )}</th
-            >
-            <td class="px-1 text-right">
-              {#if !(likesCutoff && (dayjs(day, "YYYY-MM-DD").isAfter(likesCutoff.cutAt, "day") || dayjs(day, "YYYY-MM-DD").isSame(likesCutoff.cutAt, "day")))}
-                {tweets.length}❤️
-              {/if}
-            </td>
-            <td class="px-1 text-right">
-              {retweets.length}🔁
-            </td>
-            <td class="px-1">
-              {formatTinyDurationFromMs(screenTime)}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-
-    <a
-      href={`/promedios/${dayjs(data.start).year()}/${dateToMonthString(dayjs(data.start))}`}
-      class="mt-12 text-2xl text-blue-600 underline dark:text-blue-200"
-      >Ver promedio de {monthFormatter.format(data.start)}</a
-    >
+    <StatsCalendarNavigation
+      start={dayjs(data.start).startOf("month").toDate()}
+      hasNextMonth={data.hasNextMonth}
+      hideIfNotExists={true}
+    />
   </section>
 
   <section class="mx-auto flex w-full max-w-[800px] flex-col py-8">
@@ -457,27 +343,7 @@
 </div>
 
 <style lang="postcss">
-  :global(.datepicker) {
-    display: inline-flex;
-  }
-  :global(.datepicker) button {
-    @apply text-4xl;
-  }
-
-  .milei-duende {
-    background:
-      linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
-      center / cover no-repeat url("$lib/assets/milei-duende.webp");
-    background-attachment: fixed;
-  }
-
   @media (prefers-color-scheme: dark) {
-    .milei-duende {
-      background:
-        linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-        center / cover no-repeat url("$lib/assets/milei-duende.webp");
-    }
-
     :global(.plot-d6a7b5) {
       --plot-background: #000;
     }

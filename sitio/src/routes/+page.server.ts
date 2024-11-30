@@ -5,6 +5,7 @@ import type { PageServerLoad } from "./$types";
 import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error } from "@sveltejs/kit";
 import { getLastWeek } from "$lib/data-processing/weekly";
+import { getStatsForDaysInTimePeriod } from "@/data-processing/days";
 
 const tz = "America/Argentina/Buenos_Aires";
 
@@ -36,8 +37,9 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
     retweets,
     tweets,
     lastUpdated,
-    ultimaSemana,
     firstLikedTweet,
+    monthData,
+    hasNextMonth,
   ] = await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
@@ -95,11 +97,20 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       where: isNotNull(schema.scraps.totalTweetsSeen),
     }),
 
-    getLastWeek(startingFrom.startOf("day")),
-
     db.query.likedTweets.findFirst({
       orderBy: asc(schema.likedTweets.firstSeenAt),
       where: likesCutoffSql,
+    }),
+    getStatsForDaysInTimePeriod(
+      db,
+      startingFrom.startOf("month"),
+      startingFrom.endOf("month"),
+    ),
+    db.query.retweets.findFirst({
+      where: gte(
+        schema.retweets.retweetAt,
+        startingFrom.add(1, "month").toDate(),
+      ),
     }),
   ]);
   const t1 = performance.now();
@@ -118,8 +129,9 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
     })),
     lastUpdated,
     start: startingFrom.toDate(),
-    ultimaSemana,
     firstLikedTweet,
+    monthData,
+    hasNextMonth: !!hasNextMonth,
     query,
   };
 };

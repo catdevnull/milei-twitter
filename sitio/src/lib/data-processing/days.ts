@@ -11,8 +11,11 @@ import { desc, and, gte, lte } from "drizzle-orm";
 import {
   calculateSessions,
   getInteractionTimes,
+  msToDuration,
   totalFromDurations,
 } from "./screenTime";
+import { formatDuration } from "date-fns";
+import { es } from "date-fns/locale/es";
 
 export function makeMapOfDays<T>(
   days: Array<Date>,
@@ -117,4 +120,24 @@ export function getDaysInTimePeriod(start: Dayjs, end: Dayjs) {
   )
     days.push(date);
   return days;
+}
+
+export type DataForDays = Awaited<
+  ReturnType<typeof getStatsForDaysInTimePeriod>
+>;
+
+export function processDataForDays(data: DataForDays) {
+  const daysWithData = data.filter((day) => day.screenTime > 0);
+  const avg =
+    daysWithData.reduce((prev, day) => prev + day.screenTime, 0) /
+    daysWithData.length;
+  const avgString = formatDuration(msToDuration(avg), {
+    locale: es,
+    delimiter: " y ",
+    format: ["hours", "minutes"],
+  });
+
+  const minTime = Math.min(...daysWithData.map((day) => day.screenTime));
+  const maxTime = Math.max(...daysWithData.map((day) => day.screenTime));
+  return { daysWithData, avg, avgString, minTime, maxTime };
 }
