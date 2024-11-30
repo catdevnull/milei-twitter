@@ -3,7 +3,7 @@ import { and, asc, desc, gte, isNotNull, lt, lte, sql } from "drizzle-orm";
 import * as schema from "../schema";
 import type { PageServerLoad } from "./$types";
 import { dayjs, likesCutoffSql } from "$lib/consts";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { getLastWeek } from "$lib/data-processing/weekly";
 import { getStatsForDaysInTimePeriod } from "@/data-processing/days";
 
@@ -115,6 +115,18 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
   ]);
   const t1 = performance.now();
   console.log("queries", t1 - t0);
+
+  if (
+    likedTweets.length === 0 &&
+    retweets.length === 0 &&
+    tweets.length === 0 &&
+    !url.searchParams.get("q")
+  ) {
+    return redirect(
+      302,
+      "/?q=date:" + dayjs().subtract(1, "day").tz(tz).format("YYYY-MM-DD"),
+    );
+  }
 
   setHeaders({
     "cache-control": "public, max-age=60",
