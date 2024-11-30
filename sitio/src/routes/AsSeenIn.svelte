@@ -83,7 +83,7 @@
 
 <!-- https://magicui.design/docs/components/marquee -->
 <div
-  class="group relative flex h-[400px] w-full flex-col gap-4 overflow-hidden bg-neutral-200 [--duration:10s] [--gap:1rem] md:my-4 md:h-auto md:flex-row md:gap-8 md:bg-transparent md:[--duration:25s] md:[--gap:2rem] dark:bg-neutral-950"
+  class="group relative flex h-[400px] w-full flex-col gap-4 overflow-hidden bg-neutral-200 [--duration:10s] [--gap:1rem] md:my-4 md:h-auto md:flex-row md:gap-8 md:bg-black md:bg-transparent md:[--duration:25s] md:[--gap:2rem] dark:bg-neutral-950"
 >
   <!-- {#each refs as ref}
     <a
