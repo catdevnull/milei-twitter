@@ -44,7 +44,7 @@
     class="sticky top-0 mx-auto my-2 self-start bg-neutral-100 dark:bg-neutral-900"
   >
     <ul
-      class="inline-flex divide-x divide-neutral-200 border border-neutral-200 md:flex-col md:divide-x-0 md:divide-y dark:divide-neutral-800 dark:border-neutral-800"
+      class="inline-flex divide-x divide-neutral-200 border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800 md:flex-col md:divide-x-0 md:divide-y"
     >
       <a class="flex px-4 py-2 font-medium underline" href="#scraper-tokens"
         >Scraper Tokens</a
@@ -163,7 +163,7 @@
       <form method="POST" action="?/addAccount" class="p-2">
         {#if form?.error}
           <div
-            class="[&>svg]:text-foreground relative mb-2 w-full rounded-lg border border-transparent bg-red-600 p-4 text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4"
+            class="relative mb-2 w-full rounded-lg border border-transparent bg-red-600 p-4 text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground"
           >
             <svg
               class="h-5 w-5 -translate-y-0.5"
@@ -189,13 +189,13 @@
             type="text"
             name="auth_token"
             placeholder="auth_token (el corto)"
-            class="ring-offset-background inline-flex h-10 flex-grow rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900"
+            class="inline-flex h-10 flex-grow rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900"
           />
           <input
             type="text"
             name="ct0"
             placeholder="ct0 (el largo)"
-            class="ring-offset-background inline-flex h-10 flex-grow rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900"
+            class="inline-flex h-10 flex-grow rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900"
           />
           <button
             class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-950 px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2"

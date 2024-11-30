@@ -2,3 +2,4 @@
 drizzle
 pnpm-lock.yaml
 vite.config.ts.*
+build

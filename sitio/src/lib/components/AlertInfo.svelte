@@ -1,6 +1,6 @@
 <section class="mx-auto w-full max-w-2xl px-2">
   <div
-    class="[&>svg]:text-foreground relative w-full rounded-lg border border-transparent bg-neutral-200 p-4 text-neutral-900 dark:bg-neutral-800 dark:text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4"
+    class="relative w-full rounded-lg border border-transparent bg-neutral-200 p-4 text-neutral-900 dark:bg-neutral-800 dark:text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground"
   >
     <svg
       class="h-5 w-5 -translate-y-0.5"

@@ -1,5 +1,5 @@
 <div
-  class="[&>svg]:text-foreground relative mb-2 w-full rounded-lg border border-transparent bg-red-600 p-4 text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4"
+  class="relative mb-2 w-full rounded-lg border border-transparent bg-red-600 p-4 text-white [&:has(svg)]:pl-11 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground"
 >
   <svg
     class="h-5 w-5 -translate-y-0.5"

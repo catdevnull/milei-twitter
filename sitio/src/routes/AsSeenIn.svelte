@@ -83,7 +83,7 @@
 
 <!-- https://magicui.design/docs/components/marquee -->
 <div
-  class="group relative flex h-[400px] w-full flex-col gap-4 overflow-hidden bg-neutral-200 [--duration:10s] [--gap:1rem] md:my-4 md:h-auto md:flex-row md:gap-8 md:bg-black md:bg-transparent md:[--duration:25s] md:[--gap:2rem] dark:bg-neutral-950"
+  class="group relative flex h-[400px] w-full flex-col gap-4 overflow-hidden bg-neutral-200 [--duration:10s] [--gap:1rem] dark:bg-neutral-950 md:my-4 md:h-auto md:flex-row md:gap-8 md:bg-black md:bg-transparent md:[--duration:25s] md:[--gap:2rem]"
 >
   <!-- {#each refs as ref}
     <a
@@ -97,7 +97,7 @@
   {/each} -->
   {#each [1, 2] as _}
     <div
-      class="md:animate-marquee animate-marquee-vertical flex shrink-0 flex-col items-center whitespace-nowrap [gap:var(--gap)] group-hover:[animation-play-state:paused] md:flex-row md:justify-around"
+      class="flex shrink-0 animate-marquee-vertical flex-col items-center whitespace-nowrap [gap:var(--gap)] group-hover:[animation-play-state:paused] md:animate-marquee md:flex-row md:justify-around"
     >
       {#each refs as ref}
         <a
@@ -116,9 +116,9 @@
     </div>
   {/each}
   <div
-    class="dark:from-background pointer-events-none absolute inset-x-0 -top-1 h-1/3 bg-gradient-to-b from-neutral-100 md:hidden"
+    class="pointer-events-none absolute inset-x-0 -top-1 h-1/3 bg-gradient-to-b from-neutral-100 dark:from-background md:hidden"
   ></div>
   <div
-    class="dark:from-background pointer-events-none absolute inset-x-0 -bottom-1 h-1/3 bg-gradient-to-t from-neutral-100 md:hidden"
+    class="pointer-events-none absolute inset-x-0 -bottom-1 h-1/3 bg-gradient-to-t from-neutral-100 dark:from-background md:hidden"
   ></div>
 </div>
