@@ -27,6 +27,7 @@
   title="Chequeador de likes de @JMilei"
   description={'Verifica un "me gusta" de Twitter del presidente'}
   cardPath={cardPerfil}
+  canonical={`https://milei.nulo.lol/chequear`}
 />
 
 <div class="m-auto flex max-w-2xl flex-col justify-center">

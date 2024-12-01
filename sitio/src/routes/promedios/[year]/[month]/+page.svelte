@@ -6,6 +6,7 @@
   import StatsCalendar from "@/StatsCalendar.svelte";
   import { processDataForDays } from "@/data-processing/days";
   import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
+  import { page } from "$app/stores";
 
   export let data: PageData;
 
@@ -19,6 +20,7 @@
   keywords={true}
   title={`¿Cuanto tiempo pasó Milei en Twitter en ${monthString}?`}
   description={`Descubrí cuanto tiempo pasó el presidente Javier Milei en Twitter durante ${monthString}.`}
+  canonical={`https://milei.nulo.lol/promedios/${$page.params.year}/${$page.params.month}`}
 />
 
 <main class="mx-auto flex min-h-screen max-w-2xl flex-col gap-12 py-4">
