@@ -5,15 +5,9 @@
   import {
     calculateSessions,
     formatDurationFromMs,
-    formatTinyDurationFromMs,
     getInteractionTimes,
     totalFromDurations,
   } from "$lib/data-processing/screenTime";
-  import {
-    sortMost,
-    sortMostLiked,
-    sortMostRetweeted,
-  } from "$lib/data-processing/mostLiked";
   import { goto } from "$app/navigation";
   import {
     dateFormatter,
@@ -21,7 +15,6 @@
     likesCutoff,
     longDateFormatter,
     monthFormatter,
-    timeFormatter,
     tz,
   } from "$lib/consts";
   import "core-js/es/array/to-reversed";
@@ -40,7 +33,7 @@
     LinkIcon,
     Repeat2,
   } from "lucide-svelte";
-  import { CalendarDate, parseDate } from "@internationalized/date";
+  import { parseDate } from "@internationalized/date";
   import StatsCalendar from "@/StatsCalendar.svelte";
   import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
   import timeCover from "$lib/assets/time-cover-milei.png";
@@ -84,21 +77,6 @@
   );
   $: totalTime = totalFromDurations(ranges);
 
-  $: masLikeados = sortMostLiked(filteredLikedTweets);
-  $: masRetweeteados = sortMostRetweeted(filteredRetweets);
-
-  const lastUpdatedFormatter = Intl.DateTimeFormat("es-AR", {
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: tz,
-  });
-
-  const weekDayFormatter = Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    weekday: "short",
-    timeZone: tz,
-  });
   function setQuery(query: string) {
     goto(`/?q=${query}`);
   }
@@ -251,7 +229,7 @@
   {/if}
 
   <section
-    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 dark:bg-neutral-800 md:rounded-lg"
+    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
   >
     <h2 class=" my-2 text-center text-xl font-bold md:text-4xl">
       Su actividad en {dayjs(data.start).isAfter(dayjs().startOf("month"))
@@ -333,7 +311,7 @@
       Como lo viste en la prensa
     </h2>
     <div
-      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 dark:bg-neutral-800 md:mb-8 md:flex-row md:rounded-lg md:text-lg"
+      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg dark:bg-neutral-800"
     >
       <img
         class="w-[300px] rounded-lg"
