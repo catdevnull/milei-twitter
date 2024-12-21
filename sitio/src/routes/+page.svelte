@@ -36,7 +36,6 @@
   import { parseDate } from "@internationalized/date";
   import StatsCalendar from "@/StatsCalendar.svelte";
   import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
-  import timeCover from "$lib/assets/time-cover-milei.png";
 
   export let data: PageData;
 
@@ -313,10 +312,11 @@
     <div
       class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg dark:bg-neutral-800"
     >
-      <img
+      <enhanced:img
         class="w-[300px] rounded-lg"
-        src={timeCover}
+        src="$lib/assets/time-cover-milei.png"
         alt="Milei en la prensa"
+        loading="lazy"
       />
       <div class="flex flex-col items-start gap-2">
         <blockquote class="max-w-[400px]">

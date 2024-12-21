@@ -1,15 +1,15 @@
 <script lang="ts">
-  import cortaImg from "$lib/assets/press-logos/corta.png";
-  import elDestapeImg from "$lib/assets/press-logos/el-destape.png";
-  import elPaisImg from "$lib/assets/press-logos/el-pais.png";
+  import cortaImg from "$lib/assets/press-logos/corta.png?enhanced";
+  import elDestapeImg from "$lib/assets/press-logos/el-destape.png?enhanced";
+  import elPaisImg from "$lib/assets/press-logos/el-pais.png?enhanced";
   import lpoImg from "$lib/assets/press-logos/lpo.svg";
-  import mdzolImg from "$lib/assets/press-logos/mdzol.png";
-  import pagina12Img from "$lib/assets/press-logos/pagina12.png";
+  import mdzolImg from "$lib/assets/press-logos/mdzol.png?enhanced";
+  import pagina12Img from "$lib/assets/press-logos/pagina12.png?enhanced";
   import perfilImg from "$lib/assets/press-logos/perfil.svg";
-  import tiempoArgentinoImg from "$lib/assets/press-logos/tiempo-argentino.png";
+  import tiempoArgentinoImg from "$lib/assets/press-logos/tiempo-argentino.png?enhanced";
   import clarinImg from "$lib/assets/press-logos/clarin.svg";
-  import radioConVosImg from "$lib/assets/press-logos/radio-con-vos.png";
-  import blenderImg from "$lib/assets/press-logos/blender.png";
+  import radioConVosImg from "$lib/assets/press-logos/radio-con-vos.png?enhanced";
+  import blenderImg from "$lib/assets/press-logos/blender.png?enhanced";
   import timeImg from "$lib/assets/press-logos/time.svg";
   const refs = [
     // {
@@ -83,7 +83,7 @@
 
 <!-- https://magicui.design/docs/components/marquee -->
 <div
-  class="group relative flex h-[400px] w-full flex-col gap-4 overflow-hidden bg-neutral-200 [--duration:10s] [--gap:1rem] dark:bg-neutral-950 md:my-4 md:h-auto md:flex-row md:gap-8 md:bg-black md:bg-transparent md:[--duration:25s] md:[--gap:2rem]"
+  class="group relative flex h-[400px] w-full flex-col gap-4 overflow-hidden bg-neutral-200 [--duration:10s] [--gap:1rem] md:my-4 md:h-auto md:flex-row md:gap-8 md:bg-black md:bg-transparent md:[--duration:25s] md:[--gap:2rem] dark:bg-neutral-950"
 >
   <!-- {#each refs as ref}
     <a
@@ -97,7 +97,7 @@
   {/each} -->
   {#each [1, 2] as _}
     <div
-      class="flex shrink-0 animate-marquee-vertical flex-col items-center whitespace-nowrap [gap:var(--gap)] group-hover:[animation-play-state:paused] md:animate-marquee md:flex-row md:justify-around"
+      class="animate-marquee-vertical md:animate-marquee flex shrink-0 flex-col items-center whitespace-nowrap [gap:var(--gap)] group-hover:[animation-play-state:paused] md:flex-row md:justify-around"
     >
       {#each refs as ref}
         <a
@@ -106,19 +106,27 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          <img
-            src={ref.img}
-            alt={ref.alt}
-            class={`h-8 ${ref.imgClass ?? ""}`}
-          />
+          {#if typeof ref.img === "string"}
+            <img
+              src={ref.img}
+              alt={ref.alt}
+              class={`h-8 ${ref.imgClass ?? ""}`}
+            />
+          {:else}
+            <enhanced:img
+              src={ref.img}
+              alt={ref.alt}
+              class={`h-8 w-auto ${ref.imgClass ?? ""}`}
+            />
+          {/if}
         </a>
       {/each}
     </div>
   {/each}
   <div
-    class="pointer-events-none absolute inset-x-0 -top-1 h-1/3 bg-gradient-to-b from-neutral-100 dark:from-background md:hidden"
+    class="dark:from-background pointer-events-none absolute inset-x-0 -top-1 h-1/3 bg-gradient-to-b from-neutral-100 md:hidden"
   ></div>
   <div
-    class="pointer-events-none absolute inset-x-0 -bottom-1 h-1/3 bg-gradient-to-t from-neutral-100 dark:from-background md:hidden"
+    class="dark:from-background pointer-events-none absolute inset-x-0 -bottom-1 h-1/3 bg-gradient-to-t from-neutral-100 md:hidden"
   ></div>
 </div>

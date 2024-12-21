@@ -1,5 +1,6 @@
 import { sentrySvelteKit } from "@sentry/sveltekit";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { enhancedImages } from "@sveltejs/enhanced-img";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -10,6 +11,7 @@ export default defineConfig({
         project: "milei-twitter",
       },
     }),
+    enhancedImages(),
     sveltekit(),
   ],
 });
