@@ -349,7 +349,7 @@
       Desde {longDateFormatter.format(likesCutoff?.cutAt)}, ya no podemos
       mostrar los 'me gusta' de Milei en Twitter/X porque ahora son privados.
       <a
-        class="text-blue-600 underline dark:text-blue-200"
+        class="text-blue-700 underline dark:text-blue-200"
         href="https://x.com/wanghaofei/status/1793096366132195529"
         >Más información</a
       >. Seguiremos mostrando los retweets públicos.
