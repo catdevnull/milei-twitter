@@ -162,6 +162,9 @@ importers:
       nanoid:
         specifier: ^5.0.9
         version: 5.0.9
+      sentry-integration-libsql-client:
+        specifier: ^1.3.0
+        version: 1.3.0(@libsql/client@0.14.0)(@sentry/node@8.41.0)
       svelte-echarts:
         specifier: ^0.1.1
         version: 0.1.1(echarts@5.5.0)(svelte@5.2.11)
@@ -4014,6 +4017,12 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  sentry-integration-libsql-client@1.3.0:
+    resolution: {integrity: sha512-AikPYeyV80KDHo2UhPKFxjhZ2JcaeGz0QxfGcXvChTcp8SakYTWx3Rb4vLXAZezlKxbsxNClz0Xq9jrtpQpzLQ==}
+    peerDependencies:
+      '@libsql/client': ^0.7.0
+      '@sentry/node': ^8.11.0
+
   set-cookie-parser@2.7.0:
     resolution: {integrity: sha512-lXLOiqpkUumhRdFF3k1osNXCy9akgx/dyPZ5p8qAg9seJzXr5ZrlqZuWIMuY6ejOsVLE6flJ5/h3lsn57fQ/PQ==}
 
@@ -4096,6 +4105,9 @@ packages:
   source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
+
+  sqlite-statement-type@1.1.0:
+    resolution: {integrity: sha512-RUODr8wpK+dTViTGB5Ksh+Gk30CASWM48wVtQUuaX56udfhLBlSbpufAuFx0wFvaTYSBClQ6Cer4wz9lUZ0f7w==}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -8040,6 +8052,12 @@ snapshots:
 
   semver@7.6.3: {}
 
+  sentry-integration-libsql-client@1.3.0(@libsql/client@0.14.0)(@sentry/node@8.41.0):
+    dependencies:
+      '@libsql/client': 0.14.0
+      '@sentry/node': 8.41.0
+      sqlite-statement-type: 1.1.0
+
   set-cookie-parser@2.7.0: {}
 
   set-cookie-parser@2.7.1: {}
@@ -8156,6 +8174,8 @@ snapshots:
   source-map@0.8.0-beta.0:
     dependencies:
       whatwg-url: 7.1.0
+
+  sqlite-statement-type@1.1.0: {}
 
   string-width@4.2.3:
     dependencies:
