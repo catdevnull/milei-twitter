@@ -109,7 +109,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
     db.query.retweets.findFirst({
       where: gte(
         schema.retweets.retweetAt,
-          startingFrom.add(1, "month").startOf("month").toDate(),
+        startingFrom.add(1, "month").startOf("month").toDate(),
       ),
     }),
   ]);
