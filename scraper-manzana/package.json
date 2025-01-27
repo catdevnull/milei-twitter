@@ -9,7 +9,7 @@
     "check": "tsc --noEmit",
     "start": "tsx cli.ts",
     "build": "tsup cli.ts && cp -r dbs/* dist/",
-    "deploy:trigger-prod": "pnpx trigger.dev@3.1.2 deploy"
+    "deploy:trigger-prod": "pnpx trigger.dev@latest deploy"
   },
   "keywords": [],
   "author": "",
