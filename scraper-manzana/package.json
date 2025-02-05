@@ -17,32 +17,32 @@
   "dependencies": {
     "@trigger.dev/sdk": "3.3.12",
     "async-mutex": "^0.5.0",
-    "better-sqlite3": "^11.3.0",
+    "better-sqlite3": "^11.8.1",
     "cmd-ts": "^0.13.0",
-    "dataloader": "^2.2.2",
+    "dataloader": "^2.2.3",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "drizzle-orm": "^0.33.0",
-    "openai": "^4.55.4",
-    "undici": "^6.19.8",
-    "zod": "^3.23.8"
+    "openai": "^4.83.0",
+    "undici": "^6.21.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@catdevnull/twitter-scraper": "^0.14.5",
     "@trigger.dev/build": "3.3.12",
-    "@types/better-sqlite3": "^7.6.11",
-    "@types/node": "^20.14.15",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^20.17.17",
     "@types/tough-cookie": "^4.0.5",
     "api": "workspace:^",
     "drizzle-kit": "^0.24.2",
     "escape-string-regexp": "^5.0.0",
-    "nanoid": "^5.0.7",
+    "nanoid": "^5.0.9",
     "p-debounce": "^4.0.0",
-    "p-queue": "^8.0.1",
+    "p-queue": "^8.1.0",
     "tough-cookie": "^4.1.4",
-    "tsup": "^8.2.4",
-    "tsx": "^4.17.0",
-    "typescript": "^5.5.4"
+    "tsup": "^8.3.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
   },
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
 }

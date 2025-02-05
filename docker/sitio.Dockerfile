@@ -1,4 +1,4 @@
-FROM node:20 AS base
+FROM node:23 AS base
 RUN corepack enable
 WORKDIR /usr/src/app
 
