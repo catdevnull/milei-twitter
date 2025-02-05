@@ -39,6 +39,7 @@
     "markdown-it-table-of-contents": "^0.6.0",
     "mode-watcher": "^0.5.0",
     "nanoid": "^5.0.9",
+    "posthog-js": "^1.215.3",
     "svelte-echarts": "^0.1.1",
     "svelte-mq-store": "^2.2.22",
     "svelte-radix": "^2.0.1",
