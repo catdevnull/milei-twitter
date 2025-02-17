@@ -14,7 +14,8 @@
     "benchmark:lastWeek": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./benchmarks/lastWeek.ts",
     "db:generate": "drizzle-kit generate",
     "db:reset-to-prod": "rm -f sqlite.db sqlite.db-shm sqlite.db-wal && sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;' && turso db shell http://milei-prod:8080 '.dump' | sqlite3 sqlite.db",
-    "db:seed-historic-likes": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./src/lib/db/seedHistoricLikes.ts"
+    "db:seed-historic-likes": "node --enable-source-maps --import 'data:text/javascript,import {register} from \"node:module\"; import {pathToFileURL} from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"))' ./src/lib/db/seedHistoricLikes.ts",
+    "knip": "knip"
   },
   "dependencies": {
     "@bybas/weather-icons": "^2.0.0",
@@ -61,6 +62,7 @@
     "bits-ui": "1.0.0-next.98",
     "clsx": "^2.1.1",
     "drizzle-kit": "^0.24.2",
+    "knip": "^5.44.1",
     "lucide-svelte": "^0.462.0",
     "mitata": "^0.1.14",
     "postcss": "^8.5.1",
