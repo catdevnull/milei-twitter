@@ -60,4 +60,4 @@
   });
 </script>
 
-<canvas class="h-[250px] md:h-[300px]" bind:this={canvasEl} />
+<canvas class="h-[250px] md:h-[300px]" bind:this={canvasEl}></canvas>
