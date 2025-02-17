@@ -23,9 +23,9 @@
   import { onMount } from "svelte";
   import AsSeenIn from "./AsSeenIn.svelte";
   import * as Popover from "$lib/components/ui/popover";
-  import Button from "@/components/ui/button/button.svelte";
+  import { Button, buttonVariants } from "@/components/ui/button/index";
   import { cn } from "@/utils";
-  import Calendar from "@/components/ui/calendar/calendar.svelte";
+  import { Calendar } from "@/components/ui/calendar/index";
   import {
     CalendarIcon,
     ClockIcon,
@@ -92,36 +92,33 @@
   <section
     class="mx-auto my-4 flex max-w-2xl flex-col items-center gap-4 text-center"
   >
-    <Popover.Root openFocus>
-      <Popover.Trigger asChild let:builder>
-        <Button
-          variant="outline"
-          class={cn(
-            "justify-start text-left text-xl font-bold",
-            !data.query && "text-muted-foreground",
-          )}
-          builders={[builder]}
-        >
-          <CalendarIcon class="mr-2 h-4 w-4" />
-          {data.query
-            ? data.query === "last-24h"
-              ? "las últimas 24hs"
-              : dateFormatter.format(data.start)
-            : "Seleccionar período"}
-        </Button>
+    <Popover.Root>
+      <Popover.Trigger
+        class={cn(
+          buttonVariants({ variant: "outline" }),
+          "justify-start text-left text-xl font-bold",
+          !data.query && "text-muted-foreground",
+        )}
+      >
+        <CalendarIcon class="mr-2 h-4 w-4" />
+        {data.query
+          ? data.query === "last-24h"
+            ? "las últimas 24hs"
+            : dateFormatter.format(data.start)
+          : "Seleccionar período"}
       </Popover.Trigger>
       <Popover.Content class="w-auto p-0">
         <div class="mx-2 mt-2 flex justify-center">
           <Button
             variant={data.query === "last-24h" ? "default" : "outline"}
-            on:click={() => setQuery("last-24h")}
+            onclick={() => setQuery("last-24h")}
           >
             <ClockIcon class="mr-2 h-4 w-4" />
             Últimas 24hs
           </Button>
         </div>
-
         <Calendar
+          type="single"
           onValueChange={(value) =>
             setQuery(value ? `date:${value.toString()}` : "last-24h")}
           value={data.query === "last-24h"
@@ -228,7 +225,7 @@
   {/if}
 
   <section
-    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 dark:bg-neutral-800 md:rounded-lg"
+    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
   >
     <h2 class=" my-2 text-center text-xl font-bold md:text-4xl">
       Su actividad en {dayjs(data.start).isAfter(dayjs().startOf("month"))
@@ -310,7 +307,7 @@
       Como lo viste en la prensa
     </h2>
     <div
-      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 dark:bg-neutral-800 md:mb-8 md:flex-row md:rounded-lg md:text-lg"
+      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg dark:bg-neutral-800"
     >
       <enhanced:img
         class="w-[300px] rounded-lg"
