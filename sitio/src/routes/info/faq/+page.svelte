@@ -49,8 +49,11 @@ Podés descargar los últimos datos de likes y retweets en formato CSV:
 <a href="/api/datasets/likes.csv" class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-800 px-4 py-2 mr-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 dark:hover:bg-neutral-800/50 hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2">
   likes.csv
 </a>  
-<a href="/api/datasets/retweets.csv" class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-800 px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 dark:hover:bg-neutral-800/50 hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2">
+<a href="/api/datasets/retweets.csv" class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-800 px-4 py-2 mr-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 dark:hover:bg-neutral-800/50 hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2">
   retweets.csv
+</a>  
+<a href="/api/datasets/tweets.jsonl" class="focus:shadow-outline inline-flex items-center justify-center rounded-md bg-neutral-800 px-4 py-2 text-sm font-medium tracking-wide text-white transition-colors duration-200 dark:hover:bg-neutral-800/50 hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2">
+  tweets.jsonl
 </a>
 
 Tené en cuenta que solo contempla los datos que pudimos capturar.
