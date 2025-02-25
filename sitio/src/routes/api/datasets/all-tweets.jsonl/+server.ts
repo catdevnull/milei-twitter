@@ -6,7 +6,7 @@ import type { RequestHandler } from "@sveltejs/kit";
 export const GET: RequestHandler = async () => {
   console.time("all-tweets-jsonl");
 
-  const BATCH_SIZE = 1000;
+  const BATCH_SIZE = 100;
   let lastId: string | null = null;
   let allRecords: (typeof tweets.$inferSelect)[] = [];
   // workaround because libsql sucks and returns "LibsqlError: RESPONSE_TOO_LARGE: Response is too large"
