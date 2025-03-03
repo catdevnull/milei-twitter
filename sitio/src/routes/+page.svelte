@@ -251,30 +251,31 @@
       💞 Los favoritos de Milei 💞
     </h2>
 
-    <div id="observablehq-title-bfd5728c"></div>
-    <div id="observablehq-viewof-top-bfd5728c"></div>
-    <div id="observablehq-chart_1-bfd5728c"></div>
+    <div id="observablehq-title-d59580eb"></div>
+    <div id="observablehq-viewof-top-d59580eb"></div>
+    <div id="observablehq-chart-d59580eb"></div>
 
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@observablehq/inspector@5/dist/inspector.css"> -->
+
     <script type="module" async>
       import {
         Runtime,
         Inspector,
       } from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@5/dist/runtime.js";
-      import define from "https://api.observablehq.com/@rusosnith/retuits-milei@261.js?v=4";
+      import define from "https://api.observablehq.com/@rusosnith/retuits-milei@latest.js?v=4";
       const observable = () => {
         new Runtime().module(define, (name) => {
           if (name === "title")
             return new Inspector(
-              document.querySelector("#observablehq-title-bfd5728c"),
+              document.querySelector("#observablehq-title-d59580eb"),
             );
           if (name === "viewof top")
             return new Inspector(
-              document.querySelector("#observablehq-viewof-top-bfd5728c"),
+              document.querySelector("#observablehq-viewof-top-d59580eb"),
             );
-          if (name === "chart_1")
+          if (name === "chart")
             return new Inspector(
-              document.querySelector("#observablehq-chart_1-bfd5728c"),
+              document.querySelector("#observablehq-chart-d59580eb"),
             );
           return ["tuiteroMensual"].includes(name);
         });
@@ -357,11 +358,3 @@
     <Footer />
   </div>
 </div>
-
-<style lang="postcss">
-  @media (prefers-color-scheme: dark) {
-    :global(.plot-d6a7b5) {
-      --plot-background: #000;
-    }
-  }
-</style>
