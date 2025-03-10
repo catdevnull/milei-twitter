@@ -39,8 +39,8 @@ export async function GET() {
 
   if (lastScrap) {
     const delta = +new Date() - +lastScrap.finishedAt;
-    if (delta > 31 * 60 * 1000) {
-      errors.push(`último scrap hace ${delta}ms (>31min)`);
+    if (delta > 38 * 60 * 1000) {
+      errors.push(`último scrap hace ${delta}ms (>38min)`);
     }
     if (lastScrap.totalTweetsSeen && lastScrap.totalTweetsSeen < 10) {
       errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);
