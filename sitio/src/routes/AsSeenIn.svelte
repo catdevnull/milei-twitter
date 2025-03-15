@@ -97,7 +97,7 @@
   {/each} -->
   {#each [1, 2] as _}
     <div
-      class="flex shrink-0 animate-marquee-vertical flex-col items-center whitespace-nowrap [gap:var(--gap)] group-hover:[animation-play-state:paused] md:animate-marquee md:flex-row md:justify-around"
+      class="animate-marquee-vertical md:animate-marquee flex shrink-0 flex-col items-center whitespace-nowrap [gap:var(--gap)] group-hover:[animation-play-state:paused] md:flex-row md:justify-around"
     >
       {#each refs as ref}
         <a
