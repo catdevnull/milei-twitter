@@ -41,14 +41,14 @@ async function get(url: string): Promise<unknown> {
 
 export async function getUser(userIdOrHandle: string) {
   const response = await get(
-    `https://api.socialdata.tools/twitter/user/${userIdOrHandle}`
+    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userIdOrHandle}`
   );
   return z.union([SocialDataUser, SocialDataGenericResponse]).parse(response);
 }
 
 export async function getTweet(tweetId: string) {
   const response = await get(
-    `https://api.socialdata.tools/twitter/tweets/${tweetId}`
+    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/tweets/${tweetId}`
   );
   return z.union([SocialDataTweet, SocialDataGenericResponse]).parse(response);
 }
@@ -65,7 +65,7 @@ export async function getTweetsAndReplies(
   }
   const param = cursor ? `cursor=${cursor}` : "";
   const response = await get(
-    `https://api.socialdata.tools/twitter/user/${userId}/tweets-and-replies?${param}`
+    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userId}/tweets-and-replies?${param}`
   );
   const parsed = z
     .union([SocialDataTweetsResponse, SocialDataErrorResponse])
