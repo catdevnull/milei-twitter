@@ -5,6 +5,7 @@ export default defineConfig({
   runtime: "node",
   logLevel: "log",
   machine: "micro",
+  maxDuration: 1000 * 60,
   retries: {
     enabledInDev: true,
     default: {
