@@ -15,7 +15,7 @@ export async function connectDb({
     idle_timeout: 20,
     connect_timeout: 10,
   });
-  
+
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: "drizzle" });
   return db;
