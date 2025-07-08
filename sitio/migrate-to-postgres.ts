@@ -23,6 +23,7 @@ import fs from "fs";
 
 const SQLITE_DB_PATH = "../sqld-prod/iku.db/dbs/default/data";
 const POSTGRES_URL = process.env.DATABASE_URL || "postgresql://localhost:5432/milei_test";
+const BATCH_SIZE = process.env.POSTGRES_BATCH_SIZE ? parseInt(process.env.POSTGRES_BATCH_SIZE) : 1000;
 
 interface SqliteData {
   likedTweets: any[];
@@ -119,9 +120,10 @@ async function migrateToPostgres(data: SqliteData) {
   console.log(`\nConnecting to PostgreSQL: ${POSTGRES_URL}`);
   
   const client = postgres(POSTGRES_URL, {
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    max: 5,
+    idle_timeout: 60,
+    connect_timeout: 30,
+    prepare: false, // Disable prepared statements for better remote performance
   });
   
   const db = drizzle(client, { schema });
@@ -153,8 +155,8 @@ async function migrateToPostgres(data: SqliteData) {
         totalTweetsSeen: scrap.total_tweets_seen
       }));
       
-      // Insert in batches of 1000 to avoid stack overflow
-      const batchSize = 1000;
+      // Insert in batches to avoid stack overflow and optimize for network
+      const batchSize = BATCH_SIZE;
       for (let i = 0; i < scrapsData.length; i += batchSize) {
         const batch = scrapsData.slice(i, i + batchSize);
         await db.insert(schema.scraps).values(batch);
@@ -174,7 +176,7 @@ async function migrateToPostgres(data: SqliteData) {
       }));
       
       // Insert in batches
-      const batchSize = 1000;
+      const batchSize = BATCH_SIZE;
       for (let i = 0; i < historicData.length; i += batchSize) {
         const batch = historicData.slice(i, i + batchSize);
         await db.insert(schema.historicLikedTweets).values(batch);
@@ -195,7 +197,7 @@ async function migrateToPostgres(data: SqliteData) {
       }));
       
       // Insert in batches
-      const batchSize = 1000;
+      const batchSize = BATCH_SIZE;
       for (let i = 0; i < likedData.length; i += batchSize) {
         const batch = likedData.slice(i, i + batchSize);
         await db.insert(schema.likedTweets).values(batch);
@@ -219,7 +221,7 @@ async function migrateToPostgres(data: SqliteData) {
       }));
       
       // Insert in batches
-      const batchSize = 1000;
+      const batchSize = BATCH_SIZE;
       for (let i = 0; i < retweetsData.length; i += batchSize) {
         const batch = retweetsData.slice(i, i + batchSize);
         await db.insert(schema.retweets).values(batch);
@@ -238,7 +240,7 @@ async function migrateToPostgres(data: SqliteData) {
       }));
       
       // Insert in batches
-      const batchSize = 1000;
+      const batchSize = BATCH_SIZE;
       for (let i = 0; i < tweetsData.length; i += batchSize) {
         const batch = tweetsData.slice(i, i + batchSize);
         await db.insert(schema.tweets).values(batch);
@@ -283,9 +285,10 @@ async function verifyMigration() {
   console.log("\nVerifying migration...");
   
   const client = postgres(POSTGRES_URL, {
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    max: 5,
+    idle_timeout: 60,
+    connect_timeout: 30,
+    prepare: false, // Disable prepared statements for better remote performance
   });
   
   const db = drizzle(client, { schema });
