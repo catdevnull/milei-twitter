@@ -70,26 +70,26 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       columns: {},
       extras: {
         timestamp:
-          sql<number>`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`.as(
+          sql<number>`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`.as(
             "timestamp",
           ),
         isRetweet:
-          sql<boolean>`json_extract(${schema.tweets.twitterScraperJson}, '$.isRetweet')`.as(
+          sql<boolean>`(${schema.tweets.twitterScraperJson}->>'isRetweet')::boolean`.as(
             "isRetweet",
           ),
       },
       where: and(
         gte(
-          sql`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`,
+          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`,
           +startingFrom / 1000,
         ),
         lt(
-          sql`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`,
+          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`,
           +endsAt / 1000,
         ),
       ),
       orderBy: desc(
-        sql`json_extract(${schema.tweets.twitterScraperJson}, '$.timestamp')`,
+        sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`,
       ),
     }),
     db.query.scraps.findFirst({

@@ -1,1 +1,0 @@
-ALTER TABLE db_scraps ADD `total_tweets_seen` integer;

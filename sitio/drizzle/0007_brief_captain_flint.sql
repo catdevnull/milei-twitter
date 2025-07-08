@@ -1,1 +1,0 @@
-CREATE INDEX `first_seen_at_idx` ON `db_liked_tweets` (`first_seen_at`);

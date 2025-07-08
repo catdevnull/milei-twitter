@@ -2,8 +2,8 @@ import type { Config } from "drizzle-kit";
 export default {
   schema: "./src/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: "sqlite.db",
+    url: process.env.DATABASE_URL || "postgresql://localhost:5432/milei",
   },
 } satisfies Config;

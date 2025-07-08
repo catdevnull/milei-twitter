@@ -1,1 +1,0 @@
-ALTER TABLE db_scraps ADD `cuenta_id` text;

@@ -17,7 +17,7 @@ export const GET: RequestHandler = async () => {
         orderBy: desc(tweets.id),
         limit: BATCH_SIZE,
         where: and(
-          sql`json_extract(twitter_scraper_json, '$.isRetweet') = false`,
+          sql`(twitter_scraper_json->>'isRetweet')::boolean = false`,
           lastId ? lt(tweets.id, lastId) : undefined,
         ),
       });

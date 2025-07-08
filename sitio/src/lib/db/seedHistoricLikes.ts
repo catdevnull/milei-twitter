@@ -37,6 +37,6 @@ export async function seedHistoricLikes(
 
 await seedHistoricLikes(
   await connectDb({
-    url: process.env.TURSO_CONNECTION_URL!,
+    url: process.env.DATABASE_URL!,
   }),
 );

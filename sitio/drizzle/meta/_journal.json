@@ -1,110 +1,12 @@
 {
-  "version": "5",
-  "dialect": "sqlite",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1707536835075,
-      "tag": "0000_free_the_captain",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1707597080058,
-      "tag": "0001_modern_thanos",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1707599288765,
-      "tag": "0002_magenta_bedlam",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1707678175677,
-      "tag": "0003_brief_paibok",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1707678219583,
-      "tag": "0004_clammy_alex_wilder",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1708196597015,
-      "tag": "0005_clear_darwin",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1708367089604,
-      "tag": "0006_boring_betty_brant",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1708826576183,
-      "tag": "0007_brief_captain_flint",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1708828223996,
-      "tag": "0008_outgoing_swarm",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1711675047412,
-      "tag": "0009_light_leopardon",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "5",
-      "when": 1715536623748,
-      "tag": "0010_mature_logan",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "5",
-      "when": 1715543936309,
-      "tag": "0011_new_gladiator",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1726427340015,
-      "tag": "0012_abnormal_prodigy",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1732985893689,
-      "tag": "0013_flimsy_wonder_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "6",
-      "when": 1733157824655,
-      "tag": "0014_big_zzzax",
+      "version": "7",
+      "when": 1751979572932,
+      "tag": "0000_ordinary_tarantula",
       "breakpoints": true
     }
   ]

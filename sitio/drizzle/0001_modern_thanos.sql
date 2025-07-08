@@ -1,1 +1,0 @@
-ALTER TABLE db_liked_tweets ADD `text` text;
