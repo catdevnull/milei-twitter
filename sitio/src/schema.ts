@@ -45,7 +45,9 @@ export const historicLikedTweets = pgTable("db_historic_liked_tweets", {
   postId: text("post_id").primaryKey(),
   url: text("url").notNull(),
   postedAt: timestamp("posted_at", { withTimezone: true }).notNull(),
-  estimatedLikedAt: timestamp("estimated_liked_at", { withTimezone: true }).notNull(),
+  estimatedLikedAt: timestamp("estimated_liked_at", {
+    withTimezone: true,
+  }).notNull(),
 });
 
 export const retweets = pgTable(
@@ -104,7 +106,7 @@ export const scraps = pgTable(
   "db_scraps",
   {
     id: serial("id").primaryKey(),
-    uid: text("uid"),
+    uid: text("uid").unique(),
     finishedAt: timestamp("at", { withTimezone: true }).notNull(),
     cuentaId: text("cuenta_id"),
     totalTweetsSeen: integer("total_tweets_seen"),

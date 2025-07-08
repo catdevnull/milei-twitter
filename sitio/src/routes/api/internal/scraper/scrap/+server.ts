@@ -10,7 +10,7 @@ import {
 } from "../../../../../schema.js";
 import { zScrap, type PostScrapRes } from "api/schema.js";
 
-export async function POST({ request }) {
+export async function POST({ request }: { request: Request }) {
   {
     let authHeader = request.headers.get("Authorization");
     const token = authHeader?.slice("Bearer ".length) || null;
@@ -35,7 +35,7 @@ export async function POST({ request }) {
         totalTweetsSeen: scrap.totalTweetsSeen,
       })
       .returning({ id: scraps.id })
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: scraps.uid });
     let dbScrap: { id: number };
     if (!x[0]) {
       const y = await tx.query.scraps.findFirst({
@@ -88,7 +88,7 @@ export async function POST({ request }) {
           ...values,
         })
         .onConflictDoUpdate({
-          target: [tweets.id],
+          target: tweets.id,
           set: values,
           where: gt(tweets.capturedAt, tweet.capturedAt),
         });
