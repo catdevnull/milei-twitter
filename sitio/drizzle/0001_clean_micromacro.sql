@@ -1,0 +1,1 @@
+ALTER TABLE "db_scraps" ADD CONSTRAINT "db_scraps_uid_unique" UNIQUE("uid");
