@@ -70,7 +70,7 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       columns: {},
       extras: {
         timestamp:
-          sql<number>`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`.as(
+          sql<number>`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`.as(
             "timestamp",
           ),
         isRetweet:
@@ -80,16 +80,16 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
       },
       where: and(
         gte(
-          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`,
+          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
           +startingFrom / 1000,
         ),
         lt(
-          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`,
+          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
           +endsAt / 1000,
         ),
       ),
       orderBy: desc(
-        sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::bigint`,
+        sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
       ),
     }),
     db.query.scraps.findFirst({
