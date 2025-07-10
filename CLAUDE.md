@@ -1,0 +1,1 @@
+- Always run pnpm format after finishing editing code
