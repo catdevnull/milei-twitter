@@ -42,7 +42,10 @@ import { load as todosLosTweetsLoad } from "./experimentos/todos-los-tweets/+pag
 import { load as promediosLoad } from "./promedios/[year]/[month]/+page.server.js";
 
 // Mock SvelteKit load event
-function mockLoadEvent(params: Record<string, string> = {}, url: string = "http://localhost") {
+function mockLoadEvent(
+  params: Record<string, string> = {},
+  url: string = "http://localhost",
+) {
   return {
     params,
     url: new URL(url),
@@ -144,7 +147,7 @@ describe("Main Pages Smoke Tests", () => {
     it("should load without errors", async () => {
       const event = mockLoadEvent();
       const result = await chequearLoad(event);
-      
+
       expect(result).toBeDefined();
       expect(typeof result).toBe("object");
     });
@@ -161,7 +164,7 @@ describe("Main Pages Smoke Tests", () => {
     it("should load without errors", async () => {
       const event = mockLoadEvent();
       const result = await todosLosTweetsLoad(event);
-      
+
       expect(result).toBeDefined();
       expect(typeof result).toBe("object");
     });

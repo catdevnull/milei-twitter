@@ -110,7 +110,7 @@ describe("Scraper API Real Database Tests", () => {
     await testDb
       .delete(schema.scraperTokens)
       .where(eq(schema.scraperTokens.token, validToken));
-    
+
     // Insert test token (schema is already created by migrations)
     await testDb.insert(schema.scraperTokens).values({
       token: validToken,
@@ -130,7 +130,7 @@ describe("Scraper API Real Database Tests", () => {
     await testDb
       .delete(schema.scraperTokens)
       .where(eq(schema.scraperTokens.token, validToken));
-    
+
     // Close database connection
     await client.end();
   });

@@ -25,13 +25,18 @@ export async function GET() {
   const lastScrapWithRetweets = await db
     .select({
       finishedAt: scraps.finishedAt,
-      count: sql`(select count(*) from ${retweets} where ${scraps.id} = ${retweets.scrapId})`.as('c'),
+      count:
+        sql`(select count(*) from ${retweets} where ${scraps.id} = ${retweets.scrapId})`.as(
+          "c",
+        ),
     })
     .from(scraps)
     .orderBy(desc(scraps.finishedAt))
     .groupBy()
     .limit(1)
-    .where(sql`(select count(*) from ${retweets} where ${scraps.id} = ${retweets.scrapId}) > 0`);
+    .where(
+      sql`(select count(*) from ${retweets} where ${scraps.id} = ${retweets.scrapId}) > 0`,
+    );
   // const lastLikedTweet = await db.query.likedTweets.findFirst({
   //   orderBy: desc(likedTweets.lastSeenAt),
   //   where: likesCutoffSql,
