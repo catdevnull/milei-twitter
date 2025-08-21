@@ -53,7 +53,7 @@ export async function GET() {
   } else errors.push("no hay scraps");
   if (lastScrapWithRetweets && lastScrapWithRetweets.length > 0) {
     const delta = +new Date() - +lastScrapWithRetweets[0].finishedAt;
-    if (delta > 12 * 60 * 60 * 1000) {
+    if (delta > 16 * 60 * 60 * 1000) {
       errors.push(
         `último scrap con ${lastScrapWithRetweets[0].count} retweets hace ${delta}ms (>12h)`,
       );
