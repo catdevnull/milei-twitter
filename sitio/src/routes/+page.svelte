@@ -36,6 +36,7 @@
   import { parseDate } from "@internationalized/date";
   import StatsCalendar from "@/StatsCalendar.svelte";
   import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
+  import HeatmapHours from "$lib/HeatmapHours.svelte";
 
   export let data: PageData;
 
@@ -166,6 +167,18 @@
           </span>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="mx-auto w-full max-w-2xl">
+    <div class="mx-2 my-4 rounded-lg bg-neutral-100 p-4 dark:bg-neutral-800">
+      <h2 class="mb-2 text-center text-xl font-bold md:text-3xl">
+        ¿Cuándo suele estar activo en Twitter? (UTC-3)
+      </h2>
+      <p class="mb-4 text-center text-sm text-muted-foreground">
+        Basado en retweets y likes de los últimos 60 días.
+      </p>
+      <HeatmapHours matrix={data.hourHeatmap} />
     </div>
   </section>
 
