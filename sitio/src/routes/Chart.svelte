@@ -5,10 +5,10 @@
   import ChartJs from "./ChartJs.svelte";
   import type { ChartData } from "chart.js";
 
-  import { listen } from "svelte-mq-store";
   import type { MiniLikedTweet, MiniRetweet, MiniTweet } from "../schema";
   import { likesCutoff } from "$lib/consts";
-  const isDark = listen("(prefers-color-scheme: dark)", false);
+  import { useMediaQuery } from "@/utils";
+  const isDark = useMediaQuery("(prefers-color-scheme: dark)");
 
   type LikedAndRetweeted = { url: string; estimated: Date };
 
