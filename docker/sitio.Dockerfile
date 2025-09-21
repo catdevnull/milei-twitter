@@ -13,9 +13,10 @@ RUN pnpm install --filter '...!better-sqlite3' && \
 
 ENV BODY_SIZE_LIMIT=5242880
 ENV NODE_ENV=production
-EXPOSE 3000
+ENV PORT=80
+EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000/ || exit 1
+  CMD curl -f http://localhost:80/ || exit 1
 
 CMD ["node", "build/"]
