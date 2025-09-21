@@ -16,3 +16,5 @@ qighuerojg/
 accounts.db
 
 *.local.*
+
+data/*.zip
