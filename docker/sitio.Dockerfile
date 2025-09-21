@@ -1,4 +1,4 @@
-FROM node:24
+FROM node:22
 RUN corepack enable
 WORKDIR /usr/src/app
 RUN apt-get update && \
