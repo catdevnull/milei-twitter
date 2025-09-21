@@ -102,9 +102,6 @@ importers:
       api:
         specifier: workspace:^
         version: link:../api
-      better-sqlite3:
-        specifier: ^11.8.1
-        version: 11.8.1
       boring-name-generator:
         specifier: ^1.0.3
         version: 1.0.3
@@ -190,9 +187,6 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.16
         version: 0.5.16(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.14(@swc/helpers@0.5.15))(@types/node@20.17.17)(typescript@5.7.3)))
-      '@types/better-sqlite3':
-        specifier: ^7.6.13
-        version: 7.6.13
       '@types/markdown-it':
         specifier: ^13.0.9
         version: 13.0.9
@@ -6017,6 +6011,7 @@ snapshots:
   '@types/better-sqlite3@7.6.13':
     dependencies:
       '@types/node': 20.17.17
+    optional: true
 
   '@types/chai@5.2.2':
     dependencies:

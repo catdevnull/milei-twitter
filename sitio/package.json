@@ -17,7 +17,6 @@
     "benchmark:lastWeek": "tsx ./benchmarks/lastWeek.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:reset-to-prod": "rm -f sqlite.db sqlite.db-shm sqlite.db-wal && sqlite3 sqlite.db 'PRAGMA journal_mode=WAL;' && turso db shell http://milei-prod:8080 '.dump' | sqlite3 sqlite.db",
     "db:seed-historic-likes": "tsx ./src/lib/db/seedHistoricLikes.ts",
     "migrate:to-postgres": "tsx ./migrate-to-postgres.ts",
     "knip": "knip"
@@ -25,7 +24,6 @@
   "dependencies": {
     "@sentry/sveltekit": "^8.54.0",
     "api": "workspace:^",
-    "better-sqlite3": "^11.8.1",
     "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.7",
     "chartjs-adapter-dayjs-4": "^1.0.4",
@@ -56,7 +54,6 @@
     "@sveltejs/kit": "^2.17.1",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tailwindcss/typography": "^0.5.16",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/markdown-it": "^13.0.9",
     "@types/node": "^20.17.17",
     "@types/pg": "^8.15.4",

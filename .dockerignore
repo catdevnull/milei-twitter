@@ -24,3 +24,5 @@ fly.toml
 .git
 */.venv
 */*.jsonl
+
+*/*.zip
