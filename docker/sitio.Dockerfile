@@ -7,6 +7,7 @@ RUN apt-get update && \
 
 COPY . .
 WORKDIR sitio/
+ARG DATABASE_URL
 RUN pnpm install && \
     pnpm build
 ENTRYPOINT ["tini", "--"]
