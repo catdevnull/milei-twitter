@@ -4,7 +4,6 @@ import * as schema from "../schema";
 import type { PageServerLoad } from "./$types";
 import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error, redirect } from "@sveltejs/kit";
-import { getLastWeek } from "$lib/data-processing/weekly";
 import { getStatsForDaysInTimePeriod } from "@/data-processing/days";
 
 const tz = "America/Argentina/Buenos_Aires";
@@ -25,11 +24,14 @@ function getStartingFrom(query: string) {
   }
 }
 
-export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
+export const load: PageServerLoad = async ({ url, setHeaders }) => {
   const query =
     url.searchParams.get("q") ?? "date:" + dayjs().tz(tz).format("YYYY-MM-DD");
   const startingFrom = getStartingFrom(query);
   const endsAt = startingFrom.add(24, "hour");
+
+  const heatmapStart = dayjs().tz(tz).subtract(90, "day").startOf("day");
+  const heatmapEnd = dayjs().tz(tz).endOf("day");
 
   const t0 = performance.now();
   const [
@@ -40,6 +42,8 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
     firstLikedTweet,
     monthData,
     hasNextMonth,
+    heatLikes,
+    heatRetweets,
   ] = await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
@@ -112,9 +116,48 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
         startingFrom.add(1, "month").startOf("month").toDate(),
       ),
     }),
+    db.query.likedTweets.findMany({
+      columns: { firstSeenAt: true },
+      where: and(
+        gte(schema.likedTweets.firstSeenAt, heatmapStart.toDate()),
+        lte(schema.likedTweets.firstSeenAt, heatmapEnd.toDate()),
+        likesCutoffSql,
+      ),
+      orderBy: desc(schema.likedTweets.firstSeenAt),
+    }),
+    db.query.retweets.findMany({
+      columns: { retweetAt: true },
+      where: and(
+        gte(schema.retweets.retweetAt, heatmapStart.toDate()),
+        lte(schema.retweets.retweetAt, heatmapEnd.toDate()),
+      ),
+      orderBy: desc(schema.retweets.retweetAt),
+    }),
   ]);
   const t1 = performance.now();
   console.log("queries", t1 - t0);
+
+  console.time("heatmap");
+  const hourHeatmap: number[][] = Array.from({ length: 7 }, () =>
+    Array(24).fill(0),
+  );
+  const addToHeat = (d: Date) => {
+    // Assume fixed UTC-3 (America/Argentina/Buenos_Aires without DST)
+    const utcHour = d.getUTCHours();
+    let hour = utcHour - 3;
+    let dow = d.getUTCDay(); // 0 = Sunday
+    if (hour < 0) {
+      hour += 24;
+      dow = (dow + 6) % 7; // previous day
+    } else if (hour >= 24) {
+      hour -= 24;
+      dow = (dow + 1) % 7; // next day (not expected with -3 but kept generic)
+    }
+    hourHeatmap[dow][hour]++;
+  };
+  heatLikes.forEach((t: { firstSeenAt: Date }) => addToHeat(t.firstSeenAt));
+  heatRetweets.forEach((t: { retweetAt: Date }) => addToHeat(t.retweetAt));
+  console.timeEnd("heatmap");
 
   if (
     likedTweets.length === 0 &&
@@ -145,5 +188,6 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
     monthData,
     hasNextMonth: !!hasNextMonth,
     query,
+    hourHeatmap,
   };
 };
