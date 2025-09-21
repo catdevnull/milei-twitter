@@ -28,7 +28,7 @@
     >
       <div></div>
       {#each hours as h}
-        <div class="text-muted-foreground text-center text-[10px]">{h}</div>
+        <div class="text-center text-[10px] text-muted-foreground">{h}</div>
       {/each}
 
       {#each matrix as row, dow}
@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <div class="text-muted-foreground flex items-center gap-2 self-end text-xs">
+  <div class="flex items-center gap-2 self-end text-xs text-muted-foreground">
     <span>menos</span>
     <div class="h-3 w-3" style="background:#f3f4f6"></div>
     <div class="h-3 w-3" style="background:#fde7d9"></div>

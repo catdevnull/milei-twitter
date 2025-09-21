@@ -226,7 +226,7 @@
   {/if}
 
   <section
-    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
+    class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 dark:bg-neutral-800 md:rounded-lg"
   >
     <h2 class="my-2 text-center text-xl font-bold md:text-4xl">
       Su actividad en {dayjs(data.start).isAfter(dayjs().startOf("month"))
@@ -248,12 +248,12 @@
   </section>
 
   <section
-    class="mx-auto w-full max-w-2xl bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
+    class="mx-auto w-full max-w-2xl bg-neutral-100 p-4 dark:bg-neutral-800 md:rounded-lg"
   >
     <h2 class="mb-2 text-center text-xl font-bold md:text-3xl">
       ¿Cuándo suele estar activo en Twitter?
     </h2>
-    <p class="text-muted-foreground mb-4 text-center text-sm">
+    <p class="mb-4 text-center text-sm text-muted-foreground">
       Basado en retweets y likes de los últimos 90 días.
     </p>
     <HeatmapHours matrix={data.hourHeatmap} />
@@ -321,7 +321,7 @@
       Como lo viste en la prensa
     </h2>
     <div
-      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 md:mb-8 md:flex-row md:rounded-lg md:text-lg dark:bg-neutral-800"
+      class="mx-auto flex flex-col items-center justify-center gap-4 bg-neutral-100 p-2 dark:bg-neutral-800 md:mb-8 md:flex-row md:rounded-lg md:text-lg"
     >
       <enhanced:img
         class="w-[300px] rounded-lg"
