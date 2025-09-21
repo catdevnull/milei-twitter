@@ -33,4 +33,7 @@ ENV TURSO_CONNECTION_URL=file:/db/db.db
 ENV BODY_SIZE_LIMIT=5242880
 EXPOSE 3000
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/ || exit 1
+
 CMD ["node", "."]
