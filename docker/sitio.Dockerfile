@@ -10,7 +10,6 @@ WORKDIR sitio/
 ARG DATABASE_URL
 RUN pnpm install --filter '...!better-sqlite3' && \
     pnpm build
-RUN pnpm install --prod --filter '...!better-sqlite3'
 
 ENV BODY_SIZE_LIMIT=5242880
 ENV NODE_ENV=production
