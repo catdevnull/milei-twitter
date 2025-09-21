@@ -2,7 +2,7 @@ FROM node:22
 RUN corepack enable
 WORKDIR /usr/src/app
 RUN apt-get update && \
-    apt-get install -y jq sqlite3 tini && \
+    apt-get install -y jq sqlite3 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY . .
@@ -10,7 +10,6 @@ WORKDIR sitio/
 ARG DATABASE_URL
 RUN pnpm install --filter '...!better-sqlite3' && \
     pnpm build
-ENTRYPOINT ["tini", "--"]
 RUN pnpm install --prod --filter '...!better-sqlite3'
 
 ENV BODY_SIZE_LIMIT=5242880
