@@ -35,8 +35,8 @@ export async function seedHistoricLikes(
   console.timeEnd("seedHistoricLikes");
 }
 
-await seedHistoricLikes(
-  await connectDb({
-    url: process.env.DATABASE_URL!,
-  }),
-);
+// await seedHistoricLikes(
+//   await connectDb({
+//     url: process.env.DATABASE_URL!,
+//   }),
+// );
