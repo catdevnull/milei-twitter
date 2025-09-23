@@ -42,8 +42,7 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     firstLikedTweet,
     monthData,
     hasNextMonth,
-    heatLikes,
-    heatRetweets,
+    heatTweets,
   ] = await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
@@ -116,22 +115,31 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
         startingFrom.add(1, "month").startOf("month").toDate(),
       ),
     }),
-    db.query.likedTweets.findMany({
-      columns: { firstSeenAt: true },
+    db.query.tweets.findMany({
+      columns: {},
+      extras: {
+        timestamp:
+          sql<number>`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`.as(
+            "timestamp",
+          ),
+        isRetweet:
+          sql<boolean>`(${schema.tweets.twitterScraperJson}->>'isRetweet')::boolean`.as(
+            "isRetweet",
+          ),
+      },
       where: and(
-        gte(schema.likedTweets.firstSeenAt, heatmapStart.toDate()),
-        lte(schema.likedTweets.firstSeenAt, heatmapEnd.toDate()),
-        likesCutoffSql,
+        gte(
+          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
+          +heatmapStart / 1000,
+        ),
+        lte(
+          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
+          +heatmapEnd / 1000,
+        ),
       ),
-      orderBy: desc(schema.likedTweets.firstSeenAt),
-    }),
-    db.query.retweets.findMany({
-      columns: { retweetAt: true },
-      where: and(
-        gte(schema.retweets.retweetAt, heatmapStart.toDate()),
-        lte(schema.retweets.retweetAt, heatmapEnd.toDate()),
+      orderBy: desc(
+        sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
       ),
-      orderBy: desc(schema.retweets.retweetAt),
     }),
   ]);
   const t1 = performance.now();
@@ -155,8 +163,9 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     }
     hourHeatmap[dow][hour]++;
   };
-  heatLikes.forEach((t: { firstSeenAt: Date }) => addToHeat(t.firstSeenAt));
-  heatRetweets.forEach((t: { retweetAt: Date }) => addToHeat(t.retweetAt));
+  heatTweets.forEach((t: { timestamp: number }) => {
+    addToHeat(new Date(t.timestamp * 1000));
+  });
   console.timeEnd("heatmap");
 
   if (
