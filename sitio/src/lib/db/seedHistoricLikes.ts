@@ -4,11 +4,11 @@ import { promisify } from "node:util";
 import { brotliDecompress } from "node:zlib";
 import * as schema from "../../schema";
 import { toDate } from "date-fns-tz";
-import type { db } from ".";
+import type { db as dbGlobal } from ".";
 
 const brotliDecompressP = promisify(brotliDecompress);
 
-export async function seedHistoricLikes(db: typeof db) {
+export async function seedHistoricLikes(db: typeof dbGlobal) {
   console.time("seedHistoricLikes");
   const compressed = await readFile("src/lib/db/historicLikes/likes.tsv.br");
   const dataset = await brotliDecompressP(compressed);

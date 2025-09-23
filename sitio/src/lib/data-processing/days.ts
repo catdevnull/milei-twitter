@@ -15,7 +15,7 @@ import {
 } from "./screenTime";
 import { formatDuration } from "date-fns";
 import { es } from "date-fns/locale/es";
-import { type db as dbGlobal } from "@/db";
+import type { db as dbGlobal } from "@/db";
 
 export function makeMapOfDays<T>(
   days: Array<Date>,
