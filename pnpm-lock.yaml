@@ -102,9 +102,6 @@ importers:
       api:
         specifier: workspace:^
         version: link:../api
-      boring-name-generator:
-        specifier: ^1.0.3
-        version: 1.0.3
       chart.js:
         specifier: ^4.4.7
         version: 4.4.7
@@ -156,12 +153,6 @@ importers:
       posthog-js:
         specifier: ^1.215.3
         version: 1.215.3
-      svelte-echarts:
-        specifier: ^0.1.1
-        version: 0.1.1(echarts@5.5.0)(svelte@5.20.1)
-      svelte-radix:
-        specifier: ^2.0.1
-        version: 2.0.1(svelte@5.20.1)
       zod:
         specifier: ^3.24.1
         version: 3.24.1
@@ -190,9 +181,6 @@ importers:
       '@types/node':
         specifier: ^20.17.17
         version: 20.17.17
-      '@types/pg':
-        specifier: ^8.15.4
-        version: 8.15.4
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.1)
@@ -2155,10 +2143,6 @@ packages:
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
-  boring-name-generator@1.0.3:
-    resolution: {integrity: sha512-1wEo1pNahY9js7Vkp1RQa/VWdWrXYJnVAmsHV3Pw/0YzspjABLw7dcekjukOMTIYWr8ir/aG0GX1eoEkYhpnUg==}
-    hasBin: true
-
   brace-expansion@2.0.1:
     resolution: {integrity: sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA==}
 
@@ -2283,10 +2267,6 @@ packages:
 
   commander@4.1.1:
     resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
-    engines: {node: '>= 6'}
-
-  commander@6.2.1:
-    resolution: {integrity: sha512-U7VdrJFnJgo4xjrHpTzu0yrHPGImdsmD95ZlgYSEajAn2JKzDhDTPG9kBTefmObL2w/ngeZnilk+OV9CG3d7UA==}
     engines: {node: '>= 6'}
 
   commondir@1.0.1:
@@ -2531,9 +2511,6 @@ packages:
 
   easy-table@1.2.0:
     resolution: {integrity: sha512-OFzVOv03YpvtcWGe5AayU5G2hgybsg3iqA6drU8UaoZyB9jLGMTrz9+asnLp/E+6qPh88yEI1gvyZFZ41dmgww==}
-
-  echarts@5.5.0:
-    resolution: {integrity: sha512-rNYnNCzqDAPCr4m/fqyUFv7fD9qIsd50S6GDFgO1DxZhncCsNsG7IfUlAlvZe5oSEQxtsjnHiUuppzccry93Xw==}
 
   electron-to-chromium@1.5.92:
     resolution: {integrity: sha512-BeHgmNobs05N1HMmMZ7YIuHfYBGlq/UmvlsTgg+fsbFs9xVMj+xJHFg19GN04+9Q+r8Xnh9LXqaYIyEWElnNgQ==}
@@ -3003,9 +2980,6 @@ packages:
 
   lodash.sortby@4.7.0:
     resolution: {integrity: sha512-HDWXG8isMntAyRF5vZ7xKuEvOhT4AhlRt/3czTSjvGUxjYCBVRQY48ViDHyfYz9VIoBkW4TMGQNapx+l3RUwdA==}
-
-  lodash@4.17.21:
-    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
 
   long@5.2.4:
     resolution: {integrity: sha512-qtzLbJE8hq7VabR3mISmVGtoXP8KGc2Z/AT8OuqlYD7JTR3oqrgwdjnk07wpj1twXxYmgDXgoKVWUG/fReSzHg==}
@@ -3772,22 +3746,10 @@ packages:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: '>=5.0.0'
 
-  svelte-echarts@0.1.1:
-    resolution: {integrity: sha512-kLnTPz6gmRl47Oe/Vjh6sIRBYRUUmzl8uvrdMg9wFXe1ur6L/xBo3c7e5lMBQarPRteC24+XT335P/htNyihHA==}
-    peerDependencies:
-      echarts: ^5.4.3
-      svelte: ^4.0.0
-
   svelte-parse-markup@0.1.5:
     resolution: {integrity: sha512-T6mqZrySltPCDwfKXWQ6zehipVLk4GWfH1zCMGgRtLlOIFPuw58ZxVYxVvotMJgJaurKi1i14viB2GIRKXeJTQ==}
     peerDependencies:
       svelte: ^3.0.0 || ^4.0.0 || ^5.0.0-next.1
-
-  svelte-radix@2.0.1:
-    resolution: {integrity: sha512-YrX44Dj+Rp6YZuPSjdmyd6P8QTkb2NXwySUCZYzjwkP6Cl3dZaTBPPeaSOutP3v3ycQ2XwyNOpyn4p0QcN+uYQ==}
-    engines: {node: '>=18.0.0', npm: '>=7.0.0'}
-    peerDependencies:
-      svelte: ^5.0.0
 
   svelte-toolbelt@0.7.1:
     resolution: {integrity: sha512-HcBOcR17Vx9bjaOceUvxkY3nGmbBmCBBbuWLLEWO6jtmWH8f/QoWmbyUfQZrpDINH39en1b8mptfPQT9VKQ1xQ==}
@@ -3910,9 +3872,6 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
-
-  tslib@2.3.0:
-    resolution: {integrity: sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -4186,9 +4145,6 @@ packages:
 
   zod@3.24.1:
     resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
-
-  zrender@5.5.0:
-    resolution: {integrity: sha512-O3MilSi/9mwoovx77m6ROZM7sXShR/O/JIanvzTwjN3FORfLSr81PsUGd7jlaYOeds9d8tw82oP44+3YucVo+w==}
 
 snapshots:
 
@@ -6016,11 +5972,6 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
 
-  boring-name-generator@1.0.3:
-    dependencies:
-      commander: 6.2.1
-      lodash: 4.17.21
-
   brace-expansion@2.0.1:
     dependencies:
       balanced-match: 1.0.2
@@ -6154,8 +6105,6 @@ snapshots:
       delayed-stream: 1.0.0
 
   commander@4.1.1: {}
-
-  commander@6.2.1: {}
 
   commondir@1.0.1: {}
 
@@ -6304,11 +6253,6 @@ snapshots:
       ansi-regex: 5.0.1
     optionalDependencies:
       wcwidth: 1.0.1
-
-  echarts@5.5.0:
-    dependencies:
-      tslib: 2.3.0
-      zrender: 5.5.0
 
   electron-to-chromium@1.5.92: {}
 
@@ -6847,8 +6791,6 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash.sortby@4.7.0: {}
-
-  lodash@4.17.21: {}
 
   long@5.2.4: {}
 
@@ -7567,16 +7509,7 @@ snapshots:
     transitivePeerDependencies:
       - picomatch
 
-  svelte-echarts@0.1.1(echarts@5.5.0)(svelte@5.20.1):
-    dependencies:
-      echarts: 5.5.0
-      svelte: 5.20.1
-
   svelte-parse-markup@0.1.5(svelte@5.20.1):
-    dependencies:
-      svelte: 5.20.1
-
-  svelte-radix@2.0.1(svelte@5.20.1):
     dependencies:
       svelte: 5.20.1
 
@@ -7739,8 +7672,6 @@ snapshots:
   tsconfck@3.1.3(typescript@5.7.3):
     optionalDependencies:
       typescript: 5.7.3
-
-  tslib@2.3.0: {}
 
   tslib@2.8.1: {}
 
@@ -7949,7 +7880,3 @@ snapshots:
   zod@3.23.8: {}
 
   zod@3.24.1: {}
-
-  zrender@5.5.0:
-    dependencies:
-      tslib: 2.3.0
