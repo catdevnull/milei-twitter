@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 
-export async function connectDb({
+export function connectDb({
   url,
   authToken,
 }: {
@@ -17,6 +17,5 @@ export async function connectDb({
   });
 
   const db = drizzle(client, { schema });
-  await migrate(db, { migrationsFolder: "drizzle" });
   return db;
 }
