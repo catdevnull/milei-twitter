@@ -1,0 +1,5 @@
+deploy:
+	if [ -n "$(git status --porcelain)" ]; then echo "Error: There are unstaged changes. Please commit or stash them before deploying."; exit 1; fi
+
+	env $(cat .env.production) pnpm db:migrate
+	git push dokku master
