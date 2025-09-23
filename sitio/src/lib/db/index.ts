@@ -1,7 +1,14 @@
+import * as schema from "../../schema";
 import { env } from "$env/dynamic/private";
-import { connectDb } from "./connectDb.js";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 const path = env.DATABASE_URL ?? "postgresql://localhost:5432/milei";
-export const db = connectDb({
-  url: path,
+
+const client = postgres(path, {
+  max: 1,
+  idle_timeout: 20,
+  connect_timeout: 10,
 });
+
+export const db = drizzle(client, { schema: schema });

@@ -2,15 +2,13 @@ import { parsearLinkDeTwitter } from "$lib/consts";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { brotliDecompress } from "node:zlib";
-import { connectDb } from "./connectDb";
 import * as schema from "../../schema";
 import { toDate } from "date-fns-tz";
+import type { db } from ".";
 
 const brotliDecompressP = promisify(brotliDecompress);
 
-export async function seedHistoricLikes(
-  db: Awaited<ReturnType<typeof connectDb>>,
-) {
+export async function seedHistoricLikes(db: typeof db) {
   console.time("seedHistoricLikes");
   const compressed = await readFile("src/lib/db/historicLikes/likes.tsv.br");
   const dataset = await brotliDecompressP(compressed);

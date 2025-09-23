@@ -1,4 +1,3 @@
-import type { connectDb } from "$lib/db/connectDb";
 import type { Dayjs } from "dayjs";
 import {
   likedTweets,
@@ -16,6 +15,7 @@ import {
 } from "./screenTime";
 import { formatDuration } from "date-fns";
 import { es } from "date-fns/locale/es";
+import { type db as dbGlobal } from "@/db";
 
 export function makeMapOfDays<T>(
   days: Array<Date>,
@@ -42,7 +42,7 @@ export function makeMapOfDays<T>(
 }
 
 export async function getDataForTimePeriod(
-  db: Awaited<ReturnType<typeof connectDb>>,
+  db: typeof dbGlobal,
   start: Dayjs,
   end: Dayjs,
 ): Promise<[Array<MiniLikedTweet>, Array<MiniRetweet>]> {
@@ -76,7 +76,7 @@ export async function getDataForTimePeriod(
 }
 
 export async function getStatsForDaysInTimePeriod(
-  db: Awaited<ReturnType<typeof connectDb>>,
+  db: typeof dbGlobal,
   start: Dayjs,
   end: Dayjs,
 ) {
