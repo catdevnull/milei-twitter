@@ -22,7 +22,6 @@
   "dependencies": {
     "@sentry/sveltekit": "^8.54.0",
     "api": "workspace:^",
-    "boring-name-generator": "^1.0.3",
     "chart.js": "^4.4.7",
     "chartjs-adapter-dayjs-4": "^1.0.4",
     "chartjs-plugin-datalabels": "^2.2.0",
@@ -40,8 +39,6 @@
     "nanoid": "^5.0.9",
     "postgres": "^3.4.7",
     "posthog-js": "^1.215.3",
-    "svelte-echarts": "^0.1.1",
-    "svelte-radix": "^2.0.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -53,7 +50,6 @@
     "@tailwindcss/typography": "^0.5.16",
     "@types/markdown-it": "^13.0.9",
     "@types/node": "^20.17.17",
-    "@types/pg": "^8.15.4",
     "autoprefixer": "^10.4.21",
     "bits-ui": "1.0.0-next.98",
     "clsx": "^2.1.1",
