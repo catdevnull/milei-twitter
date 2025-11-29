@@ -21,5 +21,9 @@
     <a class="text-blue-600 underline dark:text-blue-200" href="/chequear"
       >chequear retweets</a
     >
+    -
+    <a class="text-blue-600 underline dark:text-blue-200" href="/x"
+      >feed estilo X</a
+    >
   </div>
 </footer>

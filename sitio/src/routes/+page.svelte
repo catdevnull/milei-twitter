@@ -225,6 +225,20 @@
     </section>
   {/if}
 
+  <section class="mx-auto w-full max-w-2xl px-2">
+    <div
+      class="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-neutral-100 px-4 py-5 shadow-sm md:flex-row md:items-center md:justify-between dark:border-neutral-800 dark:bg-neutral-900"
+    >
+      <div class="flex flex-col gap-1">
+        <p class="text-lg font-semibold">Nuevo: feed estilo X/Twitter</p>
+        <p class="text-sm text-muted-foreground">
+          Mirá los retweets públicos de Milei en un timeline que imita cómo se vería su cuenta.
+        </p>
+      </div>
+      <Button class="w-full md:w-auto" href="/x">Abrir el feed</Button>
+    </div>
+  </section>
+
   <section
     class="mx-auto flex w-full max-w-2xl flex-col gap-4 bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
   >
