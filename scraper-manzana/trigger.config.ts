@@ -75,7 +75,6 @@ export default defineConfig({
   },
   dirs: ["trigger"],
   build: {
-    external: ["better-sqlite3"],
     extensions: [
       syncEnvVars(envForDeploy),
       aptGet({ packages: ["patch"] }),

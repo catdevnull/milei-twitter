@@ -10,11 +10,10 @@ import {
   SocialDataTweetsResponse,
   SocialDataUser,
 } from "./schemas.ts";
-import type { Tweet } from "@catdevnull/twitter-scraper";
-import { db } from "../dbs/scraps/index.ts";
 import type { Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { fetch } from "undici";
+import type { TwitterCompatTweet } from "../twitter-compat.ts";
 
 function headers() {
   const SOCIALDATA_API_KEY = process.env.SOCIALDATA_API_KEY;
@@ -39,21 +38,14 @@ async function get(url: string): Promise<unknown> {
   return json;
 }
 
-export async function getUser(userIdOrHandle: string) {
+async function getUser(userIdOrHandle: string) {
   const response = await get(
     `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userIdOrHandle}`
   );
   return z.union([SocialDataUser, SocialDataGenericResponse]).parse(response);
 }
 
-export async function getTweet(tweetId: string) {
-  const response = await get(
-    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/tweets/${tweetId}`
-  );
-  return z.union([SocialDataTweet, SocialDataGenericResponse]).parse(response);
-}
-
-export async function getTweetsAndReplies(
+async function getTweetsAndReplies(
   userIdOrHandle: string,
   cursor?: string
 ) {
@@ -77,7 +69,7 @@ export async function getTweetsAndReplies(
   throw parsed.error;
 }
 
-export async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
+async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
   let res: SocialDataTweetsResponse | null = null;
   while (true) {
     const _res = await getTweetsAndReplies(userIdOrHandle, res?.next_cursor);
@@ -92,9 +84,11 @@ export async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
   }
 }
 
-export function intoTwitterScraperTweet(
+function intoTwitterScraperTweet(
   tweet: SocialDataTweet | SocialDataBaseTweet
-): Tweet & { rawFromSocialData: SocialDataTweet | SocialDataBaseTweet } {
+): TwitterCompatTweet & {
+  rawFromSocialData: SocialDataTweet | SocialDataBaseTweet;
+} {
   return {
     bookmarkCount: tweet.bookmark_count,
     conversationId: undefined, // not sure what the conversation id is
@@ -145,7 +139,7 @@ export function intoTwitterScraperTweet(
   };
 }
 
-export function tweetIntoRetweet(tweet: Tweet): Retweet {
+function tweetIntoRetweet(tweet: TwitterCompatTweet): Retweet {
   if (!tweet.retweetedStatus) {
     throw new Error("tweet is not a retweet");
   }
@@ -207,15 +201,4 @@ export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
     totalTweetsSeen: tweets.length,
     uid: nanoid(),
   };
-}
-
-export async function cron() {
-  while (true) {
-    const lastScrap = await db.getLastScrap();
-    const scrap = await scrapNewTweets(
-      lastScrap?.tweets?.map((t) => t.id) || []
-    );
-    await db.pushScrap(scrap);
-    await new Promise((resolve) => setTimeout(resolve, 30 * 60 * 1000));
-  }
 }

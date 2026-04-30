@@ -13,43 +13,7 @@ import {
 } from "undici";
 import type { Retweet, Scrap } from "api/schema.ts";
 import { type AccountInfo, parseAccountList } from "../addAccounts.ts";
-
-type TwitterCompatTweet = {
-  __raw_UNSTABLE?: unknown;
-  bookmarkCount?: number;
-  conversationId?: string;
-  hashtags: string[];
-  html?: string;
-  id?: string;
-  inReplyToStatusId?: string;
-  isEdited?: boolean;
-  versions?: string[];
-  isQuoted?: boolean;
-  isPin?: boolean;
-  isReply?: boolean;
-  isRetweet?: boolean;
-  likes?: number;
-  name?: string;
-  mentions: Array<{ id: string; username?: string; name?: string }>;
-  permanentUrl?: string;
-  photos: Array<{ id: string; url: string; alt_text?: string }>;
-  quotedStatus?: TwitterCompatTweet;
-  quotedStatusId?: string;
-  replies?: number;
-  retweets?: number;
-  retweetedStatus?: TwitterCompatTweet;
-  retweetedStatusId?: string;
-  text?: string;
-  thread: TwitterCompatTweet[];
-  timeParsed?: Date;
-  timestamp?: number;
-  urls: string[];
-  userId?: string;
-  username?: string;
-  videos: Array<{ id: string; preview: string; url?: string }>;
-  views?: number;
-  sensitiveContent?: boolean;
-};
+import type { TwitterCompatTweet } from "../twitter-compat.ts";
 
 type TimelineRequestTemplate = {
   url: string;
@@ -1142,7 +1106,6 @@ export async function scrapNewTweetsWithBrowser(
         if (tweet.retweetedStatus) retweets.push(tweetIntoRetweet(tweet));
         if (lastTweetIds?.includes(tweet.id)) finished = true;
         if (tweets.length > maxTweets) finished = true;
-        if (finished) break;
       }
       if (!cursor) break;
     }
