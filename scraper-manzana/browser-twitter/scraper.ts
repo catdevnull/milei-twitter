@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { nanoid } from "nanoid";
 import type { BrowserContext, Page, Request } from "playwright";
 import { Cookie } from "tough-cookie";
@@ -146,6 +147,65 @@ function proxyUrlToPlaywright(proxyUrl: string): ProxyConfig {
     password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
     bypass: "localhost,127.0.0.1",
   };
+}
+
+async function startVirtualDisplayIfNeeded(
+  headless: boolean,
+): Promise<ChildProcessWithoutNullStreams | undefined> {
+  if (headless || process.platform !== "linux" || !process.env.DISPLAY) {
+    return undefined;
+  }
+
+  const xvfb = spawn(
+    "Xvfb",
+    [
+      process.env.DISPLAY,
+      "-screen",
+      "0",
+      "1280x900x24",
+      "-nolisten",
+      "tcp",
+    ],
+    { stdio: "pipe" },
+  );
+
+  let stderr = "";
+  xvfb.stderr.on("data", (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  const exit = await new Promise<{ code: number | null; signal: string | null } | null>(
+    (resolve) => {
+      const timer = setTimeout(() => resolve(null), 500);
+      xvfb.once("exit", (code, signal) => {
+        clearTimeout(timer);
+        resolve({ code, signal });
+      });
+      xvfb.once("error", () => {
+        clearTimeout(timer);
+        resolve({ code: 127, signal: null });
+      });
+    },
+  );
+
+  if (exit) {
+    const alreadyRunning = /server is already active|already running/i.test(
+      stderr,
+    );
+    if (!alreadyRunning) {
+      throw new Error(
+        `Could not start Xvfb for headed browser on ${process.env.DISPLAY}: ${stderr.trim() || `exit ${exit.code ?? exit.signal}`}`,
+      );
+    }
+    console.info(
+      `[twitter-browser] Xvfb already running on ${process.env.DISPLAY}`,
+    );
+    return undefined;
+  }
+
+  console.info(`[twitter-browser] started Xvfb on ${process.env.DISPLAY}`);
+  xvfb.unref();
+  return xvfb;
 }
 
 function playwrightSameSite(
@@ -454,14 +514,21 @@ class BrowserTwitterSession {
   private readonly context: BrowserContext;
   private readonly page: Page;
   private readonly dispatcher?: ProxyAgent;
+  private readonly xvfb?: ChildProcessWithoutNullStreams;
   private ready = false;
   private template?: TimelineRequestTemplate;
   private solverPage?: Page;
 
-  private constructor(context: BrowserContext, page: Page, proxyUrl?: string) {
+  private constructor(
+    context: BrowserContext,
+    page: Page,
+    proxyUrl?: string,
+    xvfb?: ChildProcessWithoutNullStreams,
+  ) {
     this.context = context;
     this.page = page;
     this.dispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : undefined;
+    this.xvfb = xvfb;
   }
 
   static async create(): Promise<BrowserTwitterSession> {
@@ -480,43 +547,56 @@ class BrowserTwitterSession {
       (await mkdtemp(join(tmpdir(), "milei-twitter-browser-")));
     const executablePath = process.env.TWITTER_BROWSER_EXECUTABLE_PATH;
     const channel = process.env.TWITTER_BROWSER_CHANNEL;
+    const headless = process.env.TWITTER_BROWSER_HEADLESS === "1";
+    const xvfb = await startVirtualDisplayIfNeeded(headless);
 
     const { chromium } = await import("playwright");
-    const context = await chromium.launchPersistentContext(userDataDir, {
-      channel: executablePath ? undefined : channel,
-      executablePath,
-      headless: process.env.TWITTER_BROWSER_HEADLESS === "1",
-      proxy: proxyUrl ? proxyUrlToPlaywright(proxyUrl) : undefined,
-      args: [
-        "--disable-session-crashed-bubble",
-        "--no-first-run",
-        "--no-default-browser-check",
-      ],
-      viewport: { width: 1280, height: 900 },
-      locale: "en-US",
-      timezoneId: "America/Argentina/Buenos_Aires",
-    });
-    const page = context.pages()[0] ?? (await context.newPage());
-    page.on("console", (message) => {
-      console.info(`[twitter-browser:${message.type()}] ${message.text()}`);
-    });
-    page.on("pageerror", (error) => {
-      console.error(`[twitter-browser:pageerror] ${error.message}`);
-    });
-    await page.setViewportSize({ width: 1280, height: 900 }).catch(() => {});
-    await page
-      .evaluate(() => {
-        document.title = "milei-twitter automation";
-      })
-      .catch(() => {});
-    await page.bringToFront().catch(() => {});
-    const session = new BrowserTwitterSession(context, page, proxyUrl);
-    await session.ensureReady();
-    return session;
+    let context: BrowserContext | undefined;
+    try {
+      context = await chromium.launchPersistentContext(userDataDir, {
+        channel: executablePath ? undefined : channel,
+        executablePath,
+        headless,
+        proxy: proxyUrl ? proxyUrlToPlaywright(proxyUrl) : undefined,
+        args: [
+          "--disable-session-crashed-bubble",
+          "--no-first-run",
+          "--no-default-browser-check",
+        ],
+        viewport: { width: 1280, height: 900 },
+        locale: "en-US",
+        timezoneId: "America/Argentina/Buenos_Aires",
+      });
+      const page = context.pages()[0] ?? (await context.newPage());
+      page.on("console", (message) => {
+        console.info(`[twitter-browser:${message.type()}] ${message.text()}`);
+      });
+      page.on("pageerror", (error) => {
+        console.error(`[twitter-browser:pageerror] ${error.message}`);
+      });
+      await page.setViewportSize({ width: 1280, height: 900 }).catch(() => {});
+      await page
+        .evaluate(() => {
+          document.title = "milei-twitter automation";
+        })
+        .catch(() => {});
+      await page.bringToFront().catch(() => {});
+      const session = new BrowserTwitterSession(context, page, proxyUrl, xvfb);
+      await session.ensureReady();
+      return session;
+    } catch (error) {
+      await context?.close().catch(() => {});
+      xvfb?.kill();
+      throw error;
+    }
   }
 
   async close() {
-    await this.context.close();
+    try {
+      await this.context.close();
+    } finally {
+      this.xvfb?.kill();
+    }
   }
 
   async fetchTimelinePage(cursor?: string) {
