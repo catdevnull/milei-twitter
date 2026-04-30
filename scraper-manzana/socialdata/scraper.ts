@@ -12,7 +12,7 @@ import {
 } from "./schemas.ts";
 import type { Tweet } from "@catdevnull/twitter-scraper";
 import { db } from "../dbs/scraps/index.ts";
-import type { Retweet, Scrap, zTweet } from "api/schema.ts";
+import type { Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { fetch } from "undici";
 
@@ -167,7 +167,7 @@ export function tweetIntoRetweet(tweet: Tweet): Retweet {
 }
 
 export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
-  const tweets: Array<z.infer<typeof zTweet>> = [];
+  const tweets: NonNullable<Scrap["tweets"]> = [];
   const retweets: Array<Retweet> = [];
   try {
     let finished = false;

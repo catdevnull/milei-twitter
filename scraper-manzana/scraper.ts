@@ -1,12 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { Scraper, SearchMode, Tweet } from "@catdevnull/twitter-scraper";
 import { Cookie, CookieJar } from "tough-cookie";
-import { LikedTweet, Retweet, Scrap, zTweet } from "api/schema.ts";
+import { LikedTweet, Retweet, Scrap } from "api/schema.ts";
 import { nanoid } from "nanoid";
 import { pushScrap } from "./dbs/scraps/index.ts";
 import { AccountInfo, parseAccountList } from "./addAccounts.ts";
 import pDebounce from "p-debounce";
-import { z } from "zod";
+import { db } from "./dbs/scraps/index.ts";
+import { scrapNewTweetsWithBrowser } from "./browser-twitter/scraper.ts";
+import { scrapNewTweets as scrapNewTweetsWithSocialdata } from "./socialdata/scraper.ts";
 import {
   fetch,
   Headers,
@@ -15,6 +17,73 @@ import {
   RequestInit,
   Response,
 } from "undici";
+
+const CRON_INTERVAL_MS = 30 * 60 * 1000;
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return `${error.name}: ${error.message}`;
+  return String(error);
+}
+
+export async function notifyTelegram(message: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) {
+    console.error("[notify] missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID");
+    return;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: message,
+      disable_web_page_preview: true,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error(
+      `[notify] telegram send failed: ${response.status} ${await response.text()}`
+    );
+  }
+}
+
+async function lastTweetIds() {
+  const lastScrap = await db.getLastScrap();
+  return lastScrap?.tweets?.map((tweet) => tweet.id) ?? [];
+}
+
+export async function scrapNewTweetsWithFallback(lastIds: string[]) {
+  try {
+    const scrap = await scrapNewTweetsWithBrowser(lastIds);
+    if (scrap.tweets?.length === 0) {
+      throw new Error("Browser scraper returned no tweets");
+    }
+    return scrap;
+  } catch (browserError) {
+    console.error("[cron] browser scraper failed", browserError);
+    await notifyTelegram(
+      [
+        "milei-twitter browser scraper failed; falling back to SocialData.",
+        errorMessage(browserError),
+      ].join("\n\n")
+    );
+
+    try {
+      return await scrapNewTweetsWithSocialdata(lastIds);
+    } catch (socialdataError) {
+      await notifyTelegram(
+        [
+          "milei-twitter SocialData fallback also failed.",
+          errorMessage(socialdataError),
+        ].join("\n\n")
+      );
+      throw socialdataError;
+    }
+  }
+}
 
 async function getAccountList() {
   if (process.env.AUTH_TOKEN) {
@@ -273,7 +342,7 @@ export async function saveTweetsAndRetweets(scraper: Scraper) {
   let totalTweetsSeen = 0;
   const retweets: Array<Retweet> = [];
   // XXX: por ahora, estamos guardando los retweets tambien como tweets
-  const tweets: Array<z.infer<typeof zTweet>> = [];
+  const tweets: NonNullable<Scrap["tweets"]> = [];
   for await (const tweet of scraper.getTweets("jmilei")) {
     totalTweetsSeen++;
     tweets.push({
@@ -332,25 +401,16 @@ export async function printFollowing(handle: string, jsonl: boolean) {
 }
 
 export async function cron() {
-  const scraper = await newScraper();
   while (true) {
-    // try {
-    //   const scrap = await saveLikes(scraper);
-    //   console.log(`scrapped likes, seen ${scrap.totalTweetsSeen}`);
-    // } catch (error) {
-    //   console.error(`[error] likedTweets`, error);
-    // }
-
     try {
-      const scrap = await saveTweetsAndRetweets(scraper);
-      console.log(
-        `scrapped tweets and retweets, seen ${scrap.totalTweetsSeen}`
-      );
+      const scrap = await scrapNewTweetsWithFallback(await lastTweetIds());
+      await db.pushScrap(scrap);
+      console.info(`[cron] saved scrap ${scrap.uid}, seen ${scrap.totalTweetsSeen}`);
     } catch (error) {
-      console.error("[error] tweets and retweets", error);
+      console.error("[cron] failed", error);
     }
 
-    await wait(50 * 1000 + Math.random() * 15 * 1000);
+    await wait(CRON_INTERVAL_MS);
   }
 }
 

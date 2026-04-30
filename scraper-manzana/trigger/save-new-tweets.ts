@@ -1,6 +1,6 @@
 import { logger, schedules } from "@trigger.dev/sdk";
-import { scrapNewTweets } from "../socialdata/scraper.ts";
 import { sendScrapToApi } from "../dbs/scraps/index.ts";
+import { scrapNewTweetsWithFallback } from "../scraper.ts";
 
 export const saveNewTweetsTask = schedules.task({
   id: "save-new-tweets",
@@ -14,7 +14,7 @@ export const saveNewTweetsTask = schedules.task({
     const lastTweetIds: string[] = await (
       await fetch(`${API_URL}/api/internal/scraper/last-ids`)
     ).json();
-    const scrap = await scrapNewTweets(lastTweetIds);
+    const scrap = await scrapNewTweetsWithFallback(lastTweetIds);
     if (scrap.tweets?.length === 0) {
       throw new Error("No tweets found");
     }

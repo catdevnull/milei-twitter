@@ -8,8 +8,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "check": "tsc --noEmit",
     "start": "tsx cli.ts",
+    "rebrowser:ensure": "node ensure-rebrowser-patches.mjs",
+    "probe:browser": "pnpm run rebrowser:ensure && tsx browser-probe.ts",
     "build": "tsup cli.ts && cp -r dbs/* dist/",
-    "deploy:trigger-prod": "pnpx trigger.dev@latest deploy"
+    "deploy:trigger-prod": "pnpx trigger.dev@4.3.3 deploy"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +26,8 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.33.0",
     "openai": "^4.83.0",
+    "playwright": "1.52.0",
+    "rebrowser-patches": "1.0.19",
     "undici": "^6.21.1",
     "zod": "^3.24.1"
   },

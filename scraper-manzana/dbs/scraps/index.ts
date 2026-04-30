@@ -118,7 +118,7 @@ export async function sendScrapToApi(scrapJson: string, token: string) {
     body: scrapJson,
   });
   if (!res.ok) {
-    throw new Error(`HTTP status response: ${res.status}`);
+    throw new Error(`HTTP status response: ${res.status}: ${await res.text()}`);
   }
   const json = await res.json();
   return zPostScrapRes.parse(json);

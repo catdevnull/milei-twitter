@@ -15,6 +15,7 @@ RUN pnpm build \
 FROM base
 ENTRYPOINT ["tini", "--"]
 RUN pnpm install --filter=scraper-manzana --prod
+RUN pnpm run rebrowser:ensure && pnpm exec playwright install --with-deps chromium
 COPY --from=build /app/scraper-manzana/dist dist
 RUN mkdir -p /usr/local/bin \
     && echo '#!/bin/sh\nexec node /app/scraper-manzana/dist/cli.cjs "$@"' > /usr/local/bin/cli \
@@ -23,4 +24,4 @@ RUN mkdir -p /usr/local/bin \
 ENV NODE_ENV=production
 ENV DBS_PATH=/db
 
-CMD ["cli", "cron"]
+CMD ["xvfb-run", "-a", "--server-args=-screen 0 1280x900x24", "cli", "cron"]
