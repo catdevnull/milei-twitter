@@ -10,7 +10,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const syncedEnvKeys = [
-  "API_URL",
   "SOCIALDATA_API_KEY",
   "SOCIALDATA_SELFHOSTED_URL",
   "WEBSHARE_PROXY_LIST_URL",
