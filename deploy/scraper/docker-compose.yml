@@ -1,0 +1,18 @@
+services:
+  scraper:
+    build:
+      context: ../..
+      dockerfile: docker/scraper-manzana.Dockerfile
+    image: milei-twitter-scraper:latest
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      API_URL: ${API_URL:-https://milei.nulo.lol}
+      PLAYWRIGHT_BROWSERS_PATH: /root/.cache/ms-playwright
+      TWITTER_BROWSER_USER_DATA_DIR: /data/twitter-browser-profile
+    volumes:
+      - scraper-data:/data
+    shm_size: 1gb
+
+volumes:
+  scraper-data:

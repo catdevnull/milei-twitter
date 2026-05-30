@@ -18,15 +18,30 @@ esto está desactualizado
 podes correrlo manualmente:
 
 ```
-pnpm scraper:run scrap retweets
-pnpm scraper:run scrap likes
-# y fijate con --help porque hay flags para debuggear, etc
+cd scraper-manzana
+pnpm cron:once
 ```
 
-o lo que se usa en prod que es el cron:
+En prod, el contenedor `docker/scraper-manzana.Dockerfile` corre `supercronic`
+con `scraper-manzana/crontab`. El job corre cada media hora y manda un mensaje
+a Telegram si falla.
+
+Variables necesarias:
+
+- `API_TOKEN`
+- `API_URL` (opcional, default `https://milei.nulo.lol`)
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- Variables del scraper de Twitter/SocialData según el modo usado.
+
+En `absolute-slop`, esto encaja como un Compose app separado del Dokku app
+`milei`. La plantilla está en `deploy/scraper/`:
 
 ```
-pnpm scraper:run cron
+cd deploy/scraper
+cp .env.example .env.production
+# completar secretos
+docker compose up -d --build
 ```
 
 ## producción
@@ -34,6 +49,6 @@ pnpm scraper:run cron
 ```
 git pull && pnpm install && pnpm build && cp -r drizzle build/
 node -r dotenv/config build
-# en otra tty
-pnpm scraper:run cron
+# en otra tty, para probar una corrida del scraper
+cd scraper-manzana && pnpm cron:once
 ```

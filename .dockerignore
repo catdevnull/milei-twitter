@@ -9,10 +9,15 @@ build/
 */build/
 Dockerfile*
 scraper/accounts.json
+scraper-manzana/.twitter-browser-profile*
+scraper-manzana/.twitter-debug
+scraper-manzana/scraps.db*
 
 */.svelte-kit
 .env
 .env.*
+*/.env
+*/.env.*
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
@@ -21,8 +26,11 @@ fly.toml
 */dist
 
 .devbox
+.pnpm-store
+*/.pnpm-store
 .git
 */.venv
 */*.jsonl
 
 */*.zip
+old.dump

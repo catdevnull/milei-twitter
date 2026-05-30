@@ -781,7 +781,11 @@ class BrowserTwitterSession {
     await mkdir(dir, { recursive: true });
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const base = join(dir, `${stamp}-${label}`);
-    await this.page.screenshot({ path: `${base}.png`, fullPage: true });
+    await this.page
+      .screenshot({ path: `${base}.png`, fullPage: true, timeout: 5_000 })
+      .catch((error) => {
+        console.error(`[twitter-browser] could not save debug screenshot`, error);
+      });
     const text = await this.page
       .locator("body")
       .innerText()

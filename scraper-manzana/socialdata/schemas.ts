@@ -40,40 +40,39 @@ export const SocialDataBaseTweet = z.object({
   favorite_count: z.number(),
   lang: z.string(),
   entities: z.object({
-    user_mentions: z.array(
-      z.object({
-        id_str: z.string(),
-        name: z.string(),
-        screen_name: z.string(),
-        indices: z.array(z.number()),
-      })
-    ),
-    urls: z.array(
-      z.object({
-        display_url: z.string(),
-        expanded_url: z.string().optional(),
-        indices: z.array(z.number()),
-        url: z.string(),
-      })
-    ),
-    hashtags: z.array(z.unknown()),
-    symbols: z.array(z.unknown()),
+    user_mentions: z
+      .array(
+        z.object({
+          id_str: z.string(),
+          name: z.string(),
+          screen_name: z.string(),
+          indices: z.array(z.number()),
+        })
+      )
+      .default([]),
+    urls: z
+      .array(
+        z.object({
+          display_url: z.string(),
+          expanded_url: z.string().optional(),
+          indices: z.array(z.number()),
+          url: z.string(),
+        })
+      )
+      .default([]),
+    hashtags: z.array(z.unknown()).default([]),
+    symbols: z.array(z.unknown()).default([]),
   }),
   views_count: z.number().nullable(),
   bookmark_count: z.number(),
 });
 export type SocialDataBaseTweet = z.infer<typeof SocialDataBaseTweet>;
 
-export type SocialDataTweet = z.infer<typeof SocialDataBaseTweet> & {
-  quoted_status: z.infer<typeof SocialDataBaseTweet> | null;
-  retweeted_status: z.infer<typeof SocialDataBaseTweet> | null;
-};
-
-export const SocialDataTweet: z.ZodType<SocialDataTweet> =
-  SocialDataBaseTweet.extend({
-    quoted_status: SocialDataBaseTweet.nullable(),
-    retweeted_status: SocialDataBaseTweet.nullable(),
-  });
+export const SocialDataTweet = SocialDataBaseTweet.extend({
+  quoted_status: SocialDataBaseTweet.nullable(),
+  retweeted_status: SocialDataBaseTweet.nullable(),
+});
+export type SocialDataTweet = z.infer<typeof SocialDataTweet>;
 
 export const SocialDataTweetsResponse = z.object({
   next_cursor: z.string(),

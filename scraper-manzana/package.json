@@ -6,33 +6,32 @@
   "main": "index.js",
   "scripts": {
     "check": "tsc --noEmit",
+    "cron:once": "tsx cron-runner.ts",
     "rebrowser:ensure": "node ensure-rebrowser-patches.mjs",
-    "deploy:trigger-prod": "pnpx trigger.dev@4.3.3 deploy"
+    "scraper:run": "tsx cron-runner.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@trigger.dev/sdk": "4.3.3",
+    "api": "workspace:^",
     "async-mutex": "^0.5.0",
     "dataloader": "^2.2.3",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.7",
+    "escape-string-regexp": "^5.0.0",
+    "nanoid": "^5.0.9",
     "playwright": "1.52.0",
     "rebrowser-patches": "1.0.19",
+    "tough-cookie": "^4.1.4",
+    "tsx": "^4.19.2",
     "undici": "^6.21.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@trigger.dev/build": "4.3.3",
     "@types/node": "^20.17.17",
     "@types/tough-cookie": "^4.0.5",
-    "api": "workspace:^",
-    "escape-string-regexp": "^5.0.0",
-    "nanoid": "^5.0.9",
     "p-queue": "^8.1.0",
-    "tough-cookie": "^4.1.4",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
