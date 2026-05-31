@@ -71,8 +71,14 @@ async function getTweetsAndReplies(
 
 async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
   let res: SocialDataTweetsResponse | null = null;
+  const seenCursors = new Set<string>();
   while (true) {
-    const _res = await getTweetsAndReplies(userIdOrHandle, res?.next_cursor);
+    const cursor = res?.next_cursor;
+    if (cursor) {
+      if (seenCursors.has(cursor)) break;
+      seenCursors.add(cursor);
+    }
+    const _res = await getTweetsAndReplies(userIdOrHandle, cursor);
     if ("status" in _res) {
       throw new Error(JSON.stringify(_res));
     }
@@ -160,18 +166,44 @@ function tweetIntoRetweet(tweet: TwitterCompatTweet): Retweet {
   };
 }
 
+function envNumber(name: string): number | undefined {
+  const value = process.env[name];
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
+  return parsed;
+}
+
+function maxTweetsForScrape(lastTweetIds?: string[]) {
+  return envNumber("SCRAPER_MAX_TWEETS") ?? lastTweetIds?.length ?? 199;
+}
+
+function oldestTweetDateForScrape() {
+  const days = envNumber("SCRAPER_SINCE_DAYS");
+  return days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
+}
+
 export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
   const tweets: NonNullable<Scrap["tweets"]> = [];
   const retweets: Array<Retweet> = [];
+  const seen = new Set<string>();
+  const maxTweets = maxTweetsForScrape(lastTweetIds);
+  const oldestTweetDate = oldestTweetDateForScrape();
   try {
     let finished = false;
+    let sawTweetWithinDate = false;
     for await (const scrappedTweets of getTweetsAndRepliesIterator("jmilei")) {
       if (finished) break;
 
+      let newTweetsOnPage = 0;
       for (const tweet of scrappedTweets) {
+        if (!tweet.id || seen.has(tweet.id)) continue;
+        newTweetsOnPage++;
+        seen.add(tweet.id);
         tweets.push({
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          id: tweet.id!,
+          id: tweet.id,
           twitterScraperJson: JSON.stringify(tweet),
           capturedAt: new Date(),
         });
@@ -180,13 +212,22 @@ export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
           retweets.push(tweetIntoRetweet(tweet));
         }
 
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
-        if (lastTweetIds?.includes(tweet.id!)) {
+        if (lastTweetIds?.includes(tweet.id)) {
           finished = true;
         }
-        if (tweets.length > (lastTweetIds?.length || 199)) {
+        if (oldestTweetDate && tweet.timeParsed) {
+          if (tweet.timeParsed >= oldestTweetDate) {
+            sawTweetWithinDate = true;
+          } else if (sawTweetWithinDate) {
+            finished = true;
+          }
+        }
+        if (tweets.length > maxTweets) {
           finished = true;
         }
+      }
+      if (newTweetsOnPage === 0) {
+        finished = true;
       }
     }
   } catch (error) {

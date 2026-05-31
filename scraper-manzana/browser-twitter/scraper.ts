@@ -474,6 +474,25 @@ function tweetIntoRetweet(tweet: TwitterCompatTweet): Retweet {
   };
 }
 
+function envNumber(name: string): number | undefined {
+  const value = process.env[name];
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
+  return parsed;
+}
+
+function maxTweetsForScrape(lastTweetIds?: string[]) {
+  return envNumber("SCRAPER_MAX_TWEETS") ?? lastTweetIds?.length ?? 199;
+}
+
+function oldestTweetDateForScrape() {
+  const days = envNumber("SCRAPER_SINCE_DAYS");
+  return days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
+}
+
 class BrowserTwitterSession {
   private readonly context: BrowserContext;
   private readonly page: Page;
@@ -1092,7 +1111,9 @@ export async function scrapNewTweetsWithBrowser(
     const seen = new Set<string>();
     let cursor: string | undefined;
     let finished = false;
-    const maxTweets = lastTweetIds?.length || 199;
+    const maxTweets = maxTweetsForScrape(lastTweetIds);
+    const oldestTweetDate = oldestTweetDateForScrape();
+    let sawTweetWithinDate = false;
     while (!finished) {
       const json = await session.fetchTimelinePage(cursor);
       const page = collectTimelineEntries(json);
@@ -1109,6 +1130,13 @@ export async function scrapNewTweetsWithBrowser(
         });
         if (tweet.retweetedStatus) retweets.push(tweetIntoRetweet(tweet));
         if (lastTweetIds?.includes(tweet.id)) finished = true;
+        if (oldestTweetDate && tweet.timeParsed) {
+          if (tweet.timeParsed >= oldestTweetDate) {
+            sawTweetWithinDate = true;
+          } else if (sawTweetWithinDate) {
+            finished = true;
+          }
+        }
         if (tweets.length > maxTweets) finished = true;
       }
       if (!cursor) break;

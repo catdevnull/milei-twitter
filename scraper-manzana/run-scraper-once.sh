@@ -9,5 +9,6 @@ if ! flock -n /tmp/milei-twitter-scraper.lock true; then
 fi
 
 exec flock -n /tmp/milei-twitter-scraper.lock \
+  timeout --kill-after=2m 25m \
   xvfb-run -a --server-args="-screen 0 1280x900x24" \
   pnpm exec tsx cron-runner.ts
