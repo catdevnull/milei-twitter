@@ -7,6 +7,33 @@ function errorMessage(error: unknown) {
   return String(error);
 }
 
+function envNumber(name: string): number | undefined {
+  const value = process.env[name];
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
+  return parsed;
+}
+
+function truncateTelegramMessage(message: string) {
+  const maxLength = 3900;
+  if (message.length <= maxLength) return message;
+  return `${message.slice(0, maxLength)}\n\n[truncated]`;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`${label} timed out after ${ms}ms`));
+      }, ms).unref();
+    }),
+  ]);
+}
+
 export async function notifyTelegram(message: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -20,7 +47,7 @@ export async function notifyTelegram(message: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: message,
+      text: truncateTelegramMessage(message),
       disable_web_page_preview: true,
     }),
   });
@@ -34,7 +61,13 @@ export async function notifyTelegram(message: string) {
 
 export async function scrapNewTweetsWithFallback(lastIds: string[]) {
   try {
-    const scrap = await scrapNewTweetsWithBrowser(lastIds);
+    const browserTimeoutMs =
+      envNumber("BROWSER_SCRAPER_TIMEOUT_MS") ?? 5 * 60 * 1000;
+    const scrap = await withTimeout(
+      scrapNewTweetsWithBrowser(lastIds),
+      browserTimeoutMs,
+      "Browser scraper",
+    );
     if (scrap.tweets?.length === 0) {
       throw new Error("Browser scraper returned no tweets");
     }
