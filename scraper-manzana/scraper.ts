@@ -1,6 +1,11 @@
 import { scrapNewTweetsWithBrowser } from "./browser-twitter/scraper.ts";
 import { scrapNewTweets as scrapNewTweetsWithSocialdata } from "./socialdata/scraper.ts";
 import { fetch } from "undici";
+import pRetry from "p-retry";
+import type { Scrap } from "api/schema.ts";
+
+const MIN_TWEETS_PER_SCRAPE = 10;
+const BROWSER_SCRAPER_RETRIES = 1;
 
 function errorMessage(error: unknown) {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
@@ -34,6 +39,44 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
   ]);
 }
 
+function assertEnoughTweets(scrap: Scrap, source: string) {
+  const tweetsSeen = scrap.totalTweetsSeen ?? scrap.tweets?.length ?? 0;
+  if (tweetsSeen < MIN_TWEETS_PER_SCRAPE) {
+    throw new Error(
+      `${source} returned ${tweetsSeen} tweets (<${MIN_TWEETS_PER_SCRAPE})`,
+    );
+  }
+  return scrap;
+}
+
+async function scrapNewTweetsWithBrowserRetries(
+  lastIds: string[],
+  timeoutMs: number,
+) {
+  return await pRetry(
+    async (attempt) => {
+      const scrap = await withTimeout(
+        scrapNewTweetsWithBrowser(lastIds),
+        timeoutMs,
+        `Browser scraper attempt ${attempt}`,
+      );
+      return assertEnoughTweets(
+        scrap,
+        `Browser scraper attempt ${attempt}`,
+      );
+    },
+    {
+      retries: BROWSER_SCRAPER_RETRIES,
+      onFailedAttempt: (error) => {
+        console.warn(
+          `[cron] browser scraper attempt ${error.attemptNumber} failed; retrying`,
+          error,
+        );
+      },
+    },
+  );
+}
+
 export async function notifyTelegram(message: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -63,15 +106,7 @@ export async function scrapNewTweetsWithFallback(lastIds: string[]) {
   try {
     const browserTimeoutMs =
       envNumber("BROWSER_SCRAPER_TIMEOUT_MS") ?? 5 * 60 * 1000;
-    const scrap = await withTimeout(
-      scrapNewTweetsWithBrowser(lastIds),
-      browserTimeoutMs,
-      "Browser scraper",
-    );
-    if (scrap.tweets?.length === 0) {
-      throw new Error("Browser scraper returned no tweets");
-    }
-    return scrap;
+    return await scrapNewTweetsWithBrowserRetries(lastIds, browserTimeoutMs);
   } catch (browserError) {
     console.error("[cron] browser scraper failed", browserError);
     await notifyTelegram(
@@ -82,7 +117,10 @@ export async function scrapNewTweetsWithFallback(lastIds: string[]) {
     );
 
     try {
-      return await scrapNewTweetsWithSocialdata(lastIds);
+      return assertEnoughTweets(
+        await scrapNewTweetsWithSocialdata(lastIds),
+        "SocialData fallback",
+      );
     } catch (socialdataError) {
       await notifyTelegram(
         [
