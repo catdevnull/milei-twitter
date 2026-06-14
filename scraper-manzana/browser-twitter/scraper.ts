@@ -106,7 +106,7 @@ async function resolveProxyUrl(): Promise<string | undefined> {
 function proxyUrlToPlaywright(proxyUrl: string): ProxyConfig {
   const parsed = new URL(proxyUrl);
   return {
-    server: `${parsed.protocol}//${parsed.hostname}:${parsed.port}`,
+    server: parsed.origin,
     username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
     password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
     bypass: "localhost,127.0.0.1",
