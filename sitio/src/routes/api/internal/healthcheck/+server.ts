@@ -3,6 +3,13 @@ import { and, desc, gt, isNotNull, sql } from "drizzle-orm";
 import { likedTweets, retweets, scraps } from "../../../../schema";
 import { likesCutoffSql } from "$lib/consts";
 
+const SCRAPE_INTERVAL_MINUTES = 30;
+const MISSED_SCRAPES_BEFORE_FAILURE = 3;
+const SCRAPE_GRACE_MINUTES = 8;
+const MAX_SCRAP_AGE_MINUTES =
+  SCRAPE_INTERVAL_MINUTES * MISSED_SCRAPES_BEFORE_FAILURE +
+  SCRAPE_GRACE_MINUTES;
+
 export async function GET() {
   const errors: Array<string> = [];
   const lastScrap = await db.query.scraps.findFirst({
@@ -44,8 +51,10 @@ export async function GET() {
 
   if (lastScrap) {
     const delta = +new Date() - +lastScrap.finishedAt;
-    if (delta > 38 * 60 * 1000) {
-      errors.push(`último scrap hace ${delta}ms (>38min)`);
+    if (delta > MAX_SCRAP_AGE_MINUTES * 60 * 1000) {
+      errors.push(
+        `último scrap hace ${delta}ms (>${MAX_SCRAP_AGE_MINUTES}min)`,
+      );
     }
     if (lastScrap.totalTweetsSeen && lastScrap.totalTweetsSeen < 10) {
       errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);

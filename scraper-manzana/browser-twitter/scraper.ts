@@ -814,20 +814,21 @@ class BrowserTwitterSession {
   }
 
   private async captureTimelineRequest(): Promise<TimelineRequestTemplate> {
-    const requestPromise = this.page.waitForRequest(
-      (request) => {
-        const url = new URL(request.url());
-        return (
-          url.pathname.includes("/i/api/graphql/") &&
-          url.pathname.endsWith("/UserTweetsAndReplies")
-        );
-      },
-      { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
-    );
-    await this.page.goto("https://x.com/JMilei/with_replies", {
-      waitUntil: "domcontentloaded",
-    });
-    const request = await requestPromise;
+    const [request] = await Promise.all([
+      this.page.waitForRequest(
+        (request) => {
+          const url = new URL(request.url());
+          return (
+            url.pathname.includes("/i/api/graphql/") &&
+            url.pathname.endsWith("/UserTweetsAndReplies")
+          );
+        },
+        { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
+      ),
+      this.page.goto("https://x.com/JMilei/with_replies", {
+        waitUntil: "domcontentloaded",
+      }),
+    ]);
     return parseRequestTemplate(request);
   }
 
