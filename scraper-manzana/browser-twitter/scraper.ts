@@ -1,5 +1,12 @@
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readlink,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
+import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { nanoid } from "nanoid";
@@ -50,6 +57,52 @@ function requiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing ${name}`);
   return value;
+}
+
+function errnoCode(error: unknown): string | undefined {
+  return error instanceof Error && "code" in error
+    ? String(error.code)
+    : undefined;
+}
+
+function processIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return errnoCode(error) !== "ESRCH";
+  }
+}
+
+async function removeStaleChromiumSingletons(userDataDir: string) {
+  const singletonLock = join(userDataDir, "SingletonLock");
+  let lockOwner: string;
+  try {
+    lockOwner = await readlink(singletonLock);
+  } catch (error) {
+    if (errnoCode(error) === "ENOENT") return;
+    throw error;
+  }
+
+  const ownerMatch = /^(.*)-(\d+)$/.exec(lockOwner);
+  const ownerIsAlive =
+    ownerMatch?.[1] === hostname() && processIsAlive(Number(ownerMatch[2]));
+  if (ownerIsAlive) return;
+
+  console.warn(
+    `[twitter-browser] removing stale Chromium profile lock ${lockOwner}`,
+  );
+  await Promise.all(
+    ["SingletonLock", "SingletonSocket", "SingletonCookie"].map(
+      async (filename) => {
+        try {
+          await unlink(join(userDataDir, filename));
+        } catch (error) {
+          if (errnoCode(error) !== "ENOENT") throw error;
+        }
+      },
+    ),
+  );
 }
 
 async function getAccountList() {
@@ -528,6 +581,7 @@ class BrowserTwitterSession {
     const userDataDir =
       process.env.TWITTER_BROWSER_USER_DATA_DIR ??
       (await mkdtemp(join(tmpdir(), "milei-twitter-browser-")));
+    await removeStaleChromiumSingletons(userDataDir);
     const executablePath = process.env.TWITTER_BROWSER_EXECUTABLE_PATH;
     const channel = process.env.TWITTER_BROWSER_CHANNEL;
     const headless = process.env.TWITTER_BROWSER_HEADLESS === "1";
