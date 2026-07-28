@@ -53,6 +53,8 @@ const SOLVER_PAGE_HTML = `<!doctype html>
 <body><div id="anims"></div></body>
 </html>`;
 
+const TIMELINE_URL = "https://x.com/JMilei/with_replies";
+
 function requiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing ${name}`);
@@ -302,6 +304,19 @@ function timelineRequestUrl(
     params.set("fieldToggles", JSON.stringify(template.fieldToggles));
   }
   return new URL(`${url}?${params.toString()}`);
+}
+
+export function extractChallengeCode(html: string): string | undefined {
+  const direct = html.match(
+    /["']ondemand\.s["']\s*:\s*["']([\w-]+)["']/,
+  )?.[1];
+  if (direct) return direct;
+
+  const chunkId = html.match(/(\d+)\s*:\s*["']ondemand\.s["']/)?.[1];
+  if (!chunkId) return undefined;
+  return html.match(
+    new RegExp(`(?:^|[,{}])\\s*${chunkId}\\s*:\\s*["']([\\w-]+)["']`),
+  )?.[1];
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -879,7 +894,7 @@ class BrowserTwitterSession {
         },
         { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
       ),
-      this.page.goto("https://x.com/JMilei/with_replies", {
+      this.page.goto(TIMELINE_URL, {
         waitUntil: "domcontentloaded",
       }),
     ]);
@@ -1052,7 +1067,10 @@ class BrowserTwitterSession {
   }
 
   private async getSolverInitData(): Promise<TransactionSolverInitData> {
-    const homeUrl = new URL("https://x.com/");
+    // X's root URL can be served by the newer x-web app, which does not expose
+    // the responsive-web ondemand.s manifest used by the transaction solver.
+    // The timeline route uses the same frontend as the request we captured.
+    const homeUrl = new URL(TIMELINE_URL);
     const headers = await this.apiHeaders(homeUrl, {}, "GET", {
       transactionId: false,
     });
@@ -1067,15 +1085,12 @@ class BrowserTwitterSession {
     await this.absorbSetCookie(homeUrl, homepageResponse.headers);
     if (!homepageResponse.ok) {
       throw new Error(
-        `Could not fetch X homepage for transaction solver: ${homepageResponse.status} ${homepageResponse.statusText}`,
+        `Could not fetch X timeline for transaction solver: ${homepageResponse.status} ${homepageResponse.statusText}`,
       );
     }
     const homepageData = await homepageResponse.text();
-    const vendorCode = homepageData.match(/vendor\.(\w+)\.js"/)?.[1];
-    const challengePos = homepageData.match(/(\d+):"ondemand\.s"/)?.[1];
-    const challengeCode = challengePos
-      ? homepageData.match(new RegExp(`${challengePos}:"(\\w+)"`))?.[1]
-      : undefined;
+    const vendorCode = homepageData.match(/vendor\.([\w-]+)\.js["']/)?.[1];
+    const challengeCode = extractChallengeCode(homepageData);
     if (!challengeCode) throw new Error("Could not find X challenge code");
 
     const challengeUrl = new URL(
