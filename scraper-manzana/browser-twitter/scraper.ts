@@ -399,7 +399,7 @@ function unwrapTweetResult(
   return undefined;
 }
 
-function parseTweetResult(
+export function parseTweetResult(
   input: Record<string, unknown> | undefined,
 ): TwitterCompatTweet | undefined {
   const result = unwrapTweetResult(input);
@@ -408,12 +408,12 @@ function parseTweetResult(
   const userResults = asRecord(asRecord(core?.user_results)?.result);
   const userLegacy = asRecord(userResults?.legacy);
   const userCore = asRecord(userResults?.core);
-  if (!result || !legacy || !userResults || !userLegacy) return undefined;
+  if (!result || !legacy || !userResults) return undefined;
 
   const id = asString(legacy.id_str) ?? asString(result.rest_id);
   const userId = asString(legacy.user_id_str) ?? asString(userResults.rest_id);
   const username =
-    asString(userLegacy.screen_name) ?? asString(userCore?.screen_name);
+    asString(userLegacy?.screen_name) ?? asString(userCore?.screen_name);
   const createdAt = asString(legacy.created_at);
   const timeParsed = createdAt ? new Date(createdAt) : undefined;
   const entities = asRecord(legacy.entities);
@@ -454,7 +454,7 @@ function parseTweetResult(
         name: asString(mention.name),
       }))
       .filter((mention) => mention.id),
-    name: asString(userLegacy.name) ?? asString(userCore?.name),
+    name: asString(userLegacy?.name) ?? asString(userCore?.name),
     permanentUrl:
       username && id
         ? `https://twitter.com/${username}/status/${id}`
