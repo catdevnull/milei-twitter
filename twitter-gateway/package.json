@@ -1,0 +1,21 @@
+{
+  "name": "twitter-gateway",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "node --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.18.2",
+    "hono": "^4.9.2",
+    "scraper-manzana": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

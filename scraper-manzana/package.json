@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "exports": {
+    "./accounts": "./addAccounts.ts",
+    "./browser-twitter": "./browser-twitter/scraper.ts"
+  },
   "scripts": {
     "check": "tsc --noEmit",
     "cron:once": "tsx cron-runner.ts",

@@ -22,13 +22,29 @@ import type { Retweet, Scrap } from "api/schema.ts";
 import { type AccountInfo, parseAccountList } from "../addAccounts.ts";
 import type { TwitterCompatTweet } from "../twitter-compat.ts";
 
-type TimelineRequestTemplate = {
+export type TwitterGraphqlRequestTemplate = {
   url: string;
   variables: Record<string, unknown>;
   features?: Record<string, unknown>;
   fieldToggles?: Record<string, unknown>;
   headers: Record<string, string>;
 };
+
+export type BrowserTwitterSessionOptions = {
+  account?: AccountInfo;
+  userDataDir?: string;
+};
+
+export class TwitterApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly statusText: string,
+    readonly body: string,
+  ) {
+    super(`Twitter API request failed: ${status} ${statusText} ${body}`);
+    this.name = "TwitterApiError";
+  }
+}
 
 type ProxyConfig = {
   server: string;
@@ -272,7 +288,7 @@ function getSetCookie(headers: Headers): string[] {
   return single ? [single] : [];
 }
 
-function parseRequestTemplate(request: Request): TimelineRequestTemplate {
+function parseRequestTemplate(request: Request): TwitterGraphqlRequestTemplate {
   const url = new URL(request.url());
   const variables = url.searchParams.get("variables");
   if (!variables) throw new Error("Captured request had no variables param");
@@ -288,13 +304,21 @@ function parseRequestTemplate(request: Request): TimelineRequestTemplate {
 }
 
 function timelineRequestUrl(
-  template: TimelineRequestTemplate,
+  template: TwitterGraphqlRequestTemplate,
   cursor?: string,
 ) {
+  return graphqlRequestUrl(template, cursor ? { cursor } : { cursor: undefined });
+}
+
+function graphqlRequestUrl(
+  template: TwitterGraphqlRequestTemplate,
+  variableOverrides: Record<string, unknown> = {},
+) {
   const url = apiFetchUrl(new URL(template.url));
-  const variables = { ...template.variables };
-  if (cursor) variables.cursor = cursor;
-  else delete variables.cursor;
+  const variables = { ...template.variables, ...variableOverrides };
+  for (const [key, value] of Object.entries(variables)) {
+    if (value === undefined) delete variables[key];
+  }
 
   const params = new URLSearchParams();
   params.set("variables", JSON.stringify(variables));
@@ -335,6 +359,18 @@ function asString(value: unknown): string | undefined {
 
 function asNumber(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
+}
+
+function throwIfGraphqlRateLimited(json: unknown) {
+  const errors = asArray(asRecord(json)?.errors).map(asRecord);
+  const rateLimited = errors.some(
+    (error) =>
+      error?.code === 88 ||
+      /rate limit|too many requests/i.test(asString(error?.message) ?? ""),
+  );
+  if (rateLimited) {
+    throw new TwitterApiError(429, "Too Many Requests", JSON.stringify(errors));
+  }
 }
 
 function parseViews(result: Record<string, unknown>): number | undefined {
@@ -561,28 +597,37 @@ function oldestTweetDateForScrape() {
   return days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
 }
 
-class BrowserTwitterSession {
+export class BrowserTwitterSession {
   private readonly context: BrowserContext;
   private readonly page: Page;
   private readonly dispatcher?: ProxyAgent;
   private readonly xvfb?: ChildProcessWithoutNullStreams;
   private ready = false;
-  private template?: TimelineRequestTemplate;
+  private template?: TwitterGraphqlRequestTemplate;
+  private readonly templateCache = new Map<
+    string,
+    TwitterGraphqlRequestTemplate
+  >();
   private solverPage?: Page;
+  private readonly account?: AccountInfo;
 
   private constructor(
     context: BrowserContext,
     page: Page,
     proxyUrl?: string,
     xvfb?: ChildProcessWithoutNullStreams,
+    account?: AccountInfo,
   ) {
     this.context = context;
     this.page = page;
     this.dispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : undefined;
     this.xvfb = xvfb;
+    this.account = account;
   }
 
-  static async create(): Promise<BrowserTwitterSession> {
+  static async create(
+    options: BrowserTwitterSessionOptions = {},
+  ): Promise<BrowserTwitterSession> {
     process.env.REBROWSER_PATCHES_RUNTIME_FIX_MODE ??= "alwaysIsolated";
     process.env.REBROWSER_PATCHES_SOURCE_URL ??= "app.js";
     process.env.REBROWSER_PATCHES_UTILITY_WORLD_NAME ??= "util";
@@ -594,6 +639,7 @@ class BrowserTwitterSession {
       );
     }
     const userDataDir =
+      options.userDataDir ??
       process.env.TWITTER_BROWSER_USER_DATA_DIR ??
       (await mkdtemp(join(tmpdir(), "milei-twitter-browser-")));
     await removeStaleChromiumSingletons(userDataDir);
@@ -633,7 +679,13 @@ class BrowserTwitterSession {
         })
         .catch(() => {});
       await page.bringToFront().catch(() => {});
-      const session = new BrowserTwitterSession(context, page, proxyUrl, xvfb);
+      const session = new BrowserTwitterSession(
+        context,
+        page,
+        proxyUrl,
+        xvfb,
+        options.account,
+      );
       await session.ensureReady();
       return session;
     } catch (error) {
@@ -663,17 +715,80 @@ class BrowserTwitterSession {
     });
     await this.absorbSetCookie(url, response.headers);
     if (!response.ok) {
-      throw new Error(
-        `Twitter API request failed: ${response.status} ${response.statusText} ${await response.text()}`,
+      throw new TwitterApiError(
+        response.status,
+        response.statusText,
+        await response.text(),
       );
     }
-    return await response.json();
+    const json = await response.json();
+    throwIfGraphqlRateLimited(json);
+    return json;
+  }
+
+  async captureGraphqlRequest(
+    pageUrl: string,
+    operationName: string,
+  ): Promise<TwitterGraphqlRequestTemplate> {
+    await this.ensureReady();
+    const [request] = await Promise.all([
+      this.page.waitForRequest(
+        (request) => {
+          const url = new URL(request.url());
+          return (
+            url.pathname.includes("/i/api/graphql/") &&
+            url.pathname.endsWith(`/${operationName}`)
+          );
+        },
+        { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
+      ),
+      this.page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
+    ]);
+    return parseRequestTemplate(request);
+  }
+
+  async graphqlTemplate(
+    cacheKey: string,
+    pageUrl: string,
+    operationName: string,
+  ): Promise<TwitterGraphqlRequestTemplate> {
+    const cached = this.templateCache.get(cacheKey);
+    if (cached) return cached;
+    const template = await this.captureGraphqlRequest(pageUrl, operationName);
+    this.templateCache.set(cacheKey, template);
+    return template;
+  }
+
+  async fetchGraphql(
+    template: TwitterGraphqlRequestTemplate,
+    variableOverrides: Record<string, unknown> = {},
+  ) {
+    await this.ensureReady();
+    const url = graphqlRequestUrl(template, variableOverrides);
+    const headers = await this.apiHeaders(url, template.headers, "GET");
+    const response = await undiciFetch(url, {
+      method: "GET",
+      headers,
+      dispatcher: this.dispatcher,
+    });
+    await this.absorbSetCookie(url, response.headers);
+    if (!response.ok) {
+      throw new TwitterApiError(
+        response.status,
+        response.statusText,
+        await response.text(),
+      );
+    }
+    const json = await response.json();
+    throwIfGraphqlRateLimited(json);
+    return json;
   }
 
   private async ensureReady() {
     if (this.ready) return;
     await this.ensureLoggedIn();
     this.template = await this.captureTimelineRequest();
+    this.templateCache.set("UserTweetsAndReplies", this.template);
     await this.installTransactionSolver();
     this.ready = true;
   }
@@ -684,7 +799,7 @@ class BrowserTwitterSession {
     });
     if (await this.hasAuthCookies()) return;
 
-    const account = await firstAccount();
+    const account = this.account ?? (await firstAccount());
     try {
       if (
         account.authToken &&
@@ -882,7 +997,7 @@ class BrowserTwitterSession {
     console.error(`Saved Twitter browser debug artifacts to ${base}.png/.txt`);
   }
 
-  private async captureTimelineRequest(): Promise<TimelineRequestTemplate> {
+  private async captureTimelineRequest(): Promise<TwitterGraphqlRequestTemplate> {
     const [request] = await Promise.all([
       this.page.waitForRequest(
         (request) => {
