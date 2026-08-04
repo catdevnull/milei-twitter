@@ -40,6 +40,9 @@ cd "${install_dir}"
 pnpm install --frozen-lockfile
 
 export PLAYWRIGHT_BROWSERS_PATH="${state_dir}/ms-playwright"
+# Playwright 1.52 predates Ubuntu 26.04. Its Ubuntu 24.04 Chromium build is
+# compatible, but needs an explicit platform override until Playwright is bumped.
+export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE="ubuntu24.04-x64"
 pnpm --dir scraper-manzana exec playwright install --with-deps chromium
 
 install -o root -g "${service_user}" -m 0640 \
