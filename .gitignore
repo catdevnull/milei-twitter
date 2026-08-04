@@ -21,3 +21,4 @@ scraper-manzana/.twitter-debug/
 *.local.*
 
 data/*.zip
+load-test-results/
