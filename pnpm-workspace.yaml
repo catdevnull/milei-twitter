@@ -4,3 +4,11 @@ packages:
   - twitter-gateway
   - api
   - twitter-bot
+allowBuilds:
+  '@sentry/cli': true
+  '@swc/core': true
+  better-sqlite3: true
+  core-js: true
+  esbuild: true
+  oxc-resolver: true
+  sharp: true
