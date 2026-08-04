@@ -5,8 +5,10 @@
   "version": "0.1.0",
   "scripts": {
     "check": "tsc --noEmit",
+    "deploy": "bash ../deploy/twitter-gateway/deploy.sh",
     "dev": "tsx watch src/index.ts",
-    "start": "node --import tsx src/index.ts"
+    "start": "node --import tsx src/index.ts",
+    "user:create": "node --import tsx src/cli.ts create-user"
   },
   "dependencies": {
     "@hono/node-server": "^1.18.2",

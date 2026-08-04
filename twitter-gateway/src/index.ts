@@ -2,13 +2,16 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { TwitterApiError } from "scraper-manzana/browser-twitter";
-import {
-  AllAccountsRateLimitedError,
-} from "./account-pool.ts";
+import { AccountPool, AllAccountsRateLimitedError } from "./account-pool.ts";
+import { apiAuth } from "./auth.ts";
+import { RequestDatabase } from "./database.ts";
 import { TwitterGateway, TwitterUserNotFoundError } from "./gateway.ts";
 
 const app = new Hono();
-const gateway = new TwitterGateway();
+const requests = new RequestDatabase();
+const gateway = new TwitterGateway(
+  new AccountPool((event) => requests.record(event)),
+);
 
 function required(value: string | undefined, name: string) {
   if (!value) {
@@ -25,8 +28,15 @@ function userId(value: string | undefined) {
   return id;
 }
 
-app.get("/", (c) =>
-  c.html(`<!doctype html>
+app.get("/", (c) => {
+  const stats = requests.stats();
+  const lastRequest = stats.lastRequestAt
+    ? new Date(stats.lastRequestAt).toLocaleString("en-US", {
+        dateStyle: "medium",
+        timeStyle: "medium",
+      })
+    : "Never";
+  return c.html(`<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -36,11 +46,23 @@ app.get("/", (c) =>
       body { max-width: 820px; margin: 4rem auto; padding: 0 1.25rem; font: 16px/1.55 system-ui, sans-serif; color: #17202a; }
       h1 { margin-bottom: .25rem; } code { background: #f3f5f7; padding: .15rem .35rem; border-radius: .25rem; }
       li { margin: .65rem 0; } .note { color: #536471; }
+      .status { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin: 1.5rem 0; }
+      .card { border: 1px solid #dfe3e6; border-radius: .6rem; padding: .9rem 1rem; }
+      .value { display: block; font-size: 1.7rem; font-weight: 700; }
+      .label { color: #536471; font-size: .85rem; }
+      .online { color: #16833b; }
     </style>
   </head>
   <body>
     <h1>twitter-gateway</h1>
-    <p class="note">A small, unauthenticated SocialAPI-compatible HTTP API backed by logged-in Twitter browser sessions.</p>
+    <p class="note">A small SocialAPI-compatible HTTP API backed by logged-in Twitter browser sessions and raw X requests.</p>
+    <div class="status">
+      <div class="card"><span class="value online">Online</span><span class="label">Service status</span></div>
+      <div class="card"><span class="value">${stats.total}</span><span class="label">Total X requests</span></div>
+      <div class="card"><span class="value">${stats.lastThirtyMinutes}</span><span class="label">X requests, last 30 min</span></div>
+      <div class="card"><span class="value">${stats.failed}</span><span class="label">Failed X requests</span></div>
+    </div>
+    <p class="note">Last X request: ${lastRequest}${stats.lastStatus ? ` · HTTP ${stats.lastStatus}` : ""}</p>
     <h2>Endpoints</h2>
     <ul>
       <li><code>GET /twitter/search?query=…&amp;type=Latest|Top&amp;cursor=…</code></li>
@@ -51,12 +73,14 @@ app.get("/", (c) =>
       <li><code>GET /twitter/user/:user_id/tweets-and-replies?cursor=…</code></li>
     </ul>
     <p>Pagination cursors are returned as <code>next_cursor</code>. Tweet and user objects include the original GraphQL result under <code>raw_twitter</code>.</p>
-    <p>No API authentication is required. <a href="/health">Health check</a>.</p>
+    <p>Twitter routes require <code>Authorization: Bearer YOUR_API_KEY</code>. <a href="/health">Health check</a>.</p>
   </body>
-</html>`),
-);
+</html>`);
+});
 
 app.get("/health", (c) => c.json({ ok: true }));
+
+app.use("/twitter/*", apiAuth);
 
 app.get("/twitter/search", async (c) => {
   const query = required(c.req.query("query"), "query");

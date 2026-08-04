@@ -1,0 +1,24 @@
+[Unit]
+Description=twitter-gateway API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=twitter-gateway
+Group=twitter-gateway
+WorkingDirectory=/opt/milei-twitter/twitter-gateway
+EnvironmentFile=/etc/twitter-gateway/twitter-gateway.env
+ExecStart=/usr/bin/node --import tsx src/index.ts
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/twitter-gateway
+
+[Install]
+WantedBy=multi-user.target

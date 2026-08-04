@@ -3,6 +3,7 @@ import { parseAccountList, type AccountInfo } from "scraper-manzana/accounts";
 import {
   BrowserTwitterSession,
   TwitterApiError,
+  type TwitterApiRequestEvent,
 } from "scraper-manzana/browser-twitter";
 
 type PoolEntry = {
@@ -37,6 +38,12 @@ export class AccountPool {
   private nextIndex = 0;
   private queue = Promise.resolve();
 
+  constructor(
+    private readonly onApiRequest?: (
+      event: TwitterApiRequestEvent,
+    ) => void | Promise<void>,
+  ) {}
+
   async run<T>(work: (session: BrowserTwitterSession) => Promise<T>): Promise<T> {
     const run = this.queue.then(() => this.runUnlocked(work));
     this.queue = run.then(
@@ -64,7 +71,10 @@ export class AccountPool {
       const index = (this.nextIndex + attempt) % this.entries.length;
       const entry = this.entries[index];
       if (entry.rateLimitedUntil > now) continue;
-      entry.session ??= await BrowserTwitterSession.create({ account: entry.account });
+      entry.session ??= await BrowserTwitterSession.create({
+        account: entry.account,
+        onApiRequest: this.onApiRequest,
+      });
       try {
         return await work(entry.session);
       } catch (error) {

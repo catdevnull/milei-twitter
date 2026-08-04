@@ -33,6 +33,18 @@ export type TwitterGraphqlRequestTemplate = {
 export type BrowserTwitterSessionOptions = {
   account?: AccountInfo;
   userDataDir?: string;
+  onApiRequest?: (event: TwitterApiRequestEvent) => void | Promise<void>;
+};
+
+export type TwitterApiRequestEvent = {
+  account?: string;
+  durationMs: number;
+  error?: string;
+  method: "GET";
+  operation: string;
+  path: string;
+  startedAt: Date;
+  status?: number;
 };
 
 export class TwitterApiError extends Error {
@@ -610,6 +622,7 @@ export class BrowserTwitterSession {
   >();
   private solverPage?: Page;
   private readonly account?: AccountInfo;
+  private readonly onApiRequest?: BrowserTwitterSessionOptions["onApiRequest"];
 
   private constructor(
     context: BrowserContext,
@@ -617,12 +630,14 @@ export class BrowserTwitterSession {
     proxyUrl?: string,
     xvfb?: ChildProcessWithoutNullStreams,
     account?: AccountInfo,
+    onApiRequest?: BrowserTwitterSessionOptions["onApiRequest"],
   ) {
     this.context = context;
     this.page = page;
     this.dispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : undefined;
     this.xvfb = xvfb;
     this.account = account;
+    this.onApiRequest = onApiRequest;
   }
 
   static async create(
@@ -685,6 +700,7 @@ export class BrowserTwitterSession {
         proxyUrl,
         xvfb,
         options.account,
+        options.onApiRequest,
       );
       await session.ensureReady();
       return session;
@@ -707,23 +723,7 @@ export class BrowserTwitterSession {
     await this.ensureReady();
     if (!this.template) throw new Error("Missing timeline request template");
     const url = timelineRequestUrl(this.template, cursor);
-    const headers = await this.apiHeaders(url, this.template.headers, "GET");
-    const response = await undiciFetch(url, {
-      method: "GET",
-      headers,
-      dispatcher: this.dispatcher,
-    });
-    await this.absorbSetCookie(url, response.headers);
-    if (!response.ok) {
-      throw new TwitterApiError(
-        response.status,
-        response.statusText,
-        await response.text(),
-      );
-    }
-    const json = await response.json();
-    throwIfGraphqlRateLimited(json);
-    return json;
+    return await this.fetchApiJson(url, this.template.headers);
   }
 
   async captureGraphqlRequest(
@@ -731,20 +731,7 @@ export class BrowserTwitterSession {
     operationName: string,
   ): Promise<TwitterGraphqlRequestTemplate> {
     await this.ensureReady();
-    const [request] = await Promise.all([
-      this.page.waitForRequest(
-        (request) => {
-          const url = new URL(request.url());
-          return (
-            url.pathname.includes("/i/api/graphql/") &&
-            url.pathname.endsWith(`/${operationName}`)
-          );
-        },
-        { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
-      ),
-      this.page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
-    ]);
-    return parseRequestTemplate(request);
+    return await this.captureGraphqlTemplate(pageUrl, operationName);
   }
 
   async graphqlTemplate(
@@ -765,23 +752,115 @@ export class BrowserTwitterSession {
   ) {
     await this.ensureReady();
     const url = graphqlRequestUrl(template, variableOverrides);
-    const headers = await this.apiHeaders(url, template.headers, "GET");
-    const response = await undiciFetch(url, {
-      method: "GET",
-      headers,
-      dispatcher: this.dispatcher,
-    });
-    await this.absorbSetCookie(url, response.headers);
-    if (!response.ok) {
-      throw new TwitterApiError(
-        response.status,
-        response.statusText,
-        await response.text(),
-      );
+    return await this.fetchApiJson(url, template.headers);
+  }
+
+  private async fetchApiJson(
+    url: URL,
+    capturedHeaders: Record<string, string>,
+  ) {
+    const startedAt = new Date();
+    let status: number | undefined;
+    let requestError: unknown;
+    try {
+      const headers = await this.apiHeaders(url, capturedHeaders, "GET");
+      const response = await undiciFetch(url, {
+        method: "GET",
+        headers,
+        dispatcher: this.dispatcher,
+      });
+      status = response.status;
+      await this.absorbSetCookie(url, response.headers);
+      if (!response.ok) {
+        throw new TwitterApiError(
+          response.status,
+          response.statusText,
+          await response.text(),
+        );
+      }
+      const json = await response.json();
+      throwIfGraphqlRateLimited(json);
+      return json;
+    } catch (error) {
+      requestError = error;
+      if (error instanceof TwitterApiError) status = error.status;
+      throw error;
+    } finally {
+      await this.recordApiRequest(url, startedAt, status, requestError);
     }
-    const json = await response.json();
-    throwIfGraphqlRateLimited(json);
-    return json;
+  }
+
+  private async captureGraphqlTemplate(
+    pageUrl: string,
+    operationName: string,
+  ): Promise<TwitterGraphqlRequestTemplate> {
+    const startedAt = new Date();
+    let response: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    let requestError: unknown;
+    try {
+      [response] = await Promise.all([
+        this.page.waitForResponse(
+          (response) => {
+            const url = new URL(response.url());
+            return (
+              url.pathname.includes("/i/api/graphql/") &&
+              url.pathname.endsWith(`/${operationName}`)
+            );
+          },
+          { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
+        ),
+        this.page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
+      ]);
+      if (!response.ok()) {
+        throw new TwitterApiError(
+          response.status(),
+          response.statusText(),
+          await response.text(),
+        );
+      }
+      return parseRequestTemplate(response.request());
+    } catch (error) {
+      requestError = error;
+      throw error;
+    } finally {
+      if (response) {
+        await this.recordApiRequest(
+          new URL(response.url()),
+          startedAt,
+          response.status(),
+          requestError,
+        );
+      }
+    }
+  }
+
+  private async recordApiRequest(
+    url: URL,
+    startedAt: Date,
+    status?: number,
+    requestError?: unknown,
+  ) {
+    if (!this.onApiRequest) return;
+    const operation = url.pathname.split("/").filter(Boolean).at(-1) ?? "unknown";
+    try {
+      await this.onApiRequest({
+        account: this.account?.username,
+        durationMs: Date.now() - startedAt.getTime(),
+        error:
+          requestError instanceof Error
+            ? requestError.message.slice(0, 1_000)
+            : requestError
+              ? String(requestError).slice(0, 1_000)
+              : undefined,
+        method: "GET",
+        operation,
+        path: url.pathname,
+        startedAt,
+        status,
+      });
+    } catch (error) {
+      console.error("[twitter-browser] could not record API request", error);
+    }
   }
 
   private async ensureReady() {
@@ -998,22 +1077,10 @@ export class BrowserTwitterSession {
   }
 
   private async captureTimelineRequest(): Promise<TwitterGraphqlRequestTemplate> {
-    const [request] = await Promise.all([
-      this.page.waitForRequest(
-        (request) => {
-          const url = new URL(request.url());
-          return (
-            url.pathname.includes("/i/api/graphql/") &&
-            url.pathname.endsWith("/UserTweetsAndReplies")
-          );
-        },
-        { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
-      ),
-      this.page.goto(TIMELINE_URL, {
-        waitUntil: "domcontentloaded",
-      }),
-    ]);
-    return parseRequestTemplate(request);
+    return await this.captureGraphqlTemplate(
+      TIMELINE_URL,
+      "UserTweetsAndReplies",
+    );
   }
 
   private async apiHeaders(
