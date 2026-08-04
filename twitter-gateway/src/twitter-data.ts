@@ -106,26 +106,46 @@ export function socialUser(input: unknown): JsonRecord {
   const result = unwrapResult(input) ?? {};
   const legacy = rawLegacy(result) ?? {};
   const core = record(result.core) ?? {};
+  const actionCounts = record(result.action_counts) ?? {};
+  const avatar = record(result.avatar) ?? {};
+  const banner = record(result.banner) ?? {};
+  const dmPermissions = record(result.dm_permissions) ?? {};
+  const location = record(result.location) ?? {};
+  const privacy = record(result.privacy) ?? {};
+  const profileBio = record(result.profile_bio) ?? {};
+  const relationshipCounts = record(result.relationship_counts) ?? {};
+  const tweetCounts = record(result.tweet_counts) ?? {};
+  const verification = record(result.verification) ?? {};
+  const website = record(result.website) ?? {};
   const idStr = string(result.rest_id) ?? string(legacy.id_str);
   return {
     id: number(idStr),
     id_str: idStr,
     name: string(legacy.name) ?? string(core.name),
     screen_name: string(legacy.screen_name) ?? string(core.screen_name),
-    location: string(legacy.location) ?? "",
-    url: string(legacy.url) ?? null,
-    description: string(legacy.description) ?? "",
-    protected: boolean(legacy.protected) ?? false,
-    verified: boolean(legacy.verified) ?? boolean(result.is_blue_verified) ?? false,
-    followers_count: number(legacy.followers_count) ?? 0,
-    friends_count: number(legacy.friends_count) ?? 0,
+    location: string(legacy.location) ?? string(location.location) ?? "",
+    url: string(legacy.url) ?? string(website.url) ?? null,
+    description: string(legacy.description) ?? string(profileBio.description) ?? "",
+    protected: boolean(legacy.protected) ?? boolean(privacy.protected) ?? false,
+    verified:
+      boolean(legacy.verified) ??
+      boolean(verification.verified) ??
+      boolean(result.is_blue_verified) ??
+      false,
+    followers_count:
+      number(legacy.followers_count) ?? number(relationshipCounts.followers) ?? 0,
+    friends_count:
+      number(legacy.friends_count) ?? number(relationshipCounts.following) ?? 0,
     listed_count: number(legacy.listed_count) ?? 0,
-    favourites_count: number(legacy.favourites_count) ?? 0,
-    statuses_count: number(legacy.statuses_count) ?? 0,
-    created_at: toIso(string(legacy.created_at)),
-    profile_banner_url: string(legacy.profile_banner_url) ?? null,
-    profile_image_url_https: string(legacy.profile_image_url_https) ?? null,
-    can_dm: boolean(legacy.can_dm) ?? false,
+    favourites_count:
+      number(legacy.favourites_count) ?? number(actionCounts.favorites_count) ?? 0,
+    statuses_count: number(legacy.statuses_count) ?? number(tweetCounts.tweets) ?? 0,
+    created_at: toIso(string(legacy.created_at) ?? string(core.created_at)),
+    profile_banner_url:
+      string(legacy.profile_banner_url) ?? string(banner.image_url) ?? null,
+    profile_image_url_https:
+      string(legacy.profile_image_url_https) ?? string(avatar.image_url) ?? null,
+    can_dm: boolean(legacy.can_dm) ?? boolean(dmPermissions.can_dm) ?? false,
     raw_twitter: result,
   };
 }
