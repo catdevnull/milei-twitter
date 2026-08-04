@@ -15,6 +15,17 @@ The command prints the new key once and appends it to `api-users.txt` as
 `name:key`. Set `API_AUTH_FILE` to use another file. The service reloads the
 file on each request, so new users work without a restart.
 
+Create an API user directly in production from your local checkout:
+
+```sh
+pnpm --filter twitter-gateway user:create:prod -- alice
+```
+
+This SSHes to `alwyzon@110.172.148.79`, adds the user to
+`/etc/twitter-gateway/api-users.txt`, and prints the generated API key. The
+running service picks it up without a restart. Set `DEPLOY_HOST` or
+`DEPLOY_USER` to override the SSH destination.
+
 Call Twitter routes with:
 
 ```sh
