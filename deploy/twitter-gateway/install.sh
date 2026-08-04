@@ -16,6 +16,11 @@ if ! command -v pnpm >/dev/null; then
   npm install --global pnpm@9.15.4
 fi
 
+if ! command -v caddy >/dev/null; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y caddy
+fi
+
 if ! id "${service_user}" >/dev/null 2>&1; then
   useradd \
     --system \
@@ -65,8 +70,14 @@ chown -R "${service_user}:${service_user}" "${state_dir}"
 install -o root -g root -m 0644 \
   deploy/twitter-gateway/twitter-gateway.service \
   /etc/systemd/system/twitter-gateway.service
+install -o root -g root -m 0644 \
+  deploy/twitter-gateway/Caddyfile \
+  /etc/caddy/Caddyfile
 
 systemctl daemon-reload
 systemctl enable --now twitter-gateway.service
 systemctl restart twitter-gateway.service
+systemctl enable --now caddy.service
+caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy.service
 systemctl --no-pager --full status twitter-gateway.service

@@ -148,7 +148,8 @@ app.onError((error, c) => {
 });
 
 const port = Number(process.env.PORT ?? 3000);
-serve({ fetch: app.fetch, port }, (info) => {
+const hostname = process.env.HOST ?? "0.0.0.0";
+serve({ fetch: app.fetch, hostname, port }, (info) => {
   console.info(`[twitter-gateway] listening on http://localhost:${info.port}`);
 });
 
