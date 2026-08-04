@@ -38,22 +38,27 @@ The account format is shared with `scraper-manzana`:
 username:password:email:emailPassword:authToken:twoFactorSecret
 ```
 
-Set `ACCOUNTS_FILE_FORMAT` if the columns differ. The service keeps using the
-current account until Twitter rate-limits it, then rotates to the next account.
+Set `ACCOUNTS_FILE_FORMAT` if the columns differ. The service runs multiple
+accounts concurrently and rotates work across them.
 Five-column files with a 40-character auth token in column four are detected
 automatically as `username:password:email:authToken:emailPassword`.
-When Twitter returns HTTP 429, that account is closed and cooled down for 15
-minutes (`ACCOUNT_RATE_LIMIT_COOLDOWN_MS`) while the request retries on the next
-available account.
+When Twitter returns HTTP 429, that account is drained, closed, and cooled down
+for 15 minutes (`ACCOUNT_RATE_LIMIT_COOLDOWN_MS`) while requests retry on the
+next available account.
+
+Account contexts share one Chromium process while keeping cookies and pages
+isolated. `ACCOUNT_MAX_ACTIVE_SESSIONS` controls the number of live account
+contexts (default `4`), and `ACCOUNT_CONCURRENCY` controls simultaneous raw X
+requests per account (default `8`).
 
 Proxy and browser settings are the same as `scraper-manzana`, including
 `PROXY_URL`, `WEBSHARE_PROXY_LIST_URL`, `TWITTER_BROWSER_EXECUTABLE_PATH`, and
 `TWITTER_BROWSER_HEADLESS`.
 
-Each browser/account session captures an operation's current GraphQL template
-once and caches it. Subsequent gateway calls use raw `undici` requests with a
-fresh browser-generated `x-client-transaction-id`; they do not reload the X
-frontend.
+GraphQL templates and transaction-solver source data are discovered once per
+process and shared across account contexts. Gateway calls use raw `undici`
+requests with a fresh browser-generated `x-client-transaction-id`; they do not
+reload the X frontend.
 
 Every raw X GraphQL request is recorded in SQLite with its timestamp, method,
 path, operation, status, duration, account, and error. The default database is

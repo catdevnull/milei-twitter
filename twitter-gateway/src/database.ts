@@ -78,4 +78,8 @@ export class RequestDatabase {
       total: counts.total,
     };
   }
+
+  close() {
+    (this.database as DatabaseSync & { close: () => void }).close();
+  }
 }

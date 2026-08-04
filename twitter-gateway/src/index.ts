@@ -1,7 +1,10 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { TwitterApiError } from "scraper-manzana/browser-twitter";
+import {
+  closeSharedTwitterBrowser,
+  TwitterApiError,
+} from "scraper-manzana/browser-twitter";
 import { AccountPool, AllAccountsRateLimitedError } from "./account-pool.ts";
 import { apiAuth } from "./auth.ts";
 import { RequestDatabase } from "./database.ts";
@@ -149,8 +152,27 @@ app.onError((error, c) => {
 
 const port = Number(process.env.PORT ?? 3000);
 const hostname = process.env.HOST ?? "0.0.0.0";
-serve({ fetch: app.fetch, hostname, port }, (info) => {
+const server = serve({ fetch: app.fetch, hostname, port }, (info) => {
   console.info(`[twitter-gateway] listening on http://localhost:${info.port}`);
 });
+
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.info(`[twitter-gateway] ${signal}; shutting down`);
+  server.close();
+  (
+    server as typeof server & { closeAllConnections?: () => void }
+  ).closeAllConnections?.();
+  await closeSharedTwitterBrowser().catch((error) => {
+    console.error("[twitter-gateway] could not close shared browser", error);
+  });
+  requests.close();
+  process.exit(0);
+}
+
+process.once("SIGINT", () => void shutdown("SIGINT"));
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
 
 export { app };

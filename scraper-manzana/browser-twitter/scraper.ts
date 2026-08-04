@@ -1,16 +1,15 @@
 import {
   mkdir,
-  mkdtemp,
   readFile,
   readlink,
   unlink,
   writeFile,
 } from "node:fs/promises";
-import { hostname, tmpdir } from "node:os";
+import { hostname } from "node:os";
 import { join } from "node:path";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { nanoid } from "nanoid";
-import type { BrowserContext, Page, Request } from "playwright";
+import type { Browser, BrowserContext, Page, Request } from "playwright";
 import { Cookie } from "tough-cookie";
 import {
   fetch as undiciFetch,
@@ -82,6 +81,91 @@ const SOLVER_PAGE_HTML = `<!doctype html>
 </html>`;
 
 const TIMELINE_URL = "https://x.com/JMilei/with_replies";
+
+type SharedBrowserState = {
+  browser: Browser;
+  xvfb?: ChildProcessWithoutNullStreams;
+};
+
+let sharedBrowserPromise: Promise<SharedBrowserState> | undefined;
+const sharedTemplatePromises = new Map<
+  string,
+  Promise<TwitterGraphqlRequestTemplate>
+>();
+let sharedSolverInitPromise: Promise<TransactionSolverInitData> | undefined;
+
+async function sharedResource<T>(
+  cache: Map<string, Promise<T>>,
+  key: string,
+  load: () => Promise<T>,
+) {
+  let promise = cache.get(key);
+  if (!promise) {
+    promise = load();
+    cache.set(key, promise);
+  }
+  try {
+    return await promise;
+  } catch (error) {
+    if (cache.get(key) === promise) cache.delete(key);
+    throw error;
+  }
+}
+
+async function getSharedBrowser(): Promise<SharedBrowserState> {
+  if (sharedBrowserPromise) return await sharedBrowserPromise;
+  const launch = (async () => {
+    process.env.REBROWSER_PATCHES_RUNTIME_FIX_MODE ??= "alwaysIsolated";
+    process.env.REBROWSER_PATCHES_SOURCE_URL ??= "app.js";
+    process.env.REBROWSER_PATCHES_UTILITY_WORLD_NAME ??= "util";
+    const { chromium } = await import("playwright");
+    const executablePath = process.env.TWITTER_BROWSER_EXECUTABLE_PATH;
+    const channel = process.env.TWITTER_BROWSER_CHANNEL;
+    const headless = process.env.TWITTER_BROWSER_HEADLESS === "1";
+    const xvfb = await startVirtualDisplayIfNeeded(headless);
+    try {
+      const browser = await chromium.launch({
+        channel: executablePath ? undefined : channel,
+        executablePath,
+        headless,
+        args: [
+          "--disable-session-crashed-bubble",
+          "--no-first-run",
+          "--no-default-browser-check",
+        ],
+      });
+      const state = { browser, xvfb };
+      browser.on("disconnected", () => {
+        if (sharedBrowserPromise === launch) sharedBrowserPromise = undefined;
+        xvfb?.kill();
+      });
+      return state;
+    } catch (error) {
+      xvfb?.kill();
+      throw error;
+    }
+  })();
+  sharedBrowserPromise = launch;
+  try {
+    return await launch;
+  } catch (error) {
+    if (sharedBrowserPromise === launch) sharedBrowserPromise = undefined;
+    throw error;
+  }
+}
+
+export async function closeSharedTwitterBrowser() {
+  const pending = sharedBrowserPromise;
+  sharedBrowserPromise = undefined;
+  if (!pending) return;
+  const state = await pending.catch(() => undefined);
+  if (!state) return;
+  try {
+    await state.browser.close();
+  } finally {
+    state.xvfb?.kill();
+  }
+}
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -654,32 +738,38 @@ export class BrowserTwitterSession {
       );
     }
     const userDataDir =
-      options.userDataDir ??
-      process.env.TWITTER_BROWSER_USER_DATA_DIR ??
-      (await mkdtemp(join(tmpdir(), "milei-twitter-browser-")));
-    await removeStaleChromiumSingletons(userDataDir);
+      options.userDataDir ?? process.env.TWITTER_BROWSER_USER_DATA_DIR;
     const executablePath = process.env.TWITTER_BROWSER_EXECUTABLE_PATH;
     const channel = process.env.TWITTER_BROWSER_CHANNEL;
     const headless = process.env.TWITTER_BROWSER_HEADLESS === "1";
-    const xvfb = await startVirtualDisplayIfNeeded(headless);
-
-    const { chromium } = await import("playwright");
     let context: BrowserContext | undefined;
+    let xvfb: ChildProcessWithoutNullStreams | undefined;
     try {
-      context = await chromium.launchPersistentContext(userDataDir, {
-        channel: executablePath ? undefined : channel,
-        executablePath,
-        headless,
+      const contextOptions = {
         proxy: proxyUrl ? proxyUrlToPlaywright(proxyUrl) : undefined,
-        args: [
-          "--disable-session-crashed-bubble",
-          "--no-first-run",
-          "--no-default-browser-check",
-        ],
         viewport: { width: 1280, height: 900 },
         locale: "en-US",
         timezoneId: "America/Argentina/Buenos_Aires",
-      });
+      };
+      if (userDataDir) {
+        await removeStaleChromiumSingletons(userDataDir);
+        xvfb = await startVirtualDisplayIfNeeded(headless);
+        const { chromium } = await import("playwright");
+        context = await chromium.launchPersistentContext(userDataDir, {
+          ...contextOptions,
+          channel: executablePath ? undefined : channel,
+          executablePath,
+          headless,
+          args: [
+            "--disable-session-crashed-bubble",
+            "--no-first-run",
+            "--no-default-browser-check",
+          ],
+        });
+      } else {
+        const { browser } = await getSharedBrowser();
+        context = await browser.newContext(contextOptions);
+      }
       const page = context.pages()[0] ?? (await context.newPage());
       page.on("console", (message) => {
         console.info(`[twitter-browser:${message.type()}] ${message.text()}`);
@@ -741,7 +831,11 @@ export class BrowserTwitterSession {
   ): Promise<TwitterGraphqlRequestTemplate> {
     const cached = this.templateCache.get(cacheKey);
     if (cached) return cached;
-    const template = await this.captureGraphqlRequest(pageUrl, operationName);
+    const template = await sharedResource(
+      sharedTemplatePromises,
+      cacheKey,
+      async () => await this.captureGraphqlRequest(pageUrl, operationName),
+    );
     this.templateCache.set(cacheKey, template);
     return template;
   }
@@ -866,7 +960,11 @@ export class BrowserTwitterSession {
   private async ensureReady() {
     if (this.ready) return;
     await this.ensureLoggedIn();
-    this.template = await this.captureTimelineRequest();
+    this.template = await sharedResource(
+      sharedTemplatePromises,
+      "UserTweetsAndReplies",
+      async () => await this.captureTimelineRequest(),
+    );
     this.templateCache.set("UserTweetsAndReplies", this.template);
     await this.installTransactionSolver();
     this.ready = true;
@@ -907,7 +1005,7 @@ export class BrowserTwitterSession {
         await this.page.goto("https://x.com/home", {
           waitUntil: "domcontentloaded",
         });
-        await this.page.waitForTimeout(3_000);
+        await this.waitForAuthCookies(5_000);
         if (await this.isLoggedInHome()) return;
       }
 
@@ -930,6 +1028,15 @@ export class BrowserTwitterSession {
       cookies.some((cookie) => cookie.name === "auth_token") &&
       cookies.some((cookie) => cookie.name === "ct0")
     );
+  }
+
+  private async waitForAuthCookies(timeout: number) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      if (await this.hasAuthCookies()) return true;
+      await this.page.waitForTimeout(100);
+    }
+    return false;
   }
 
   private async isLoggedInHome() {
@@ -1126,11 +1233,23 @@ export class BrowserTwitterSession {
   }
 
   private async installTransactionSolver() {
-    await this.page
-      .waitForLoadState("networkidle", { timeout: 15_000 })
-      .catch(() => {});
-    await this.page.waitForTimeout(2_000);
-    const initData = await this.getSolverInitData();
+    if (!sharedSolverInitPromise) {
+      const initialization = (async () => {
+        await this.page
+          .waitForLoadState("networkidle", { timeout: 15_000 })
+          .catch(() => {});
+        await this.page.waitForTimeout(2_000);
+        return await this.getSolverInitData();
+      })();
+      const shared = initialization.catch((error) => {
+        if (sharedSolverInitPromise === shared) {
+          sharedSolverInitPromise = undefined;
+        }
+        throw error;
+      });
+      sharedSolverInitPromise = shared;
+    }
+    const initData = await sharedSolverInitPromise;
     const solverPage = await this.context.newPage();
     solverPage.on("console", (message) => {
       console.info(`[twitter-solver:${message.type()}] ${message.text()}`);

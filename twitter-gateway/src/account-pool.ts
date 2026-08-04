@@ -8,8 +8,17 @@ import {
 
 type PoolEntry = {
   account: AccountInfo;
-  session?: BrowserTwitterSession;
+  closing?: Promise<void>;
+  inFlight: number;
+  initializing?: Promise<BrowserTwitterSession>;
   rateLimitedUntil: number;
+  session?: BrowserTwitterSession;
+};
+
+type AccountPoolOptions = {
+  maxActiveAccounts?: number;
+  perAccountConcurrency?: number;
+  sessionFactory?: (account: AccountInfo) => Promise<BrowserTwitterSession>;
 };
 
 async function loadAccounts() {
@@ -33,65 +42,205 @@ function accountFormat(source: string) {
   return undefined;
 }
 
+function positiveInteger(value: number | string | undefined, fallback: number) {
+  const parsed = Number(value ?? fallback);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export class AccountPool {
-  private entries?: PoolEntry[];
+  private entriesPromise?: Promise<PoolEntry[]>;
+  private readonly maxActiveAccounts: number;
   private nextIndex = 0;
-  private queue = Promise.resolve();
+  private readonly perAccountConcurrency: number;
+  private readonly sessionFactory: (
+    account: AccountInfo,
+  ) => Promise<BrowserTwitterSession>;
+  private readonly waiters = new Set<() => void>();
 
   constructor(
     private readonly onApiRequest?: (
       event: TwitterApiRequestEvent,
     ) => void | Promise<void>,
-  ) {}
-
-  async run<T>(work: (session: BrowserTwitterSession) => Promise<T>): Promise<T> {
-    const run = this.queue.then(() => this.runUnlocked(work));
-    this.queue = run.then(
-      () => undefined,
-      () => undefined,
+    options: AccountPoolOptions = {},
+  ) {
+    this.maxActiveAccounts = positiveInteger(
+      options.maxActiveAccounts ?? process.env.ACCOUNT_MAX_ACTIVE_SESSIONS,
+      4,
     );
-    return run;
+    this.perAccountConcurrency = positiveInteger(
+      options.perAccountConcurrency ?? process.env.ACCOUNT_CONCURRENCY,
+      8,
+    );
+    this.sessionFactory =
+      options.sessionFactory ??
+      (async (account) =>
+        await BrowserTwitterSession.create({
+          account,
+          onApiRequest: this.onApiRequest,
+        }));
   }
 
-  private async runUnlocked<T>(
-    work: (session: BrowserTwitterSession) => Promise<T>,
-  ): Promise<T> {
-    this.entries ??= (await loadAccounts()).map((account) => ({
-      account,
-      rateLimitedUntil: 0,
-    }));
-    const now = Date.now();
-    const available = this.entries.filter((entry) => entry.rateLimitedUntil <= now);
-    if (available.length === 0) {
-      const retryAt = Math.min(...this.entries.map((entry) => entry.rateLimitedUntil));
-      throw new AllAccountsRateLimitedError(retryAt);
-    }
-
-    for (let attempt = 0; attempt < this.entries.length; attempt++) {
-      const index = (this.nextIndex + attempt) % this.entries.length;
-      const entry = this.entries[index];
-      if (entry.rateLimitedUntil > now) continue;
-      entry.session ??= await BrowserTwitterSession.create({
-        account: entry.account,
-        onApiRequest: this.onApiRequest,
-      });
+  async run<T>(work: (session: BrowserTwitterSession) => Promise<T>): Promise<T> {
+    const entries = await this.entries();
+    for (let attempt = 0; attempt < entries.length; attempt++) {
+      const entry = await this.acquire(entries);
       try {
-        return await work(entry.session);
+        return await work(entry.session!);
       } catch (error) {
         if (!(error instanceof TwitterApiError) || error.status !== 429) throw error;
-        const cooldown = Number(process.env.ACCOUNT_RATE_LIMIT_COOLDOWN_MS ?? 900_000);
-        entry.rateLimitedUntil = Date.now() + cooldown;
-        this.nextIndex = (index + 1) % this.entries.length;
-        await entry.session.close().catch(() => {});
-        entry.session = undefined;
-        console.warn(
-          `[twitter-gateway] @${entry.account.username} rate limited; rotating account`,
-        );
+        this.markRateLimited(entry);
+      } finally {
+        this.release(entry);
       }
     }
 
-    const retryAt = Math.min(...this.entries.map((entry) => entry.rateLimitedUntil));
+    const retryAt = Math.min(...entries.map((entry) => entry.rateLimitedUntil));
     throw new AllAccountsRateLimitedError(retryAt);
+  }
+
+  private entries() {
+    this.entriesPromise ??= loadAccounts().then((accounts) =>
+      accounts.map((account) => ({
+        account,
+        inFlight: 0,
+        rateLimitedUntil: 0,
+      })),
+    );
+    return this.entriesPromise;
+  }
+
+  private async acquire(entries: PoolEntry[]): Promise<PoolEntry> {
+    for (;;) {
+      const now = Date.now();
+      const ready = this.rotated(entries).filter(
+        (entry) =>
+          entry.session &&
+          entry.rateLimitedUntil <= now &&
+          entry.inFlight < this.perAccountConcurrency,
+      );
+      if (ready.length > 0) {
+        const minimumLoad = Math.min(...ready.map((entry) => entry.inFlight));
+        const entry = ready.find((candidate) => candidate.inFlight === minimumLoad)!;
+        entry.inFlight += 1;
+        this.advance(entries, entry);
+        return entry;
+      }
+
+      const active = entries.filter(
+        (entry) => entry.session || entry.initializing || entry.closing,
+      ).length;
+      const uninitialized = this.rotated(entries).find(
+        (entry) =>
+          !entry.session &&
+          !entry.initializing &&
+          !entry.closing &&
+          entry.rateLimitedUntil <= now,
+      );
+      if (uninitialized && active < Math.min(this.maxActiveAccounts, entries.length)) {
+        await this.initialize(entries, uninitialized);
+        continue;
+      }
+
+      const everyAccountLimited = entries.every(
+        (entry) => entry.rateLimitedUntil > now,
+      );
+      if (everyAccountLimited) {
+        throw new AllAccountsRateLimitedError(
+          Math.min(...entries.map((entry) => entry.rateLimitedUntil)),
+        );
+      }
+
+      const retryAt = Math.min(
+        ...entries
+          .map((entry) => entry.rateLimitedUntil)
+          .filter((value) => value > now),
+      );
+      await this.waitForAvailability(Number.isFinite(retryAt) ? retryAt - now : undefined);
+    }
+  }
+
+  private async initialize(entries: PoolEntry[], entry: PoolEntry) {
+    const initialization = this.sessionFactory(entry.account);
+    entry.initializing = initialization;
+    this.advance(entries, entry);
+    try {
+      entry.session = await initialization;
+      console.info(`[twitter-gateway] @${entry.account.username} session ready`);
+    } finally {
+      if (entry.initializing === initialization) entry.initializing = undefined;
+      this.notifyWaiters();
+    }
+  }
+
+  private markRateLimited(entry: PoolEntry) {
+    const wasAvailable = entry.rateLimitedUntil <= Date.now();
+    const cooldown = Number(process.env.ACCOUNT_RATE_LIMIT_COOLDOWN_MS ?? 900_000);
+    entry.rateLimitedUntil = Math.max(entry.rateLimitedUntil, Date.now() + cooldown);
+    if (wasAvailable) {
+      console.warn(
+        `[twitter-gateway] @${entry.account.username} rate limited; draining and rotating account`,
+      );
+    }
+  }
+
+  private release(entry: PoolEntry) {
+    entry.inFlight = Math.max(0, entry.inFlight - 1);
+    this.closeRateLimitedSession(entry);
+    this.notifyWaiters();
+  }
+
+  private closeRateLimitedSession(entry: PoolEntry) {
+    if (
+      entry.inFlight > 0 ||
+      entry.rateLimitedUntil <= Date.now() ||
+      !entry.session ||
+      entry.closing
+    ) {
+      return;
+    }
+    const session = entry.session;
+    entry.session = undefined;
+    entry.closing = session
+      .close()
+      .catch((error) => {
+        console.error(
+          `[twitter-gateway] could not close @${entry.account.username} session`,
+          error,
+        );
+      })
+      .finally(() => {
+        entry.closing = undefined;
+        this.notifyWaiters();
+      });
+  }
+
+  private rotated(entries: PoolEntry[]) {
+    return entries.map((_, offset) => entries[(this.nextIndex + offset) % entries.length]);
+  }
+
+  private advance(entries: PoolEntry[], entry: PoolEntry) {
+    this.nextIndex = (entries.indexOf(entry) + 1) % entries.length;
+  }
+
+  private waitForAvailability(timeout?: number) {
+    return new Promise<void>((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const done = () => {
+        if (timer) clearTimeout(timer);
+        this.waiters.delete(done);
+        resolve();
+      };
+      this.waiters.add(done);
+      if (timeout !== undefined) {
+        timer = setTimeout(done, Math.max(1, Math.min(timeout, 2_147_483_647)));
+      }
+    });
+  }
+
+  private notifyWaiters() {
+    const waiters = [...this.waiters];
+    this.waiters.clear();
+    for (const resolve of waiters) resolve();
   }
 }
 
