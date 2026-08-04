@@ -31,6 +31,8 @@ function asBrowserSession(session: FakeSession) {
 test("runs multiple accounts concurrently with a per-account bound", async () => {
   process.env.ACCOUNTS_LIST = accounts(4);
   let active = 0;
+  let initializing = 0;
+  let initializationPeak = 0;
   let peak = 0;
   const perAccount = new Map<string, number>();
   const perAccountPeak = new Map<string, number>();
@@ -39,6 +41,10 @@ test("runs multiple accounts concurrently with a per-account bound", async () =>
     maxActiveAccounts: 2,
     perAccountConcurrency: 2,
     sessionFactory: async (account) => {
+      initializing += 1;
+      initializationPeak = Math.max(initializationPeak, initializing);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      initializing -= 1;
       initialized.add(account.username);
       return asBrowserSession({
         account: account.username,
@@ -69,6 +75,7 @@ test("runs multiple accounts concurrently with a per-account bound", async () =>
   );
 
   assert.equal(initialized.size, 2);
+  assert.equal(initializationPeak, 1);
   assert.equal(peak, 4);
   assert.deepEqual([...perAccountPeak.values()].sort(), [2, 2]);
 });

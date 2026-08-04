@@ -49,7 +49,9 @@ next available account.
 Account contexts share one Chromium process while keeping cookies and pages
 isolated. `ACCOUNT_MAX_ACTIVE_SESSIONS` controls the number of live account
 contexts (default `4`), and `ACCOUNT_CONCURRENCY` controls simultaneous raw X
-requests per account (default `8`).
+requests per account (default `8`). To prevent cold-start memory spikes,
+`ACCOUNT_BOOTSTRAP_CONCURRENCY` limits simultaneous frontend setup to one
+account by default; warm accounts still run concurrently.
 
 Proxy and browser settings are the same as `scraper-manzana`, including
 `PROXY_URL`, `WEBSHARE_PROXY_LIST_URL`, `TWITTER_BROWSER_EXECUTABLE_PATH`, and

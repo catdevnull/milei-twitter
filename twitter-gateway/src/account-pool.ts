@@ -16,6 +16,7 @@ type PoolEntry = {
 };
 
 type AccountPoolOptions = {
+  bootstrapConcurrency?: number;
   maxActiveAccounts?: number;
   perAccountConcurrency?: number;
   sessionFactory?: (account: AccountInfo) => Promise<BrowserTwitterSession>;
@@ -48,7 +49,10 @@ function positiveInteger(value: number | string | undefined, fallback: number) {
 }
 
 export class AccountPool {
+  private activeInitializations = 0;
+  private readonly bootstrapConcurrency: number;
   private entriesPromise?: Promise<PoolEntry[]>;
+  private readonly initializationWaiters: Array<() => void> = [];
   private readonly maxActiveAccounts: number;
   private nextIndex = 0;
   private readonly perAccountConcurrency: number;
@@ -63,6 +67,10 @@ export class AccountPool {
     ) => void | Promise<void>,
     options: AccountPoolOptions = {},
   ) {
+    this.bootstrapConcurrency = positiveInteger(
+      options.bootstrapConcurrency ?? process.env.ACCOUNT_BOOTSTRAP_CONCURRENCY,
+      1,
+    );
     this.maxActiveAccounts = positiveInteger(
       options.maxActiveAccounts ?? process.env.ACCOUNT_MAX_ACTIVE_SESSIONS,
       4,
@@ -177,7 +185,9 @@ export class AccountPool {
   }
 
   private async initialize(entries: PoolEntry[], entry: PoolEntry) {
-    const initialization = this.sessionFactory(entry.account);
+    const initialization = this.withInitializationSlot(
+      async () => await this.sessionFactory(entry.account),
+    );
     entry.initializing = initialization;
     this.advance(entries, entry);
     try {
@@ -188,6 +198,21 @@ export class AccountPool {
     } finally {
       if (entry.initializing === initialization) entry.initializing = undefined;
       this.notifyWaiters();
+    }
+  }
+
+  private async withInitializationSlot<T>(work: () => Promise<T>) {
+    if (this.activeInitializations >= this.bootstrapConcurrency) {
+      await new Promise<void>((resolve) => {
+        this.initializationWaiters.push(resolve);
+      });
+    }
+    this.activeInitializations += 1;
+    try {
+      return await work();
+    } finally {
+      this.activeInitializations -= 1;
+      this.initializationWaiters.shift()?.();
     }
   }
 
