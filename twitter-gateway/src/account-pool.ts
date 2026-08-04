@@ -80,14 +80,17 @@ export class AccountPool {
         }));
   }
 
-  async run<T>(work: (session: BrowserTwitterSession) => Promise<T>): Promise<T> {
+  async run<T>(
+    work: (session: BrowserTwitterSession) => Promise<T>,
+  ): Promise<T> {
     const entries = await this.entries();
     for (let attempt = 0; attempt < entries.length; attempt++) {
       const entry = await this.acquire(entries);
       try {
         return await work(entry.session!);
       } catch (error) {
-        if (!(error instanceof TwitterApiError) || error.status !== 429) throw error;
+        if (!(error instanceof TwitterApiError) || error.status !== 429)
+          throw error;
         this.markRateLimited(entry);
       } finally {
         this.release(entry);
@@ -120,7 +123,9 @@ export class AccountPool {
       );
       if (ready.length > 0) {
         const minimumLoad = Math.min(...ready.map((entry) => entry.inFlight));
-        const entry = ready.find((candidate) => candidate.inFlight === minimumLoad)!;
+        const entry = ready.find(
+          (candidate) => candidate.inFlight === minimumLoad,
+        )!;
         entry.inFlight += 1;
         this.advance(entries, entry);
         return entry;
@@ -136,7 +141,10 @@ export class AccountPool {
           !entry.closing &&
           entry.rateLimitedUntil <= now,
       );
-      if (uninitialized && active < Math.min(this.maxActiveAccounts, entries.length)) {
+      if (
+        uninitialized &&
+        active < Math.min(this.maxActiveAccounts, entries.length)
+      ) {
         await this.initialize(entries, uninitialized);
         continue;
       }
@@ -155,7 +163,9 @@ export class AccountPool {
           .map((entry) => entry.rateLimitedUntil)
           .filter((value) => value > now),
       );
-      await this.waitForAvailability(Number.isFinite(retryAt) ? retryAt - now : undefined);
+      await this.waitForAvailability(
+        Number.isFinite(retryAt) ? retryAt - now : undefined,
+      );
     }
   }
 
@@ -165,7 +175,9 @@ export class AccountPool {
     this.advance(entries, entry);
     try {
       entry.session = await initialization;
-      console.info(`[twitter-gateway] @${entry.account.username} session ready`);
+      console.info(
+        `[twitter-gateway] @${entry.account.username} session ready`,
+      );
     } finally {
       if (entry.initializing === initialization) entry.initializing = undefined;
       this.notifyWaiters();
@@ -174,8 +186,13 @@ export class AccountPool {
 
   private markRateLimited(entry: PoolEntry) {
     const wasAvailable = entry.rateLimitedUntil <= Date.now();
-    const cooldown = Number(process.env.ACCOUNT_RATE_LIMIT_COOLDOWN_MS ?? 900_000);
-    entry.rateLimitedUntil = Math.max(entry.rateLimitedUntil, Date.now() + cooldown);
+    const cooldown = Number(
+      process.env.ACCOUNT_RATE_LIMIT_COOLDOWN_MS ?? 900_000,
+    );
+    entry.rateLimitedUntil = Math.max(
+      entry.rateLimitedUntil,
+      Date.now() + cooldown,
+    );
     if (wasAvailable) {
       console.warn(
         `[twitter-gateway] @${entry.account.username} rate limited; draining and rotating account`,
@@ -215,7 +232,9 @@ export class AccountPool {
   }
 
   private rotated(entries: PoolEntry[]) {
-    return entries.map((_, offset) => entries[(this.nextIndex + offset) % entries.length]);
+    return entries.map(
+      (_, offset) => entries[(this.nextIndex + offset) % entries.length],
+    );
   }
 
   private advance(entries: PoolEntry[], entry: PoolEntry) {

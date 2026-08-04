@@ -18,7 +18,9 @@ const gateway = new TwitterGateway(
 
 function required(value: string | undefined, name: string) {
   if (!value) {
-    throw new HTTPException(422, { message: `Missing required parameter: ${name}` });
+    throw new HTTPException(422, {
+      message: `Missing required parameter: ${name}`,
+    });
   }
   return value;
 }
@@ -26,7 +28,9 @@ function required(value: string | undefined, name: string) {
 function userId(value: string | undefined) {
   const id = required(value, "user_id");
   if (!/^\d+$/.test(id)) {
-    throw new HTTPException(422, { message: "user_id must be a numeric Twitter ID" });
+    throw new HTTPException(422, {
+      message: "user_id must be a numeric Twitter ID",
+    });
   }
   return id;
 }
@@ -91,7 +95,9 @@ app.get("/twitter/search", async (c) => {
   if (requestedType !== "Latest" && requestedType !== "Top") {
     throw new HTTPException(422, { message: "type must be Latest or Top" });
   }
-  return c.json(await gateway.search(query, requestedType, c.req.query("cursor")));
+  return c.json(
+    await gateway.search(query, requestedType, c.req.query("cursor")),
+  );
 });
 
 app.get("/twitter/followers/list", async (c) =>
@@ -114,18 +120,28 @@ app.get("/twitter/friends/list", async (c) =>
 
 app.get("/twitter/user/:userId/tweets", async (c) =>
   c.json(
-    await gateway.tweets(userId(c.req.param("userId")), false, c.req.query("cursor")),
+    await gateway.tweets(
+      userId(c.req.param("userId")),
+      false,
+      c.req.query("cursor"),
+    ),
   ),
 );
 
 app.get("/twitter/user/:userId/tweets-and-replies", async (c) =>
   c.json(
-    await gateway.tweets(userId(c.req.param("userId")), true, c.req.query("cursor")),
+    await gateway.tweets(
+      userId(c.req.param("userId")),
+      true,
+      c.req.query("cursor"),
+    ),
   ),
 );
 
 app.get("/twitter/user/:identifier", async (c) =>
-  c.json(await gateway.profile(required(c.req.param("identifier"), "identifier"))),
+  c.json(
+    await gateway.profile(required(c.req.param("identifier"), "identifier")),
+  ),
 );
 
 app.onError((error, c) => {
@@ -137,7 +153,10 @@ app.onError((error, c) => {
     return c.json({ error: error.message }, 404);
   }
   if (error instanceof AllAccountsRateLimitedError) {
-    const retryAfter = Math.max(1, Math.ceil((error.retryAt - Date.now()) / 1000));
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((error.retryAt - Date.now()) / 1000),
+    );
     c.header("Retry-After", String(retryAfter));
     return c.json({ error: error.message, retry_after: retryAfter }, 503);
   }
@@ -147,7 +166,10 @@ app.onError((error, c) => {
       error.status === 404 ? 404 : 502,
     );
   }
-  return c.json({ error: error instanceof Error ? error.message : "Internal error" }, 500);
+  return c.json(
+    { error: error instanceof Error ? error.message : "Internal error" },
+    500,
+  );
 });
 
 const port = Number(process.env.PORT ?? 3000);

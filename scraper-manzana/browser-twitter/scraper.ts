@@ -1,10 +1,4 @@
-import {
-  mkdir,
-  readFile,
-  readlink,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, readFile, readlink, unlink, writeFile } from "node:fs/promises";
 import { hostname } from "node:os";
 import { join } from "node:path";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
@@ -93,6 +87,7 @@ const sharedTemplatePromises = new Map<
   Promise<TwitterGraphqlRequestTemplate>
 >();
 let sharedSolverInitPromise: Promise<TransactionSolverInitData> | undefined;
+let sharedSolverPagePromise: Promise<Page> | undefined;
 
 async function sharedResource<T>(
   cache: Map<string, Promise<T>>,
@@ -137,6 +132,8 @@ async function getSharedBrowser(): Promise<SharedBrowserState> {
       const state = { browser, xvfb };
       browser.on("disconnected", () => {
         if (sharedBrowserPromise === launch) sharedBrowserPromise = undefined;
+        sharedSolverInitPromise = undefined;
+        sharedSolverPagePromise = undefined;
         xvfb?.kill();
       });
       return state;
@@ -157,6 +154,8 @@ async function getSharedBrowser(): Promise<SharedBrowserState> {
 export async function closeSharedTwitterBrowser() {
   const pending = sharedBrowserPromise;
   sharedBrowserPromise = undefined;
+  sharedSolverInitPromise = undefined;
+  sharedSolverPagePromise = undefined;
   if (!pending) return;
   const state = await pending.catch(() => undefined);
   if (!state) return;
@@ -289,14 +288,7 @@ async function startVirtualDisplayIfNeeded(
 
   const xvfb = spawn(
     "Xvfb",
-    [
-      process.env.DISPLAY,
-      "-screen",
-      "0",
-      "1280x900x24",
-      "-nolisten",
-      "tcp",
-    ],
+    [process.env.DISPLAY, "-screen", "0", "1280x900x24", "-nolisten", "tcp"],
     { stdio: "pipe" },
   );
 
@@ -305,19 +297,20 @@ async function startVirtualDisplayIfNeeded(
     stderr += chunk.toString();
   });
 
-  const exit = await new Promise<{ code: number | null; signal: string | null } | null>(
-    (resolve) => {
-      const timer = setTimeout(() => resolve(null), 500);
-      xvfb.once("exit", (code, signal) => {
-        clearTimeout(timer);
-        resolve({ code, signal });
-      });
-      xvfb.once("error", () => {
-        clearTimeout(timer);
-        resolve({ code: 127, signal: null });
-      });
-    },
-  );
+  const exit = await new Promise<{
+    code: number | null;
+    signal: string | null;
+  } | null>((resolve) => {
+    const timer = setTimeout(() => resolve(null), 500);
+    xvfb.once("exit", (code, signal) => {
+      clearTimeout(timer);
+      resolve({ code, signal });
+    });
+    xvfb.once("error", () => {
+      clearTimeout(timer);
+      resolve({ code: 127, signal: null });
+    });
+  });
 
   if (exit) {
     const alreadyRunning = /server is already active|already running/i.test(
@@ -403,7 +396,10 @@ function timelineRequestUrl(
   template: TwitterGraphqlRequestTemplate,
   cursor?: string,
 ) {
-  return graphqlRequestUrl(template, cursor ? { cursor } : { cursor: undefined });
+  return graphqlRequestUrl(
+    template,
+    cursor ? { cursor } : { cursor: undefined },
+  );
 }
 
 function graphqlRequestUrl(
@@ -427,9 +423,7 @@ function graphqlRequestUrl(
 }
 
 export function extractChallengeCode(html: string): string | undefined {
-  const direct = html.match(
-    /["']ondemand\.s["']\s*:\s*["']([\w-]+)["']/,
-  )?.[1];
+  const direct = html.match(/["']ondemand\.s["']\s*:\s*["']([\w-]+)["']/)?.[1];
   if (direct) return direct;
 
   const chunkId = html.match(/(\d+)\s*:\s*["']ondemand\.s["']/)?.[1];
@@ -695,7 +689,7 @@ function oldestTweetDateForScrape() {
 
 export class BrowserTwitterSession {
   private readonly context: BrowserContext;
-  private readonly page: Page;
+  private page: Page;
   private readonly dispatcher?: ProxyAgent;
   private readonly xvfb?: ChildProcessWithoutNullStreams;
   private ready = false;
@@ -704,7 +698,6 @@ export class BrowserTwitterSession {
     string,
     TwitterGraphqlRequestTemplate
   >();
-  private solverPage?: Page;
   private readonly account?: AccountInfo;
   private readonly onApiRequest?: BrowserTwitterSessionOptions["onApiRequest"];
 
@@ -888,12 +881,13 @@ export class BrowserTwitterSession {
     pageUrl: string,
     operationName: string,
   ): Promise<TwitterGraphqlRequestTemplate> {
+    const page = await this.ensurePage();
     const startedAt = new Date();
     let response: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     let requestError: unknown;
     try {
       [response] = await Promise.all([
-        this.page.waitForResponse(
+        page.waitForResponse(
           (response) => {
             const url = new URL(response.url());
             return (
@@ -903,7 +897,7 @@ export class BrowserTwitterSession {
           },
           { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
         ),
-        this.page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
+        page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
       ]);
       if (!response.ok()) {
         throw new TwitterApiError(
@@ -925,7 +919,15 @@ export class BrowserTwitterSession {
           requestError,
         );
       }
+      if (this.ready) await page.close().catch(() => {});
     }
+  }
+
+  private async ensurePage() {
+    if (this.page.isClosed()) {
+      this.page = await this.context.newPage();
+    }
+    return this.page;
   }
 
   private async recordApiRequest(
@@ -935,7 +937,8 @@ export class BrowserTwitterSession {
     requestError?: unknown,
   ) {
     if (!this.onApiRequest) return;
-    const operation = url.pathname.split("/").filter(Boolean).at(-1) ?? "unknown";
+    const operation =
+      url.pathname.split("/").filter(Boolean).at(-1) ?? "unknown";
     try {
       await this.onApiRequest({
         account: this.account?.username,
@@ -968,6 +971,7 @@ export class BrowserTwitterSession {
     this.templateCache.set("UserTweetsAndReplies", this.template);
     await this.installTransactionSolver();
     this.ready = true;
+    await this.page.close().catch(() => {});
   }
 
   private async ensureLoggedIn() {
@@ -1173,7 +1177,10 @@ export class BrowserTwitterSession {
     await this.page
       .screenshot({ path: `${base}.png`, fullPage: true, timeout: 5_000 })
       .catch((error) => {
-        console.error(`[twitter-browser] could not save debug screenshot`, error);
+        console.error(
+          `[twitter-browser] could not save debug screenshot`,
+          error,
+        );
       });
     const text = await this.page
       .locator("body")
@@ -1250,121 +1257,140 @@ export class BrowserTwitterSession {
       sharedSolverInitPromise = shared;
     }
     const initData = await sharedSolverInitPromise;
-    const solverPage = await this.context.newPage();
-    solverPage.on("console", (message) => {
-      console.info(`[twitter-solver:${message.type()}] ${message.text()}`);
-    });
-    solverPage.on("pageerror", (error) => {
-      console.error(`[twitter-solver:pageerror] ${error.message}`);
-    });
-    const solverUrl = `http://127.0.0.1/milei-twitter-solver-${nanoid()}.html`;
-    await this.context.route(solverUrl, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "text/html; charset=utf-8",
-        body: SOLVER_PAGE_HTML,
+    if (sharedSolverPagePromise) {
+      await sharedSolverPagePromise;
+      return;
+    }
+    const setup = (async () => {
+      const { browser } = await getSharedBrowser();
+      const solverContext = await browser.newContext();
+      const solverPage = await solverContext.newPage();
+      solverPage.on("console", (message) => {
+        console.info(`[twitter-solver:${message.type()}] ${message.text()}`);
       });
+      solverPage.on("pageerror", (error) => {
+        console.error(`[twitter-solver:pageerror] ${error.message}`);
+      });
+      const solverUrl = `http://127.0.0.1/milei-twitter-solver-${nanoid()}.html`;
+      await solverContext.route(solverUrl, async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html; charset=utf-8",
+          body: SOLVER_PAGE_HTML,
+        });
+      });
+      await solverPage.goto(solverUrl, { waitUntil: "domcontentloaded" });
+      await solverPage.evaluate((data) => {
+        const browserWindow = window as unknown as {
+          __SCRIPTS_LOADED__?: Record<string, boolean>;
+          __name?: <T>(value: T) => T;
+          webpackChunk_twitter_responsive_web?: Array<Record<number, unknown>>;
+          _CHALLENGE?: () => () => (
+            path: string,
+            method: string,
+          ) => Promise<string>;
+          __mileiTwitterSolveTransaction?: (
+            path: string,
+            method: string,
+          ) => Promise<string>;
+        };
+        browserWindow.__SCRIPTS_LOADED__ = { runtime: true };
+        browserWindow.__name = (value) => value;
+        eval(data.vendorData);
+
+        const animsDiv = document.getElementById("anims");
+        if (!animsDiv) throw new Error("Missing animation container");
+        for (const anim of data.anims) animsDiv.innerHTML += `\n${anim}`;
+
+        const verification = document.querySelector(
+          'meta[name="twitter-site-verification"]',
+        );
+        if (verification) {
+          verification.setAttribute("content", data.verificationCode);
+        }
+
+        const idMatch = data.challengeData.match(
+          /\.push\(\[\[\d+\],\{(\d+)[:(]/,
+        );
+        if (!idMatch) throw new Error("Module ID not found");
+        const id = idMatch[1];
+
+        const defaultMatch = data.challengeData.match(
+          /default:\(\)=>(\w+)\}\)/,
+        );
+        if (!defaultMatch) throw new Error("Default export not found");
+        const defaultVar = defaultMatch[1];
+        const patchedChallengeData = data.challengeData.replace(
+          `default:()=>${defaultVar}`,
+          `default:(window._CHALLENGE=()=>${defaultVar})`,
+        );
+        eval(patchedChallengeData);
+
+        const chunks = browserWindow.webpackChunk_twitter_responsive_web || [];
+        const registry: Record<string, Function> = {};
+        for (const payload of chunks) {
+          if (payload && payload[1]) Object.assign(registry, payload[1]);
+        }
+
+        const cache: Record<string, { exports: Record<string, unknown> }> = {};
+        function wreq(moduleId: string) {
+          if (cache[moduleId]) return cache[moduleId].exports;
+          const factory = registry[moduleId];
+          if (!factory) throw new Error(`No module with id ${moduleId}`);
+          const module = { id: moduleId, loaded: false, exports: {} };
+          cache[moduleId] = module;
+          factory(module, module.exports, wreq);
+          module.loaded = true;
+          return module.exports;
+        }
+
+        wreq.d = (
+          exports: Record<string, unknown>,
+          definition: Record<string, () => unknown>,
+        ) => {
+          for (const key in definition) {
+            Object.defineProperty(exports, key, {
+              enumerable: true,
+              get: definition[key],
+            });
+          }
+        };
+        wreq.r = (exports: Record<string, unknown>) => {
+          if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(exports, Symbol.toStringTag, {
+              value: "Module",
+            });
+          }
+          Object.defineProperty(exports, "__esModule", { value: true });
+        };
+        wreq.n = (mod: { __esModule?: boolean; default?: unknown }) => {
+          const getter = mod && mod.__esModule ? () => mod.default : () => mod;
+          wreq.d(getter as unknown as Record<string, unknown>, { a: getter });
+          return getter;
+        };
+        wreq.o = (obj: object, prop: string) =>
+          Object.prototype.hasOwnProperty.call(obj, prop);
+
+        const chunk = browserWindow
+          .webpackChunk_twitter_responsive_web?.[1]?.[1] as
+          | Record<string, Function>
+          | undefined;
+        if (!chunk || !chunk[id])
+          throw new Error(`No chunk module with id ${id}`);
+        chunk[id](chunks, cache, wreq);
+        const challenge = browserWindow._CHALLENGE?.();
+        if (!challenge) throw new Error("Challenge export was not initialized");
+        browserWindow.__mileiTwitterSolveTransaction = challenge();
+      }, initData);
+      return solverPage;
+    })();
+    const shared = setup.catch((error) => {
+      if (sharedSolverPagePromise === shared)
+        sharedSolverPagePromise = undefined;
+      throw error;
     });
-    await solverPage.goto(solverUrl, { waitUntil: "domcontentloaded" });
-    await solverPage.evaluate((data) => {
-      const browserWindow = window as unknown as {
-        __SCRIPTS_LOADED__?: Record<string, boolean>;
-        __name?: <T>(value: T) => T;
-        webpackChunk_twitter_responsive_web?: Array<Record<number, unknown>>;
-        _CHALLENGE?: () => () => (
-          path: string,
-          method: string,
-        ) => Promise<string>;
-        __mileiTwitterSolveTransaction?: (
-          path: string,
-          method: string,
-        ) => Promise<string>;
-      };
-      browserWindow.__SCRIPTS_LOADED__ = { runtime: true };
-      browserWindow.__name = (value) => value;
-      eval(data.vendorData);
-
-      const animsDiv = document.getElementById("anims");
-      if (!animsDiv) throw new Error("Missing animation container");
-      for (const anim of data.anims) animsDiv.innerHTML += `\n${anim}`;
-
-      const verification = document.querySelector(
-        'meta[name="twitter-site-verification"]',
-      );
-      if (verification) {
-        verification.setAttribute("content", data.verificationCode);
-      }
-
-      const idMatch = data.challengeData.match(/\.push\(\[\[\d+\],\{(\d+)[:(]/);
-      if (!idMatch) throw new Error("Module ID not found");
-      const id = idMatch[1];
-
-      const defaultMatch = data.challengeData.match(/default:\(\)=>(\w+)\}\)/);
-      if (!defaultMatch) throw new Error("Default export not found");
-      const defaultVar = defaultMatch[1];
-      const patchedChallengeData = data.challengeData.replace(
-        `default:()=>${defaultVar}`,
-        `default:(window._CHALLENGE=()=>${defaultVar})`,
-      );
-      eval(patchedChallengeData);
-
-      const chunks = browserWindow.webpackChunk_twitter_responsive_web || [];
-      const registry: Record<string, Function> = {};
-      for (const payload of chunks) {
-        if (payload && payload[1]) Object.assign(registry, payload[1]);
-      }
-
-      const cache: Record<string, { exports: Record<string, unknown> }> = {};
-      function wreq(moduleId: string) {
-        if (cache[moduleId]) return cache[moduleId].exports;
-        const factory = registry[moduleId];
-        if (!factory) throw new Error(`No module with id ${moduleId}`);
-        const module = { id: moduleId, loaded: false, exports: {} };
-        cache[moduleId] = module;
-        factory(module, module.exports, wreq);
-        module.loaded = true;
-        return module.exports;
-      }
-
-      wreq.d = (
-        exports: Record<string, unknown>,
-        definition: Record<string, () => unknown>,
-      ) => {
-        for (const key in definition) {
-          Object.defineProperty(exports, key, {
-            enumerable: true,
-            get: definition[key],
-          });
-        }
-      };
-      wreq.r = (exports: Record<string, unknown>) => {
-        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-          Object.defineProperty(exports, Symbol.toStringTag, {
-            value: "Module",
-          });
-        }
-        Object.defineProperty(exports, "__esModule", { value: true });
-      };
-      wreq.n = (mod: { __esModule?: boolean; default?: unknown }) => {
-        const getter = mod && mod.__esModule ? () => mod.default : () => mod;
-        wreq.d(getter as unknown as Record<string, unknown>, { a: getter });
-        return getter;
-      };
-      wreq.o = (obj: object, prop: string) =>
-        Object.prototype.hasOwnProperty.call(obj, prop);
-
-      const chunk = browserWindow
-        .webpackChunk_twitter_responsive_web?.[1]?.[1] as
-        | Record<string, Function>
-        | undefined;
-      if (!chunk || !chunk[id])
-        throw new Error(`No chunk module with id ${id}`);
-      chunk[id](chunks, cache, wreq);
-      const challenge = browserWindow._CHALLENGE?.();
-      if (!challenge) throw new Error("Challenge export was not initialized");
-      browserWindow.__mileiTwitterSolveTransaction = challenge();
-    }, initData);
-    this.solverPage = solverPage;
+    sharedSolverPagePromise = shared;
+    await shared;
   }
 
   private async getSolverInitData(): Promise<TransactionSolverInitData> {
@@ -1434,9 +1460,9 @@ export class BrowserTwitterSession {
   }
 
   private async transactionId(method: string, url: URL): Promise<string> {
-    if (!this.solverPage)
-      throw new Error("Transaction solver is not installed");
-    return await this.solverPage.evaluate(
+    const solverPage = await sharedSolverPagePromise;
+    if (!solverPage) throw new Error("Transaction solver is not installed");
+    return await solverPage.evaluate(
       async ({ path, method }) => {
         const solve = (
           window as unknown as {

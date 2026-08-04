@@ -40,26 +40,31 @@ test("runs multiple accounts concurrently with a per-account bound", async () =>
     perAccountConcurrency: 2,
     sessionFactory: async (account) => {
       initialized.add(account.username);
-      return asBrowserSession({ account: account.username, close: async () => {} });
+      return asBrowserSession({
+        account: account.username,
+        close: async () => {},
+      });
     },
   });
 
   await Promise.all(
-    Array.from({ length: 12 }, async () =>
-      await pool.run(async (session) => {
-        const name = (session as unknown as FakeSession).account;
-        active += 1;
-        peak = Math.max(peak, active);
-        const accountActive = (perAccount.get(name) ?? 0) + 1;
-        perAccount.set(name, accountActive);
-        perAccountPeak.set(
-          name,
-          Math.max(perAccountPeak.get(name) ?? 0, accountActive),
-        );
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        perAccount.set(name, accountActive - 1);
-        active -= 1;
-      }),
+    Array.from(
+      { length: 12 },
+      async () =>
+        await pool.run(async (session) => {
+          const name = (session as unknown as FakeSession).account;
+          active += 1;
+          peak = Math.max(peak, active);
+          const accountActive = (perAccount.get(name) ?? 0) + 1;
+          perAccount.set(name, accountActive);
+          perAccountPeak.set(
+            name,
+            Math.max(perAccountPeak.get(name) ?? 0, accountActive),
+          );
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          perAccount.set(name, accountActive - 1);
+          active -= 1;
+        }),
     ),
   );
 

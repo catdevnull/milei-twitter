@@ -39,11 +39,13 @@ export class RequestDatabase {
 
   record(event: TwitterApiRequestEvent) {
     this.database
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO x_requests (
           started_at, method, path, operation, status, duration_ms, account, error
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         event.startedAt.getTime(),
         event.method,
@@ -59,16 +61,24 @@ export class RequestDatabase {
   stats(): RequestStats {
     const cutoff = Date.now() - 30 * 60 * 1_000;
     const counts = this.database
-      .prepare(`
+      .prepare(
+        `
         SELECT
           COUNT(*) AS total,
           SUM(CASE WHEN started_at >= ? THEN 1 ELSE 0 END) AS recent,
           SUM(CASE WHEN status IS NULL OR status < 200 OR status >= 300 THEN 1 ELSE 0 END) AS failed
         FROM x_requests
-      `)
-      .get(cutoff) as { total: number; recent: number | null; failed: number | null };
+      `,
+      )
+      .get(cutoff) as {
+      total: number;
+      recent: number | null;
+      failed: number | null;
+    };
     const last = this.database
-      .prepare("SELECT started_at, status FROM x_requests ORDER BY id DESC LIMIT 1")
+      .prepare(
+        "SELECT started_at, status FROM x_requests ORDER BY id DESC LIMIT 1",
+      )
       .get() as { started_at: number; status: number | null } | undefined;
     return {
       failed: counts.failed ?? 0,
