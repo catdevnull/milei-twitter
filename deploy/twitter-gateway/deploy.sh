@@ -15,6 +15,7 @@ rsync \
   --delete \
   --exclude='.git/' \
   --exclude='node_modules/' \
+  --exclude='load-test-results/' \
   --exclude='.env' \
   --exclude='.env.*' \
   --exclude='api-users.txt' \

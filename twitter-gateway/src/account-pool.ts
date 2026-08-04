@@ -145,8 +145,15 @@ export class AccountPool {
         uninitialized &&
         active < Math.min(this.maxActiveAccounts, entries.length)
       ) {
-        await this.initialize(entries, uninitialized);
-        continue;
+        uninitialized.inFlight = 1;
+        try {
+          await this.initialize(entries, uninitialized);
+          return uninitialized;
+        } catch (error) {
+          uninitialized.inFlight = 0;
+          this.notifyWaiters();
+          throw error;
+        }
       }
 
       const everyAccountLimited = entries.every(
