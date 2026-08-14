@@ -161,7 +161,7 @@ export async function closeSharedTwitterBrowser() {
   const state = await pending.catch(() => undefined);
   if (!state) return;
   try {
-    await state.browser.close();
+    await state.browser.close().catch(() => {});
   } finally {
     state.xvfb?.kill();
   }
@@ -1539,7 +1539,10 @@ export async function scrapNewTweetsWithBrowser(
       if (!cursor) break;
     }
   } finally {
-    if (process.env.TWITTER_BROWSER_KEEP_OPEN !== "1") await session.close();
+    if (process.env.TWITTER_BROWSER_KEEP_OPEN !== "1") {
+      await session.close();
+      await closeSharedTwitterBrowser();
+    }
   }
 
   console.info(`--> ${tweets.length} tweets`);
