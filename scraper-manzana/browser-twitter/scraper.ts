@@ -797,7 +797,7 @@ export class BrowserTwitterSession {
 
   async close() {
     try {
-      await this.context.close();
+      await this.context.close().catch(() => {});
     } finally {
       this.xvfb?.kill();
     }
