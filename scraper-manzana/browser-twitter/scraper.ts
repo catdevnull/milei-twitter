@@ -972,7 +972,6 @@ export class BrowserTwitterSession {
     this.templateCache.set(TIMELINE_OPERATION_NAME, this.template);
     await this.installTransactionSolver();
     this.ready = true;
-    await this.page.close().catch(() => {});
   }
 
   private async ensureLoggedIn() {
