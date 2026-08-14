@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { extractChallengeCode, parseTweetResult } from "./scraper.ts";
+import {
+  extractChallengeCode,
+  parseTweetResult,
+  TIMELINE_OPERATION_NAME,
+} from "./scraper.ts";
+
+test("captures X's current replies timeline operation", () => {
+  assert.equal(TIMELINE_OPERATION_NAME, "UserRepliesTimeline");
+});
 
 test("extracts an ondemand challenge from the numeric chunk manifest", () => {
   const html = '59924:"ondemand.s",59924:"8561faa"';

@@ -75,6 +75,7 @@ const SOLVER_PAGE_HTML = `<!doctype html>
 </html>`;
 
 const TIMELINE_URL = "https://x.com/JMilei/with_replies";
+export const TIMELINE_OPERATION_NAME = "UserRepliesTimeline";
 
 type SharedBrowserState = {
   browser: Browser;
@@ -965,10 +966,10 @@ export class BrowserTwitterSession {
     await this.ensureLoggedIn();
     this.template = await sharedResource(
       sharedTemplatePromises,
-      "UserTweetsAndReplies",
+      TIMELINE_OPERATION_NAME,
       async () => await this.captureTimelineRequest(),
     );
-    this.templateCache.set("UserTweetsAndReplies", this.template);
+    this.templateCache.set(TIMELINE_OPERATION_NAME, this.template);
     await this.installTransactionSolver();
     this.ready = true;
     await this.page.close().catch(() => {});
@@ -1193,7 +1194,7 @@ export class BrowserTwitterSession {
   private async captureTimelineRequest(): Promise<TwitterGraphqlRequestTemplate> {
     return await this.captureGraphqlTemplate(
       TIMELINE_URL,
-      "UserTweetsAndReplies",
+      TIMELINE_OPERATION_NAME,
     );
   }
 
