@@ -94,6 +94,29 @@ export function isGraphqlOperation(
   );
 }
 
+export function extractGraphqlQueryId(
+  javascript: string,
+  operationName: string,
+) {
+  const escapedOperation = operationName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return javascript.match(
+    new RegExp(
+      `queryId:\"([^\"]+)\",operationName:\"${escapedOperation}\"`,
+    ),
+  )?.[1];
+}
+
+export function replaceGraphqlQueryId(
+  template: TwitterGraphqlRequestTemplate,
+  queryId: string,
+) {
+  const url = new URL(template.url);
+  const parts = url.pathname.split("/");
+  parts[parts.length - 2] = queryId;
+  url.pathname = parts.join("/");
+  return { ...template, url: url.toString() };
+}
+
 type SharedBrowserState = {
   browser: Browser;
   xvfb?: ChildProcessWithoutNullStreams;
@@ -907,21 +930,15 @@ export class BrowserTwitterSession {
     try {
       [response] = await Promise.all([
         page.waitForResponse(
-          (response) =>
-            response.ok() &&
-            isGraphqlOperation(response.url(), operationAliases),
+          (response) => isGraphqlOperation(response.url(), operationAliases),
           { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
         ),
         page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
       ]);
-      if (!response.ok()) {
-        throw new TwitterApiError(
-          response.status(),
-          response.statusText(),
-          await response.text(),
-        );
-      }
-      return parseRequestTemplate(response.request());
+      const template = parseRequestTemplate(response.request());
+      if (response.ok()) return template;
+      const queryId = await this.currentGraphqlQueryId(pageUrl, operationName);
+      return replaceGraphqlQueryId(template, queryId);
     } catch (error) {
       requestError = error;
       throw error;
@@ -936,6 +953,48 @@ export class BrowserTwitterSession {
       }
       if (this.ready) await page.close().catch(() => {});
     }
+  }
+
+  private async currentGraphqlQueryId(
+    pageUrl: string,
+    operationName: string,
+  ) {
+    const htmlUrl = new URL(pageUrl);
+    const headers = await this.apiHeaders(htmlUrl, {}, "GET", {
+      transactionId: false,
+    });
+    const htmlResponse = await undiciFetch(htmlUrl, {
+      headers,
+      dispatcher: this.dispatcher,
+    });
+    if (!htmlResponse.ok) {
+      throw new TwitterApiError(
+        htmlResponse.status,
+        htmlResponse.statusText,
+        await htmlResponse.text(),
+      );
+    }
+    const html = await htmlResponse.text();
+    const mainScript = html.match(
+      /https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/main\.[\w-]+\.js/,
+    )?.[0];
+    if (!mainScript) throw new Error("Could not find X main JavaScript bundle");
+    const scriptResponse = await undiciFetch(mainScript, {
+      dispatcher: this.dispatcher,
+    });
+    if (!scriptResponse.ok) {
+      throw new Error(
+        `Could not fetch X main JavaScript bundle: ${scriptResponse.status} ${scriptResponse.statusText}`,
+      );
+    }
+    const queryId = extractGraphqlQueryId(
+      await scriptResponse.text(),
+      operationName,
+    );
+    if (!queryId) {
+      throw new Error(`Could not find X query ID for ${operationName}`);
+    }
+    return queryId;
   }
 
   private async ensurePage() {

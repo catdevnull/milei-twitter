@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   extractChallengeCode,
+  extractGraphqlQueryId,
   isGraphqlOperation,
   parseTweetResult,
+  replaceGraphqlQueryId,
   TIMELINE_OPERATION_ALIASES,
   TIMELINE_OPERATION_NAME,
 } from "./scraper.ts";
@@ -32,6 +34,28 @@ test("recognizes both replies timeline operation names used by X", () => {
       TIMELINE_OPERATION_ALIASES,
     ),
     false,
+  );
+});
+
+test("refreshes a stale GraphQL query ID from X's bundle", () => {
+  assert.equal(
+    extractGraphqlQueryId(
+      'e.exports={queryId:"fresh-id",operationName:"SearchTimeline",operationType:"query"}',
+      "SearchTimeline",
+    ),
+    "fresh-id",
+  );
+  const refreshed = replaceGraphqlQueryId(
+    {
+      url: "https://x.com/i/api/graphql/stale-id/SearchTimeline?variables=%7B%7D",
+      variables: {},
+      headers: {},
+    },
+    "fresh-id",
+  );
+  assert.equal(
+    refreshed.url,
+    "https://x.com/i/api/graphql/fresh-id/SearchTimeline?variables=%7B%7D",
   );
 });
 
