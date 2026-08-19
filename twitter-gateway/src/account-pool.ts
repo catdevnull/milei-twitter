@@ -92,14 +92,16 @@ export class AccountPool {
     work: (session: BrowserTwitterSession) => Promise<T>,
   ): Promise<T> {
     const entries = await this.entries();
+    const excluded = new Set<PoolEntry>();
     for (let attempt = 0; attempt < entries.length; attempt++) {
-      const entry = await this.acquire(entries);
+      const entry = await this.acquire(entries, excluded);
       try {
         return await work(entry.session!);
       } catch (error) {
-        if (!(error instanceof TwitterApiError) || error.status !== 429)
-          throw error;
-        this.markRateLimited(entry);
+        if (!(error instanceof TwitterApiError)) throw error;
+        if (error.status === 429) this.markRateLimited(entry);
+        else if (![401, 403, 404].includes(error.status)) throw error;
+        excluded.add(entry);
       } finally {
         this.release(entry);
       }
@@ -120,11 +122,15 @@ export class AccountPool {
     return this.entriesPromise;
   }
 
-  private async acquire(entries: PoolEntry[]): Promise<PoolEntry> {
+  private async acquire(
+    entries: PoolEntry[],
+    excluded: ReadonlySet<PoolEntry> = new Set(),
+  ): Promise<PoolEntry> {
     for (;;) {
       const now = Date.now();
       const ready = this.rotated(entries).filter(
         (entry) =>
+          !excluded.has(entry) &&
           entry.session &&
           entry.rateLimitedUntil <= now &&
           entry.inFlight < this.perAccountConcurrency,
@@ -140,10 +146,13 @@ export class AccountPool {
       }
 
       const active = entries.filter(
-        (entry) => entry.session || entry.initializing || entry.closing,
+        (entry) =>
+          !excluded.has(entry) &&
+          (entry.session || entry.initializing || entry.closing),
       ).length;
       const uninitialized = this.rotated(entries).find(
         (entry) =>
+          !excluded.has(entry) &&
           !entry.session &&
           !entry.initializing &&
           !entry.closing &&

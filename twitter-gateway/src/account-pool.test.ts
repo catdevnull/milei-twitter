@@ -109,3 +109,30 @@ test("drains a rate-limited account and retries on another account", async () =>
   assert.deepEqual(visited, ["account0", "account1"]);
   assert.deepEqual(closed, ["account0"]);
 });
+
+test("retries account-specific authorization and not-found failures", async () => {
+  for (const status of [401, 403, 404]) {
+    process.env.ACCOUNTS_LIST = accounts(2);
+    const visited: string[] = [];
+    const pool = new AccountPool(undefined, {
+      maxActiveAccounts: 1,
+      sessionFactory: async (account) =>
+        asBrowserSession({
+          account: account.username,
+          close: async () => {},
+        }),
+    });
+
+    const result = await pool.run(async (session) => {
+      const name = (session as unknown as FakeSession).account;
+      visited.push(name);
+      if (name === "account0") {
+        throw new TwitterApiError(status, "account-specific failure", "");
+      }
+      return name;
+    });
+
+    assert.equal(result, "account1");
+    assert.deepEqual(visited, ["account0", "account1"]);
+  }
+});
