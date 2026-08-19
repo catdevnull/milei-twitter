@@ -907,7 +907,9 @@ export class BrowserTwitterSession {
     try {
       [response] = await Promise.all([
         page.waitForResponse(
-          (response) => isGraphqlOperation(response.url(), operationAliases),
+          (response) =>
+            response.ok() &&
+            isGraphqlOperation(response.url(), operationAliases),
           { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
         ),
         page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
