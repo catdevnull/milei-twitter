@@ -2,12 +2,37 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   extractChallengeCode,
+  isGraphqlOperation,
   parseTweetResult,
+  TIMELINE_OPERATION_ALIASES,
   TIMELINE_OPERATION_NAME,
 } from "./scraper.ts";
 
 test("captures X's current replies timeline operation", () => {
   assert.equal(TIMELINE_OPERATION_NAME, "UserRepliesTimeline");
+  assert.deepEqual(TIMELINE_OPERATION_ALIASES, [
+    "UserRepliesTimeline",
+    "UserTweetsAndReplies",
+  ]);
+});
+
+test("recognizes both replies timeline operation names used by X", () => {
+  for (const operation of TIMELINE_OPERATION_ALIASES) {
+    assert.equal(
+      isGraphqlOperation(
+        `https://x.com/i/api/graphql/query-id/${operation}?variables=%7B%7D`,
+        TIMELINE_OPERATION_ALIASES,
+      ),
+      true,
+    );
+  }
+  assert.equal(
+    isGraphqlOperation(
+      "https://x.com/i/api/graphql/query-id/UserTweets",
+      TIMELINE_OPERATION_ALIASES,
+    ),
+    false,
+  );
 });
 
 test("extracts an ondemand challenge from the numeric chunk manifest", () => {

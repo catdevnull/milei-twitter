@@ -76,6 +76,23 @@ const SOLVER_PAGE_HTML = `<!doctype html>
 
 const TIMELINE_URL = "https://x.com/JMilei/with_replies";
 export const TIMELINE_OPERATION_NAME = "UserRepliesTimeline";
+export const TIMELINE_OPERATION_ALIASES = [
+  TIMELINE_OPERATION_NAME,
+  "UserTweetsAndReplies",
+] as const;
+
+export function isGraphqlOperation(
+  requestUrl: string,
+  operationNames: readonly string[],
+) {
+  const url = new URL(requestUrl);
+  return (
+    url.pathname.includes("/i/api/graphql/") &&
+    operationNames.some((operationName) =>
+      url.pathname.endsWith(`/${operationName}`),
+    )
+  );
+}
 
 type SharedBrowserState = {
   browser: Browser;
@@ -881,6 +898,7 @@ export class BrowserTwitterSession {
   private async captureGraphqlTemplate(
     pageUrl: string,
     operationName: string,
+    operationAliases: readonly string[] = [operationName],
   ): Promise<TwitterGraphqlRequestTemplate> {
     const page = await this.ensurePage();
     const startedAt = new Date();
@@ -889,13 +907,7 @@ export class BrowserTwitterSession {
     try {
       [response] = await Promise.all([
         page.waitForResponse(
-          (response) => {
-            const url = new URL(response.url());
-            return (
-              url.pathname.includes("/i/api/graphql/") &&
-              url.pathname.endsWith(`/${operationName}`)
-            );
-          },
+          (response) => isGraphqlOperation(response.url(), operationAliases),
           { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
         ),
         page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
@@ -1194,6 +1206,7 @@ export class BrowserTwitterSession {
     return await this.captureGraphqlTemplate(
       TIMELINE_URL,
       TIMELINE_OPERATION_NAME,
+      TIMELINE_OPERATION_ALIASES,
     );
   }
 
