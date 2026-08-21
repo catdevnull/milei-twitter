@@ -73,10 +73,11 @@ test("recaptures a stale search template after a 404", async () => {
 test("returns the browser-captured first search page", async () => {
   let pageUrl: string | undefined;
   const session = {
-    captureGraphqlJson: async (url: string) => {
+    captureGraphqlContinuation: async (url: string) => {
       pageUrl = url;
-      return {};
+      return { continuation: {}, json: {} };
     },
+    closeGraphqlContinuation: async () => {},
   } as unknown as BrowserTwitterSession;
   const accounts = {
     run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
@@ -86,4 +87,41 @@ test("returns the browser-captured first search page", async () => {
   await new TwitterGateway(accounts).search("from:example", "Latest");
 
   assert.match(pageUrl ?? "", /q=from%3Aexample/);
+});
+
+test("continues search by scrolling the captured browser page", async () => {
+  let continuations = 0;
+  const continuation = { operationName: "SearchTimeline" };
+  const session = {
+    captureGraphqlContinuation: async () => ({
+      continuation,
+      json: {
+        data: {
+          search_by_raw_query: {
+            search_timeline: {
+              timeline: {
+                instructions: [{ entries: [{ entryId: "cursor-bottom-1", content: { cursorType: "Bottom", value: "cursor-1" } }] }],
+              },
+            },
+          },
+        },
+      },
+    }),
+    continueGraphql: async () => {
+      continuations += 1;
+      return {};
+    },
+    closeGraphqlContinuation: async () => {},
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+  const gateway = new TwitterGateway(accounts);
+
+  const first = await gateway.search("from:example", "Latest");
+  await gateway.search(first.next_cursor!, "Latest", first.next_cursor!);
+
+  assert.equal(first.next_cursor, "cursor-1");
+  assert.equal(continuations, 1);
 });

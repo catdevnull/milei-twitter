@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   extractChallengeCode,
   extractGraphqlQueryId,
+  selectProxyLine,
   isGraphqlOperation,
   parseTweetResult,
   replaceGraphqlQueryId,
@@ -10,6 +11,13 @@ import {
   TIMELINE_OPERATION_NAME,
   TIMELINE_USER_ID,
 } from "./scraper.ts";
+
+test("assigns proxy-list entries deterministically by account index", () => {
+  const lines = ["proxy-a:80", "", " proxy-b:81 ", "proxy-c:82"];
+  assert.equal(selectProxyLine(lines, 0), "proxy-a:80");
+  assert.equal(selectProxyLine(lines, 1), "proxy-b:81");
+  assert.equal(selectProxyLine(lines, 3), "proxy-a:80");
+});
 
 test("captures X's current replies timeline operation", () => {
   assert.equal(TIMELINE_USER_ID, "4020276615");

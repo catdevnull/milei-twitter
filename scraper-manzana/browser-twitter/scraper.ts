@@ -23,6 +23,11 @@ export type TwitterGraphqlRequestTemplate = {
   headers: Record<string, string>;
 };
 
+export type TwitterGraphqlContinuation = {
+  operationName: string;
+  page: Page;
+};
+
 export type BrowserTwitterSessionOptions = {
   account?: AccountInfo;
   userDataDir?: string;
@@ -292,7 +297,16 @@ function normalizeProxyLine(line: string): string {
   throw new Error(`Unsupported proxy format: ${trimmed}`);
 }
 
-async function resolveProxyUrl(): Promise<string | undefined> {
+export function selectProxyLine(
+  lines: readonly string[],
+  accountIndex: number,
+): string | undefined {
+  const available = lines.map((line) => line.trim()).filter(Boolean);
+  if (available.length === 0) return undefined;
+  return available[Math.max(0, accountIndex) % available.length];
+}
+
+async function resolveProxyUrl(account?: AccountInfo): Promise<string | undefined> {
   if (process.env.PROXY_URL) return normalizeProxyLine(process.env.PROXY_URL);
   if (!process.env.WEBSHARE_PROXY_LIST_URL) return undefined;
 
@@ -302,12 +316,19 @@ async function resolveProxyUrl(): Promise<string | undefined> {
       `Could not download proxy list: ${response.status} ${response.statusText}`,
     );
   }
-  const firstLine = (await response.text())
-    .split(/\r?\n/g)
-    .map((line) => line.trim())
-    .find(Boolean);
-  if (!firstLine) throw new Error("Downloaded proxy list was empty");
-  return normalizeProxyLine(firstLine);
+  const accounts = parseAccountList(
+    await getAccountList(),
+    process.env.ACCOUNTS_FILE_FORMAT,
+  );
+  const accountIndex = account
+    ? Math.max(0, accounts.findIndex(({ username }) => username === account.username))
+    : 0;
+  const proxyLine = selectProxyLine(
+    (await response.text()).split(/\r?\n/g),
+    accountIndex,
+  );
+  if (!proxyLine) throw new Error("Downloaded proxy list was empty");
+  return normalizeProxyLine(proxyLine);
 }
 
 function proxyUrlToPlaywright(proxyUrl: string): ProxyConfig {
@@ -779,7 +800,7 @@ export class BrowserTwitterSession {
     process.env.REBROWSER_PATCHES_SOURCE_URL ??= "app.js";
     process.env.REBROWSER_PATCHES_UTILITY_WORLD_NAME ??= "util";
 
-    const proxyUrl = await resolveProxyUrl();
+    const proxyUrl = await resolveProxyUrl(options.account);
     if (!proxyUrl && process.env.TWITTER_ALLOW_DIRECT !== "1") {
       throw new Error(
         "Missing PROXY_URL or WEBSHARE_PROXY_LIST_URL. Set TWITTER_ALLOW_DIRECT=1 to run without a proxy.",
@@ -910,6 +931,46 @@ export class BrowserTwitterSession {
     }
   }
 
+  async captureGraphqlContinuation(
+    pageUrl: string,
+    operationName: string,
+  ): Promise<{ continuation: TwitterGraphqlContinuation; json: unknown }> {
+    await this.ensureReady();
+    const page = await this.context.newPage();
+    try {
+      const responsePromise = page.waitForResponse(
+        (candidate) => isGraphqlOperation(candidate.url(), [operationName]),
+        { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
+      );
+      await page.goto(pageUrl, { waitUntil: "domcontentloaded" });
+      const response = await responsePromise;
+      const json = await this.browserResponseJson(response);
+      return { continuation: { operationName, page }, json };
+    } catch (error) {
+      await page.close().catch(() => {});
+      throw error;
+    }
+  }
+
+  async continueGraphql(
+    continuation: TwitterGraphqlContinuation,
+  ): Promise<unknown> {
+    const { operationName, page } = continuation;
+    if (page.isClosed()) throw new Error("GraphQL continuation page is closed");
+    const responsePromise = page.waitForResponse(
+      (candidate) => isGraphqlOperation(candidate.url(), [operationName]),
+      { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
+    );
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.mouse.wheel(0, 100_000);
+    const response = await responsePromise;
+    return await this.browserResponseJson(response);
+  }
+
+  async closeGraphqlContinuation(continuation: TwitterGraphqlContinuation) {
+    await continuation.page.close().catch(() => {});
+  }
+
   async graphqlTemplate(
     cacheKey: string,
     pageUrl: string,
@@ -998,6 +1059,42 @@ export class BrowserTwitterSession {
       throw error;
     } finally {
       await this.recordApiRequest(url, startedAt, status, requestError);
+    }
+  }
+
+  private async browserResponseJson(
+    response: Awaited<ReturnType<Page["waitForResponse"]>>,
+  ) {
+    const startedAt = new Date();
+    let requestError: unknown;
+    try {
+      if (!response.ok()) {
+        const headers = await response.allHeaders();
+        const resetSeconds = Number(headers["x-rate-limit-reset"]);
+        const retryAfterSeconds = Number(headers["retry-after"]);
+        const retryAt = Number.isFinite(resetSeconds) && resetSeconds > 0
+          ? resetSeconds * 1_000
+          : Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+            ? Date.now() + retryAfterSeconds * 1_000
+            : undefined;
+        throw new TwitterApiError(
+          response.status(),
+          response.statusText(),
+          await response.text(),
+          retryAt,
+        );
+      }
+      return await response.json();
+    } catch (error) {
+      requestError = error;
+      throw error;
+    } finally {
+      await this.recordApiRequest(
+        new URL(response.url()),
+        startedAt,
+        response.status(),
+        requestError,
+      );
     }
   }
 
