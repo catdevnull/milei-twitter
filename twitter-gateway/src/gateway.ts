@@ -1,7 +1,4 @@
-import type {
-  BrowserTwitterSession,
-  TwitterGraphqlContinuation,
-} from "scraper-manzana/browser-twitter";
+import type { BrowserTwitterSession } from "scraper-manzana/browser-twitter";
 import {
   TIMELINE_OPERATION_NAME,
   TwitterApiError,
@@ -15,81 +12,39 @@ import {
 } from "./twitter-data.ts";
 
 export class TwitterGateway {
-  private readonly searchContinuations = new Map<
-    string,
-    { continuation: TwitterGraphqlContinuation; session: BrowserTwitterSession }
-  >();
-
   constructor(private readonly accounts = new AccountPool()) {}
 
   search(query: string, type: "Latest" | "Top", cursor?: string) {
-    const active = cursor ? this.searchContinuations.get(cursor) : undefined;
-    if (cursor && active) {
-      return this.continueSearch(cursor, active);
-    }
     return this.accounts.run(async (session) => {
       const url = new URL("https://x.com/search");
       url.searchParams.set("q", query);
       url.searchParams.set("src", "typed_query");
       url.searchParams.set("f", type === "Latest" ? "live" : "top");
-      if (!cursor) {
-        const captured = await session.captureGraphqlContinuation(
-          url.toString(),
-          "SearchTimeline",
-        );
-        const response = timelineResponse(captured.json);
-        if (response.next_cursor) {
-          this.searchContinuations.set(response.next_cursor, {
-            continuation: captured.continuation,
-            session,
-          });
-        } else {
-          await session.closeGraphqlContinuation(captured.continuation);
-        }
-        return response;
-      }
-      const variables = { cursor, product: type, rawQuery: query };
-      for (let attempt = 1; attempt <= 2; attempt += 1) {
-        const template = await session.graphqlTemplate(
-          "SearchTimeline",
-          url.toString(),
-          "SearchTimeline",
-        );
+      const template = await session.graphqlTemplate(
+        "SearchTimeline",
+        url.toString(),
+        "SearchTimeline",
+      );
+      let lastError: unknown;
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
         try {
           return timelineResponse(
-            await session.fetchGraphql(template, variables),
+            await session.fetchSearchGraphql(template, {
+              cursor,
+              product: type,
+              rawQuery: query,
+            }),
           );
         } catch (error) {
-          if (
-            !(error instanceof TwitterApiError) ||
-            error.status !== 404 ||
-            attempt === 2
-          ) {
+          lastError = error;
+          if (!(error instanceof TwitterApiError) || error.status !== 404) {
             throw error;
           }
-          session.invalidateGraphqlTemplate("SearchTimeline");
+          if (attempt < 4) await session.resetTransactionSolver();
         }
       }
-      throw new Error("SearchTimeline retry exhausted");
+      throw lastError;
     });
-  }
-
-  private async continueSearch(
-    cursor: string,
-    active: {
-      continuation: TwitterGraphqlContinuation;
-      session: BrowserTwitterSession;
-    },
-  ) {
-    const json = await active.session.continueGraphql(active.continuation);
-    const response = timelineResponse(json);
-    this.searchContinuations.delete(cursor);
-    if (response.next_cursor) {
-      this.searchContinuations.set(response.next_cursor, active);
-    } else {
-      await active.session.closeGraphqlContinuation(active.continuation);
-    }
-    return response;
   }
 
   profile(identifier: string) {

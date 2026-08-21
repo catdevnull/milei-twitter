@@ -38,7 +38,7 @@ export type TwitterApiRequestEvent = {
   account?: string;
   durationMs: number;
   error?: string;
-  method: "GET";
+  method: "GET" | "POST";
   operation: string;
   path: string;
   startedAt: Date;
@@ -1030,9 +1030,40 @@ export class BrowserTwitterSession {
     return await this.fetchApiJson(url, template.headers);
   }
 
+  async fetchSearchGraphql(
+    template: TwitterGraphqlRequestTemplate,
+    variableOverrides: Record<string, unknown> = {},
+  ) {
+    await this.ensureReady();
+    const capturedUrl = graphqlRequestUrl(template, variableOverrides);
+    const url = new URL(capturedUrl);
+    const variables = url.searchParams.get("variables");
+    const features = url.searchParams.get("features");
+    url.search = "";
+    if (variables) url.searchParams.set("variables", variables);
+    const queryId = url.pathname.split("/").filter(Boolean).at(-2);
+    return await this.fetchApiJson(url, template.headers, {
+      method: "POST",
+      body: JSON.stringify({
+        features: features ? JSON.parse(features) : {},
+        queryId,
+      }),
+    });
+  }
+
+  async resetTransactionSolver() {
+    const previous = sharedSolverPagePromise;
+    sharedSolverInitPromise = undefined;
+    sharedSolverPagePromise = undefined;
+    const page = await previous?.catch(() => undefined);
+    await page?.context().close().catch(() => {});
+    await this.installTransactionSolver();
+  }
+
   private async fetchApiJson(
     url: URL,
     capturedHeaders: Record<string, string>,
+    options: { body?: string; method?: "GET" | "POST" } = {},
   ) {
     const startedAt = new Date();
     let status: number | undefined;
@@ -1040,10 +1071,13 @@ export class BrowserTwitterSession {
     try {
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {
-          const headers = await this.apiHeaders(url, capturedHeaders, "GET");
+          const method = options.method ?? "GET";
+          const headers = await this.apiHeaders(url, capturedHeaders, method);
+          if (options.body) headers.set("content-type", "application/json");
           const response = await undiciFetch(url, {
-            method: "GET",
+            method,
             headers,
+            body: options.body,
             dispatcher: this.dispatcher,
             signal: AbortSignal.timeout(
               Number(process.env.TWITTER_API_TIMEOUT_MS ?? 20_000),
@@ -1081,7 +1115,13 @@ export class BrowserTwitterSession {
       if (error instanceof TwitterApiError) status = error.status;
       throw error;
     } finally {
-      await this.recordApiRequest(url, startedAt, status, requestError);
+      await this.recordApiRequest(
+        url,
+        startedAt,
+        status,
+        requestError,
+        options.method ?? "GET",
+      );
     }
   }
 
@@ -1211,6 +1251,7 @@ export class BrowserTwitterSession {
     startedAt: Date,
     status?: number,
     requestError?: unknown,
+    method: "GET" | "POST" = "GET",
   ) {
     if (!this.onApiRequest) return;
     const operation =
@@ -1225,7 +1266,7 @@ export class BrowserTwitterSession {
             : requestError
               ? String(requestError).slice(0, 1_000)
               : undefined,
-        method: "GET",
+        method,
         operation,
         path: url.pathname,
         startedAt,
