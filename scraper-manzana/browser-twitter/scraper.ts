@@ -75,6 +75,7 @@ const SOLVER_PAGE_HTML = `<!doctype html>
 </html>`;
 
 const TIMELINE_URL = "https://x.com/JMilei/with_replies";
+export const TIMELINE_USER_ID = "4020276615";
 export const TIMELINE_OPERATION_NAME = "UserRepliesTimeline";
 export const TIMELINE_OPERATION_ALIASES = [
   TIMELINE_OPERATION_NAME,
@@ -100,9 +101,7 @@ export function extractGraphqlQueryId(
 ) {
   const escapedOperation = operationName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return javascript.match(
-    new RegExp(
-      `queryId:\"([^\"]+)\",operationName:\"${escapedOperation}\"`,
-    ),
+    new RegExp(`queryId:\"([^\"]+)\",operationName:\"${escapedOperation}\"`),
   )?.[1];
 }
 
@@ -492,6 +491,20 @@ function asNumber(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
+function retryableTwitterFetchError(error: unknown) {
+  if (error instanceof TwitterApiError) return error.status >= 500;
+  if (!(error instanceof Error)) return false;
+  if (error.name === "TimeoutError" || error.name === "AbortError") return true;
+  if (error instanceof TypeError && error.message === "fetch failed")
+    return true;
+  const cause = error.cause;
+  if (!cause || typeof cause !== "object") return false;
+  const code = "code" in cause ? String(cause.code) : "";
+  return ["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "UND_ERR_SOCKET"].includes(
+    code,
+  );
+}
+
 function throwIfGraphqlRateLimited(json: unknown) {
   const errors = asArray(asRecord(json)?.errors).map(asRecord);
   const rateLimited = errors.some(
@@ -865,13 +878,24 @@ export class BrowserTwitterSession {
   ): Promise<TwitterGraphqlRequestTemplate> {
     const cached = this.templateCache.get(cacheKey);
     if (cached) return cached;
+    const sharedCacheKey = this.account?.username
+      ? `${cacheKey}:${this.account.username}`
+      : cacheKey;
     const template = await sharedResource(
       sharedTemplatePromises,
-      cacheKey,
+      sharedCacheKey,
       async () => await this.captureGraphqlRequest(pageUrl, operationName),
     );
     this.templateCache.set(cacheKey, template);
     return template;
+  }
+
+  invalidateGraphqlTemplate(cacheKey: string) {
+    this.templateCache.delete(cacheKey);
+    const sharedCacheKey = this.account?.username
+      ? `${cacheKey}:${this.account.username}`
+      : cacheKey;
+    sharedTemplatePromises.delete(sharedCacheKey);
   }
 
   async fetchGraphql(
@@ -891,24 +915,36 @@ export class BrowserTwitterSession {
     let status: number | undefined;
     let requestError: unknown;
     try {
-      const headers = await this.apiHeaders(url, capturedHeaders, "GET");
-      const response = await undiciFetch(url, {
-        method: "GET",
-        headers,
-        dispatcher: this.dispatcher,
-      });
-      status = response.status;
-      await this.absorbSetCookie(url, response.headers);
-      if (!response.ok) {
-        throw new TwitterApiError(
-          response.status,
-          response.statusText,
-          await response.text(),
-        );
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          const headers = await this.apiHeaders(url, capturedHeaders, "GET");
+          const response = await undiciFetch(url, {
+            method: "GET",
+            headers,
+            dispatcher: this.dispatcher,
+            signal: AbortSignal.timeout(
+              Number(process.env.TWITTER_API_TIMEOUT_MS ?? 20_000),
+            ),
+          });
+          status = response.status;
+          await this.absorbSetCookie(url, response.headers);
+          if (!response.ok) {
+            throw new TwitterApiError(
+              response.status,
+              response.statusText,
+              await response.text(),
+            );
+          }
+          const json = await response.json();
+          throwIfGraphqlRateLimited(json);
+          return json;
+        } catch (error) {
+          requestError = error;
+          if (error instanceof TwitterApiError) status = error.status;
+          if (attempt === 3 || !retryableTwitterFetchError(error)) throw error;
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+        }
       }
-      const json = await response.json();
-      throwIfGraphqlRateLimited(json);
-      return json;
     } catch (error) {
       requestError = error;
       if (error instanceof TwitterApiError) status = error.status;
@@ -955,10 +991,7 @@ export class BrowserTwitterSession {
     }
   }
 
-  private async currentGraphqlQueryId(
-    pageUrl: string,
-    operationName: string,
-  ) {
+  private async currentGraphqlQueryId(pageUrl: string, operationName: string) {
     const htmlUrl = new URL(pageUrl);
     const headers = await this.apiHeaders(htmlUrl, {}, "GET", {
       transactionId: false,
@@ -1305,10 +1338,21 @@ export class BrowserTwitterSession {
     if (cookie) headers.set("cookie", cookie);
     if (csrf) headers.set("x-csrf-token", csrf);
     if (options.transactionId !== false) {
-      headers.set(
-        "x-client-transaction-id",
-        await this.transactionId(method, url),
-      );
+      try {
+        headers.set(
+          "x-client-transaction-id",
+          await this.transactionId(method, url),
+        );
+      } catch (error) {
+        const capturedTransactionId = Object.entries(capturedHeaders).find(
+          ([name]) => name.toLowerCase() === "x-client-transaction-id",
+        )?.[1];
+        if (!capturedTransactionId) throw error;
+        console.warn(
+          "[twitter-browser] transaction solver timed out; using captured transaction ID",
+        );
+        headers.set("x-client-transaction-id", capturedTransactionId);
+      }
     }
     return headers;
   }
@@ -1536,21 +1580,38 @@ export class BrowserTwitterSession {
   private async transactionId(method: string, url: URL): Promise<string> {
     const solverPage = await sharedSolverPagePromise;
     if (!solverPage) throw new Error("Transaction solver is not installed");
-    return await solverPage.evaluate(
-      async ({ path, method }) => {
-        const solve = (
-          window as unknown as {
-            __mileiTwitterSolveTransaction?: (
-              path: string,
-              method: string,
-            ) => Promise<string>;
-          }
-        ).__mileiTwitterSolveTransaction;
-        if (!solve) throw new Error("Transaction solver is not installed");
-        return await solve(path, method);
-      },
-      { path: url.pathname, method },
-    );
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        solverPage.evaluate(
+          async ({ path, method }) => {
+            const solve = (
+              window as unknown as {
+                __mileiTwitterSolveTransaction?: (
+                  path: string,
+                  method: string,
+                ) => Promise<string>;
+              }
+            ).__mileiTwitterSolveTransaction;
+            if (!solve) throw new Error("Transaction solver is not installed");
+            return await solve(path, method);
+          },
+          { path: url.pathname, method },
+        ),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => {
+              const error = new Error("Transaction solver timed out");
+              error.name = "TimeoutError";
+              reject(error);
+            },
+            Number(process.env.TWITTER_TRANSACTION_TIMEOUT_MS ?? 5_000),
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   private async absorbSetCookie(url: URL, headers: Headers) {
@@ -1582,6 +1643,7 @@ export async function scrapNewTweetsWithBrowser(
     const seen = new Set<string>();
     let cursor: string | undefined;
     let finished = false;
+    let matchedKnownTweet = false;
     const maxTweets = maxTweetsForScrape(lastTweetIds);
     const oldestTweetDate = oldestTweetDateForScrape();
     let sawTweetWithinDate = false;
@@ -1592,6 +1654,7 @@ export async function scrapNewTweetsWithBrowser(
       if (page.tweets.length === 0) break;
 
       for (const tweet of page.tweets) {
+        if (tweet.userId !== TIMELINE_USER_ID) continue;
         if (!tweet.id || seen.has(tweet.id)) continue;
         seen.add(tweet.id);
         tweets.push({
@@ -1600,7 +1663,10 @@ export async function scrapNewTweetsWithBrowser(
           capturedAt: new Date(),
         });
         if (tweet.retweetedStatus) retweets.push(tweetIntoRetweet(tweet));
-        if (lastTweetIds?.includes(tweet.id)) finished = true;
+        if (lastTweetIds?.includes(tweet.id)) {
+          matchedKnownTweet = true;
+          finished = true;
+        }
         if (oldestTweetDate && tweet.timeParsed) {
           if (tweet.timeParsed >= oldestTweetDate) {
             sawTweetWithinDate = true;
@@ -1611,6 +1677,11 @@ export async function scrapNewTweetsWithBrowser(
         if (tweets.length > maxTweets) finished = true;
       }
       if (!cursor) break;
+    }
+    if (lastTweetIds?.length && !matchedKnownTweet) {
+      throw new Error(
+        `Twitter timeline did not overlap the ${lastTweetIds.length} known tweet IDs`,
+      );
     }
   } finally {
     if (process.env.TWITTER_BROWSER_KEEP_OPEN !== "1") {

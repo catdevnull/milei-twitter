@@ -32,7 +32,8 @@ function boolean(value: unknown): boolean | undefined {
 
 function unwrapResult(value: unknown): JsonRecord | undefined {
   let result = record(value);
-  while (result && !result.legacy && result.result) result = record(result.result);
+  while (result && !result.legacy && result.result)
+    result = record(result.result);
   return result;
 }
 
@@ -50,10 +51,7 @@ export function findBottomCursor(value: unknown): string | undefined {
     }
     const item = record(node);
     if (!item) return;
-    if (
-      (item.cursorType === "Bottom" || item.entryType === "TimelineTimelineCursor") &&
-      typeof item.value === "string"
-    ) {
+    if (item.cursorType === "Bottom" && typeof item.value === "string") {
       found = item.value;
       return;
     }
@@ -76,7 +74,8 @@ function collectResults(value: unknown, containerKey: string): JsonRecord[] {
     const container = record(item[containerKey]);
     const result = unwrapResult(container?.result);
     if (result) {
-      const key = string(result.rest_id) ?? JSON.stringify(result).slice(0, 200);
+      const key =
+        string(result.rest_id) ?? JSON.stringify(result).slice(0, 200);
       if (!seen.has(key)) {
         seen.add(key);
         results.push(result);
@@ -125,7 +124,8 @@ export function socialUser(input: unknown): JsonRecord {
     screen_name: string(legacy.screen_name) ?? string(core.screen_name),
     location: string(legacy.location) ?? string(location.location) ?? "",
     url: string(legacy.url) ?? string(website.url) ?? null,
-    description: string(legacy.description) ?? string(profileBio.description) ?? "",
+    description:
+      string(legacy.description) ?? string(profileBio.description) ?? "",
     protected: boolean(legacy.protected) ?? boolean(privacy.protected) ?? false,
     verified:
       boolean(legacy.verified) ??
@@ -133,18 +133,25 @@ export function socialUser(input: unknown): JsonRecord {
       boolean(result.is_blue_verified) ??
       false,
     followers_count:
-      number(legacy.followers_count) ?? number(relationshipCounts.followers) ?? 0,
+      number(legacy.followers_count) ??
+      number(relationshipCounts.followers) ??
+      0,
     friends_count:
       number(legacy.friends_count) ?? number(relationshipCounts.following) ?? 0,
     listed_count: number(legacy.listed_count) ?? 0,
     favourites_count:
-      number(legacy.favourites_count) ?? number(actionCounts.favorites_count) ?? 0,
-    statuses_count: number(legacy.statuses_count) ?? number(tweetCounts.tweets) ?? 0,
+      number(legacy.favourites_count) ??
+      number(actionCounts.favorites_count) ??
+      0,
+    statuses_count:
+      number(legacy.statuses_count) ?? number(tweetCounts.tweets) ?? 0,
     created_at: toIso(string(legacy.created_at) ?? string(core.created_at)),
     profile_banner_url:
       string(legacy.profile_banner_url) ?? string(banner.image_url) ?? null,
     profile_image_url_https:
-      string(legacy.profile_image_url_https) ?? string(avatar.image_url) ?? null,
+      string(legacy.profile_image_url_https) ??
+      string(avatar.image_url) ??
+      null,
     can_dm: boolean(legacy.can_dm) ?? boolean(dmPermissions.can_dm) ?? false,
     raw_twitter: result,
   };
@@ -166,7 +173,9 @@ export function socialTweet(input: unknown): JsonRecord | undefined {
   const parsed = parseTweetResult(result);
   if (!result || !parsed) return undefined;
   const legacy = rawLegacy(result) ?? {};
-  const quoted = unwrapResult(record(record(result.quoted_status_result)?.result));
+  const quoted = unwrapResult(
+    record(record(result.quoted_status_result)?.result),
+  );
   const retweeted = unwrapResult(
     record(record(legacy.retweeted_status_result)?.result),
   );
@@ -183,8 +192,8 @@ export function socialTweet(input: unknown): JsonRecord | undefined {
     user: socialUser(tweetUser(result)),
     quoted_status_id_str: parsed.quotedStatusId ?? null,
     is_quote_status: parsed.isQuoted,
-    quoted_status: quoted ? socialTweet(quoted) ?? null : null,
-    retweeted_status: retweeted ? socialTweet(retweeted) ?? null : null,
+    quoted_status: quoted ? (socialTweet(quoted) ?? null) : null,
+    retweeted_status: retweeted ? (socialTweet(retweeted) ?? null) : null,
     quote_count: number(legacy.quote_count) ?? 0,
     reply_count: parsed.replies ?? 0,
     retweet_count: parsed.retweets ?? 0,
@@ -198,12 +207,16 @@ export function socialTweet(input: unknown): JsonRecord | undefined {
   };
 }
 
-export function timelineResponse(json: unknown) {
+export function timelineResponse(json: unknown, userId?: string) {
   return {
     next_cursor: findBottomCursor(json) ?? null,
     tweets: extractTweetResults(json)
       .map(socialTweet)
-      .filter((tweet): tweet is JsonRecord => !!tweet),
+      .filter((tweet): tweet is JsonRecord => {
+        if (!tweet) return false;
+        if (!userId) return true;
+        return string(record(tweet.user)?.id_str) === userId;
+      }),
   };
 }
 

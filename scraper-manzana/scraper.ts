@@ -60,10 +60,7 @@ async function scrapNewTweetsWithBrowserRetries(
         timeoutMs,
         `Browser scraper attempt ${attempt}`,
       );
-      return assertEnoughTweets(
-        scrap,
-        `Browser scraper attempt ${attempt}`,
-      );
+      return assertEnoughTweets(scrap, `Browser scraper attempt ${attempt}`);
     },
     {
       retries: BROWSER_SCRAPER_RETRIES,
@@ -85,19 +82,22 @@ export async function notifyTelegram(message: string) {
     return;
   }
 
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: truncateTelegramMessage(message),
-      disable_web_page_preview: true,
-    }),
-  });
+  const response = await fetch(
+    `https://api.telegram.org/bot${token}/sendMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: truncateTelegramMessage(message),
+        disable_web_page_preview: true,
+      }),
+    },
+  );
 
   if (!response.ok) {
     console.error(
-      `[notify] telegram send failed: ${response.status} ${await response.text()}`
+      `[notify] telegram send failed: ${response.status} ${await response.text()}`,
     );
   }
 }
@@ -109,12 +109,6 @@ export async function scrapNewTweetsWithFallback(lastIds: string[]) {
     return await scrapNewTweetsWithBrowserRetries(lastIds, browserTimeoutMs);
   } catch (browserError) {
     console.error("[cron] browser scraper failed", browserError);
-    await notifyTelegram(
-      [
-        "milei-twitter browser scraper failed; falling back to SocialData.",
-        errorMessage(browserError),
-      ].join("\n\n")
-    );
 
     try {
       return assertEnoughTweets(
@@ -122,13 +116,14 @@ export async function scrapNewTweetsWithFallback(lastIds: string[]) {
         "SocialData fallback",
       );
     } catch (socialdataError) {
-      await notifyTelegram(
+      throw new AggregateError(
+        [browserError, socialdataError],
         [
-          "milei-twitter SocialData fallback also failed.",
-          errorMessage(socialdataError),
-        ].join("\n\n")
+          "Both tweet sources failed.",
+          `Browser: ${errorMessage(browserError)}`,
+          `SocialData: ${errorMessage(socialdataError)}`,
+        ].join("\n"),
       );
-      throw socialdataError;
     }
   }
 }

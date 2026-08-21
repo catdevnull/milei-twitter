@@ -11,6 +11,7 @@ WorkingDirectory=/opt/milei-twitter/twitter-gateway
 EnvironmentFile=/etc/twitter-gateway/twitter-gateway.env
 Environment=HOST=127.0.0.1
 Environment=PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
+Environment=TWITTER_DEBUG_DIR=/var/lib/twitter-gateway/debug
 ExecStart=/usr/bin/node --import tsx src/index.ts
 Restart=on-failure
 RestartSec=5s

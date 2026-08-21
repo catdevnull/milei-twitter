@@ -136,3 +136,51 @@ test("retries account-specific authorization and not-found failures", async () =
     assert.deepEqual(visited, ["account0", "account1"]);
   }
 });
+
+test("rotates accounts after a transient network failure", async () => {
+  process.env.ACCOUNTS_LIST = accounts(2);
+  const visited: string[] = [];
+  const pool = new AccountPool(undefined, {
+    maxActiveAccounts: 1,
+    sessionFactory: async (account) =>
+      asBrowserSession({
+        account: account.username,
+        close: async () => {},
+      }),
+  });
+
+  const result = await pool.run(async (session) => {
+    const name = (session as unknown as FakeSession).account;
+    visited.push(name);
+    if (name === "account0") throw new TypeError("fetch failed");
+    return name;
+  });
+
+  assert.equal(result, "account1");
+  assert.deepEqual(visited, ["account0", "account1"]);
+});
+
+test("skips an account whose browser session cannot initialize", async () => {
+  process.env.ACCOUNTS_LIST = accounts(2);
+  const initialized: string[] = [];
+  const pool = new AccountPool(undefined, {
+    maxActiveAccounts: 1,
+    sessionFactory: async (account) => {
+      initialized.push(account.username);
+      if (account.username === "account0") {
+        throw new Error("navigation timed out");
+      }
+      return asBrowserSession({
+        account: account.username,
+        close: async () => {},
+      });
+    },
+  });
+
+  const result = await pool.run(
+    async (session) => (session as unknown as FakeSession).account,
+  );
+
+  assert.equal(result, "account1");
+  assert.deepEqual(initialized, ["account0", "account1"]);
+});

@@ -8,9 +8,11 @@ import {
   replaceGraphqlQueryId,
   TIMELINE_OPERATION_ALIASES,
   TIMELINE_OPERATION_NAME,
+  TIMELINE_USER_ID,
 } from "./scraper.ts";
 
 test("captures X's current replies timeline operation", () => {
+  assert.equal(TIMELINE_USER_ID, "4020276615");
   assert.equal(TIMELINE_OPERATION_NAME, "UserRepliesTimeline");
   assert.deepEqual(TIMELINE_OPERATION_ALIASES, [
     "UserRepliesTimeline",
@@ -70,7 +72,10 @@ test("extracts an ondemand challenge from the direct manifest", () => {
 });
 
 test("returns undefined when the page has no responsive-web challenge", () => {
-  assert.equal(extractChallengeCode('<script src="entry-client.js">'), undefined);
+  assert.equal(
+    extractChallengeCode('<script src="entry-client.js">'),
+    undefined,
+  );
 });
 
 test("parses author identity from the current user core shape", () => {

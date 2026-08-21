@@ -1,4 +1,8 @@
 import type { BrowserTwitterSession } from "scraper-manzana/browser-twitter";
+import {
+  TIMELINE_OPERATION_NAME,
+  TwitterApiError,
+} from "scraper-manzana/browser-twitter";
 import { AccountPool } from "./account-pool.ts";
 import {
   extractProfileResult,
@@ -16,18 +20,29 @@ export class TwitterGateway {
       url.searchParams.set("q", query);
       url.searchParams.set("src", "typed_query");
       url.searchParams.set("f", type === "Latest" ? "live" : "top");
-      const template = await session.graphqlTemplate(
-        "SearchTimeline",
-        url.toString(),
-        "SearchTimeline",
-      );
-      return timelineResponse(
-        await session.fetchGraphql(template, {
-          cursor,
-          product: type,
-          rawQuery: query,
-        }),
-      );
+      const variables = { cursor, product: type, rawQuery: query };
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        const template = await session.graphqlTemplate(
+          "SearchTimeline",
+          url.toString(),
+          "SearchTimeline",
+        );
+        try {
+          return timelineResponse(
+            await session.fetchGraphql(template, variables),
+          );
+        } catch (error) {
+          if (
+            !(error instanceof TwitterApiError) ||
+            error.status !== 404 ||
+            attempt === 2
+          ) {
+            throw error;
+          }
+          session.invalidateGraphqlTemplate("SearchTimeline");
+        }
+      }
+      throw new Error("SearchTimeline retry exhausted");
     });
   }
 
@@ -68,7 +83,7 @@ export class TwitterGateway {
   tweets(userId: string, includeReplies: boolean, cursor?: string) {
     return this.accounts.run(async (session) => {
       const suffix = includeReplies ? "with_replies" : "";
-      const operation = includeReplies ? "UserTweetsAndReplies" : "UserTweets";
+      const operation = includeReplies ? TIMELINE_OPERATION_NAME : "UserTweets";
       const pageUrl = `https://x.com/JMilei/${suffix}`.replace(/\/$/, "");
       const template = await session.graphqlTemplate(
         operation,
@@ -79,7 +94,7 @@ export class TwitterGateway {
         userId,
         cursor,
       });
-      return timelineResponse(json);
+      return timelineResponse(json, userId);
     });
   }
 

@@ -48,6 +48,19 @@ function positiveInteger(value: number | string | undefined, fallback: number) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function isTransientNetworkError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  if (error.name === "TimeoutError" || error.name === "AbortError") return true;
+  if (error instanceof TypeError && error.message === "fetch failed")
+    return true;
+  const cause = error.cause;
+  if (!cause || typeof cause !== "object") return false;
+  const code = "code" in cause ? String(cause.code) : "";
+  return ["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "UND_ERR_SOCKET"].includes(
+    code,
+  );
+}
+
 export class AccountPool {
   private activeInitializations = 0;
   private readonly bootstrapConcurrency: number;
@@ -98,9 +111,16 @@ export class AccountPool {
       try {
         return await work(entry.session!);
       } catch (error) {
-        if (!(error instanceof TwitterApiError)) throw error;
-        if (error.status === 429) this.markRateLimited(entry);
-        else if (![401, 403, 404].includes(error.status)) throw error;
+        if (error instanceof TwitterApiError) {
+          if (error.status === 429) this.markRateLimited(entry);
+          else if ([401, 403, 404].includes(error.status)) {
+            this.markTemporarilyUnavailable(entry);
+          } else throw error;
+        } else if (!isTransientNetworkError(error)) {
+          throw error;
+        } else {
+          this.markTemporarilyUnavailable(entry);
+        }
         excluded.add(entry);
       } finally {
         this.release(entry);
@@ -126,6 +146,7 @@ export class AccountPool {
     entries: PoolEntry[],
     excluded: ReadonlySet<PoolEntry> = new Set(),
   ): Promise<PoolEntry> {
+    const failedInitializations = new Set<PoolEntry>();
     for (;;) {
       const now = Date.now();
       const ready = this.rotated(entries).filter(
@@ -146,13 +167,12 @@ export class AccountPool {
       }
 
       const active = entries.filter(
-        (entry) =>
-          !excluded.has(entry) &&
-          (entry.session || entry.initializing || entry.closing),
+        (entry) => entry.session || entry.initializing || entry.closing,
       ).length;
       const uninitialized = this.rotated(entries).find(
         (entry) =>
           !excluded.has(entry) &&
+          !failedInitializations.has(entry) &&
           !entry.session &&
           !entry.initializing &&
           !entry.closing &&
@@ -168,17 +188,45 @@ export class AccountPool {
           return uninitialized;
         } catch (error) {
           uninitialized.inFlight = 0;
+          failedInitializations.add(uninitialized);
+          uninitialized.rateLimitedUntil =
+            Date.now() +
+            Number(process.env.ACCOUNT_INITIALIZATION_RETRY_MS ?? 60_000);
+          console.error(
+            `[twitter-gateway] could not initialize @${uninitialized.account.username}; trying another account`,
+            error,
+          );
           this.notifyWaiters();
-          throw error;
+          continue;
         }
       }
 
-      const everyAccountLimited = entries.every(
+      const candidates = entries.filter(
+        (entry) => !excluded.has(entry) && !failedInitializations.has(entry),
+      );
+      if (candidates.length === 0) {
+        const retryAt = Math.min(
+          ...entries
+            .filter((entry) => !excluded.has(entry))
+            .map((entry) => entry.rateLimitedUntil),
+        );
+        throw new AllAccountsRateLimitedError(retryAt);
+      }
+      const maxActive = Math.min(this.maxActiveAccounts, entries.length);
+      const hasUsableActiveEntry = candidates.some(
+        (entry) => entry.session || entry.initializing || entry.closing,
+      );
+      if (active >= maxActive && !hasUsableActiveEntry) {
+        await this.waitForAvailability(10_000);
+        continue;
+      }
+
+      const everyAccountLimited = candidates.every(
         (entry) => entry.rateLimitedUntil > now,
       );
       if (everyAccountLimited) {
         throw new AllAccountsRateLimitedError(
-          Math.min(...entries.map((entry) => entry.rateLimitedUntil)),
+          Math.min(...candidates.map((entry) => entry.rateLimitedUntil)),
         );
       }
 
@@ -239,6 +287,14 @@ export class AccountPool {
         `[twitter-gateway] @${entry.account.username} rate limited; draining and rotating account`,
       );
     }
+  }
+
+  private markTemporarilyUnavailable(entry: PoolEntry) {
+    entry.rateLimitedUntil = Math.max(
+      entry.rateLimitedUntil,
+      Date.now() +
+        Number(process.env.ACCOUNT_TRANSIENT_FAILURE_COOLDOWN_MS ?? 60_000),
+    );
   }
 
   private release(entry: PoolEntry) {

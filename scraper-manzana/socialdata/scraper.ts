@@ -40,15 +40,12 @@ async function get(url: string): Promise<unknown> {
 
 async function getUser(userIdOrHandle: string) {
   const response = await get(
-    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userIdOrHandle}`
+    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userIdOrHandle}`,
   );
   return z.union([SocialDataUser, SocialDataGenericResponse]).parse(response);
 }
 
-async function getTweetsAndReplies(
-  userIdOrHandle: string,
-  cursor?: string
-) {
+async function getTweetsAndReplies(userIdOrHandle: string, cursor?: string) {
   let userId = userIdOrHandle;
   if (!userIdOrHandle.match(/^\d+$/)) {
     const user = await getUser(userIdOrHandle);
@@ -57,7 +54,7 @@ async function getTweetsAndReplies(
   }
   const param = cursor ? `cursor=${cursor}` : "";
   const response = await get(
-    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userId}/tweets-and-replies?${param}`
+    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userId}/tweets-and-replies?${param}`,
   );
   const parsed = z
     .union([SocialDataTweetsResponse, SocialDataErrorResponse])
@@ -69,11 +66,15 @@ async function getTweetsAndReplies(
   throw parsed.error;
 }
 
-async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
+async function* getTweetsAndRepliesIterator(
+  userIdOrHandle: string,
+  initialCursor?: string,
+) {
   let res: SocialDataTweetsResponse | null = null;
   const seenCursors = new Set<string>();
+  let nextCursor = initialCursor;
   while (true) {
-    const cursor = res?.next_cursor;
+    const cursor = nextCursor;
     if (cursor) {
       if (seenCursors.has(cursor)) break;
       seenCursors.add(cursor);
@@ -83,6 +84,7 @@ async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
       throw new Error(JSON.stringify(_res));
     }
     res = _res;
+    nextCursor = res.next_cursor;
     yield res.tweets.map(intoTwitterScraperTweet);
     if (!res.next_cursor) {
       break;
@@ -90,8 +92,8 @@ async function* getTweetsAndRepliesIterator(userIdOrHandle: string) {
   }
 }
 
-function intoTwitterScraperTweet(
-  tweet: SocialDataTweet | SocialDataBaseTweet
+export function intoTwitterScraperTweet(
+  tweet: SocialDataTweet | SocialDataBaseTweet,
 ): TwitterCompatTweet & {
   rawFromSocialData: SocialDataTweet | SocialDataBaseTweet;
 } {
@@ -185,7 +187,10 @@ function oldestTweetDateForScrape() {
   return days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
 }
 
-export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
+export async function scrapNewTweets(
+  lastTweetIds?: string[],
+  initialCursor?: string,
+): Promise<Scrap> {
   const tweets: NonNullable<Scrap["tweets"]> = [];
   const retweets: Array<Retweet> = [];
   const seen = new Set<string>();
@@ -194,7 +199,10 @@ export async function scrapNewTweets(lastTweetIds?: string[]): Promise<Scrap> {
   try {
     let finished = false;
     let sawTweetWithinDate = false;
-    for await (const scrappedTweets of getTweetsAndRepliesIterator("jmilei")) {
+    for await (const scrappedTweets of getTweetsAndRepliesIterator(
+      "jmilei",
+      initialCursor,
+    )) {
       if (finished) break;
 
       let newTweetsOnPage = 0;

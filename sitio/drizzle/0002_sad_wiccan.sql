@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "db_tweets_captured_at_idx" ON "db_tweets" USING btree ("captured_at");
