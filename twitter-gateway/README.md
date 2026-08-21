@@ -66,12 +66,25 @@ account by default; warm accounts still run concurrently.
 
 Proxy and browser settings are the same as `scraper-manzana`, including
 `PROXY_URL`, `WEBSHARE_PROXY_LIST_URL`, `TWITTER_BROWSER_EXECUTABLE_PATH`, and
-`TWITTER_BROWSER_HEADLESS`.
+`TWITTER_BROWSER_HEADLESS`. Proxy lists are downloaded once per process and
+assigned deterministically by account position instead of sending every
+account through the first proxy.
 
 GraphQL templates and transaction-solver source data are discovered once per
 process and shared across account contexts. Gateway calls use raw `undici`
 requests with a fresh browser-generated `x-client-transaction-id`; they do not
-reload the X frontend.
+reload the X frontend. `SearchTimeline` uses X's current mixed POST shape
+(variables in the URL; features and query ID in the JSON body). Because X can
+occasionally bootstrap a transaction key that strict endpoints reject with an
+empty HTTP 404, Search automatically rebuilds the transaction solver up to
+three times before rotating accounts.
+
+Compatibility references worth checking when X changes its wire format:
+
+- [gobird wire protocol](https://github.com/mudrii/gobird/blob/main/docs/wire-protocol.md)
+- [Twikit transaction parser fix](https://github.com/d60/twikit/pull/410)
+- [twscrape](https://github.com/vladkens/twscrape)
+- [twitter-scraper](https://github.com/the-convocation/twitter-scraper)
 
 Every raw X GraphQL request is recorded in SQLite with its timestamp, method,
 path, operation, status, duration, account, and error. The default database is
