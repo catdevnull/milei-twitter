@@ -99,6 +99,7 @@ async function main() {
   const since = arg("--since");
   const until = arg("--until");
   const outPath = arg("--out");
+  const querySuffix = arg("--query-suffix", "")!.trim();
   const minWindowSeconds = Number(arg("--min-window-seconds", "60"));
   const pageCapacity = Number(arg("--page-capacity", "20"));
   if (!apiKey || !handle || !userId || !since || !until || !outPath) {
@@ -116,7 +117,14 @@ async function main() {
   const seen = await existingIds(outPath);
   while (state.pending.length > 0) {
       const interval = state.pending.pop()!;
-      const query = `from:${handle} since_time:${Math.floor(interval.start / 1_000)} until_time:${Math.floor(interval.end / 1_000)}`;
+      const query = [
+        `from:${handle}`,
+        `since_time:${Math.floor(interval.start / 1_000)}`,
+        `until_time:${Math.floor(interval.end / 1_000)}`,
+        querySuffix,
+      ]
+        .filter(Boolean)
+        .join(" ");
       const response = await fetchPage(baseUrl, apiKey, query);
       let written = 0;
       for (const tweet of response.tweets) {

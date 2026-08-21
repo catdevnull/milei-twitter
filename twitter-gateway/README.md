@@ -53,6 +53,9 @@ Set `ACCOUNTS_FILE_FORMAT` if the columns differ. The service runs multiple
 accounts concurrently and rotates work across them.
 Five-column files with a 40-character auth token in column four are detected
 automatically as `username:password:email:authToken:emailPassword`.
+Provider exports shaped as
+`username:password:email:twoFactorSecret:csrfToken:authToken` are also detected,
+and mixed files are parsed line by line.
 When Twitter returns HTTP 429, that account is drained, closed, and cooled down
 for 15 minutes (`ACCOUNT_RATE_LIMIT_COOLDOWN_MS`) while requests retry on the
 next available account.
@@ -70,6 +73,11 @@ Proxy and browser settings are the same as `scraper-manzana`, including
 `TWITTER_BROWSER_HEADLESS`. Proxy lists are downloaded once per process and
 assigned deterministically by account position instead of sending every
 account through the first proxy.
+
+For an exhaustive time-sliced SearchTimeline backfill, use
+`scripts/fetchTweetsByAdaptiveSearch.ts`. `--query-suffix` adds operators to
+every interval; for example, `--query-suffix filter:nativeretweets` isolates
+native retweets while preserving resumable state and coverage files.
 
 GraphQL templates and transaction-solver source data are discovered once per
 process and shared across account contexts. Gateway calls use raw `undici`
