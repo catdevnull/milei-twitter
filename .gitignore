@@ -20,5 +20,7 @@ scraper-manzana/.twitter-debug/
 
 *.local.*
 
-data/*.zip
+# Local backfill datasets and exploratory tooling.
+data/
+scripts/fetchTweetsBySearch.ts
 load-test-results/
