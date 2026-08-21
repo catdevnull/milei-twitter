@@ -273,7 +273,6 @@ async function getAccountList() {
 }
 
 function accountListFormat(source: string) {
-  if (process.env.ACCOUNTS_FILE_FORMAT) return process.env.ACCOUNTS_FILE_FORMAT;
   const fields = source.split(/\r?\n/).find(Boolean)?.split(":") ?? [];
   if (
     fields.length === 6 &&
@@ -291,11 +290,17 @@ function accountListFormat(source: string) {
   return undefined;
 }
 
+export function parseAccountSource(source: string) {
+  return process.env.ACCOUNTS_FILE_FORMAT
+    ? parseAccountList(source, process.env.ACCOUNTS_FILE_FORMAT)
+    : source
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .flatMap((line) => parseAccountList(line, accountListFormat(line)));
+}
+
 async function firstAccount(): Promise<AccountInfo> {
-  const accounts = parseAccountList(
-    await getAccountList(),
-    process.env.ACCOUNTS_FILE_FORMAT,
-  );
+  const accounts = parseAccountSource(await getAccountList());
   const account = accounts[0];
   if (!account) throw new Error("ACCOUNTS_LIST did not contain any accounts");
   return account;
@@ -351,7 +356,7 @@ async function resolveProxyUrl(account?: AccountInfo): Promise<string | undefine
   if (process.env.PROXY_URL) return normalizeProxyLine(process.env.PROXY_URL);
   if (!process.env.WEBSHARE_PROXY_LIST_URL) return undefined;
   const accountSource = await getAccountList();
-  const accounts = parseAccountList(accountSource, accountListFormat(accountSource));
+  const accounts = parseAccountSource(accountSource);
   const accountIndex = account
     ? Math.max(0, accounts.findIndex(({ username }) => username === account.username))
     : 0;

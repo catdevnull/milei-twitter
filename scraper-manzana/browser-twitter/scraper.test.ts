@@ -5,12 +5,35 @@ import {
   extractGraphqlQueryId,
   selectProxyLine,
   isGraphqlOperation,
+  parseAccountSource,
   parseTweetResult,
   replaceGraphqlQueryId,
   TIMELINE_OPERATION_ALIASES,
   TIMELINE_OPERATION_NAME,
   TIMELINE_USER_ID,
 } from "./scraper.ts";
+
+test("parses mixed legacy and provider accounts for proxy assignment", () => {
+  const accounts = parseAccountSource(
+    [
+      "legacy:password:legacy@example.com:" +
+        "a".repeat(40) +
+        ":mail-password",
+      [
+        "provider",
+        "password",
+        "provider@example.com",
+        "JBSWY3DPEHPK3PXP",
+        "b".repeat(160),
+        "c".repeat(40),
+      ].join(":"),
+    ].join("\r\n"),
+  );
+
+  assert.equal(accounts.length, 2);
+  assert.equal(accounts[1]?.username, "provider");
+  assert.equal(accounts[1]?.csrfToken, "b".repeat(160));
+});
 
 test("assigns proxy-list entries deterministically by account index", () => {
   const lines = ["proxy-a:80", "", " proxy-b:81 ", "proxy-c:82"];
