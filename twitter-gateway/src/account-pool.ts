@@ -38,14 +38,25 @@ async function loadAccounts() {
   const source = process.env.ACCOUNTS_LIST
     ? process.env.ACCOUNTS_LIST
     : await readFile(process.env.ACCOUNTS_FILE_PATH ?? "accounts.txt", "utf8");
-  const accounts = parseAccountList(source, accountFormat(source));
+  const accounts = process.env.ACCOUNTS_FILE_FORMAT
+    ? parseAccountList(source, process.env.ACCOUNTS_FILE_FORMAT)
+    : source
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .flatMap((line) => parseAccountList(line, accountFormat(line)));
   if (accounts.length === 0) throw new Error("The accounts file is empty");
   return accounts;
 }
 
 function accountFormat(source: string) {
-  if (process.env.ACCOUNTS_FILE_FORMAT) return process.env.ACCOUNTS_FILE_FORMAT;
   const fields = source.split(/\r?\n/).find(Boolean)?.split(":") ?? [];
+  if (
+    fields.length === 6 &&
+    /^[0-9a-f]{160}$/i.test(fields[4] ?? "") &&
+    /^[0-9a-f]{40}$/i.test(fields[5] ?? "")
+  ) {
+    return "username:password:email:twoFactorSecret:csrfToken:authToken";
+  }
   if (fields.length === 5 && /^[0-9a-f]{40}$/i.test(fields[3] ?? "")) {
     return "username:password:email:authToken:emailPassword";
   }

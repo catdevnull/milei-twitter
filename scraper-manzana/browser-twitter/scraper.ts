@@ -275,6 +275,13 @@ async function getAccountList() {
 function accountListFormat(source: string) {
   if (process.env.ACCOUNTS_FILE_FORMAT) return process.env.ACCOUNTS_FILE_FORMAT;
   const fields = source.split(/\r?\n/).find(Boolean)?.split(":") ?? [];
+  if (
+    fields.length === 6 &&
+    /^[0-9a-f]{160}$/i.test(fields[4] ?? "") &&
+    /^[0-9a-f]{40}$/i.test(fields[5] ?? "")
+  ) {
+    return "username:password:email:twoFactorSecret:csrfToken:authToken";
+  }
   if (fields.length === 5 && /^[0-9a-f]{40}$/i.test(fields[3] ?? "")) {
     return "username:password:email:authToken:emailPassword";
   }
@@ -1333,6 +1340,26 @@ export class BrowserTwitterSession {
             secure: true,
             sameSite: "None",
           },
+          ...(account.csrfToken
+            ? ([
+                {
+                  name: "ct0",
+                  value: account.csrfToken,
+                  domain: ".x.com",
+                  path: "/",
+                  secure: true,
+                  sameSite: "Lax",
+                },
+                {
+                  name: "ct0",
+                  value: account.csrfToken,
+                  domain: ".twitter.com",
+                  path: "/",
+                  secure: true,
+                  sameSite: "Lax",
+                },
+              ] as const)
+            : []),
         ]);
         await this.page.goto("https://x.com/home", {
           waitUntil: "domcontentloaded",

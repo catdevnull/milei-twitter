@@ -10,6 +10,7 @@ export type AccountInfo = {
   emailPassword: string;
   authToken: string;
   twoFactorSecret: string;
+  csrfToken?: string;
 };
 
 /**
@@ -29,6 +30,7 @@ export function parseAccountList(
     .replace("emailPassword", `(?<emailPassword>.*)`)
     .replace("authToken", `(?<authToken>.*)`)
     .replace("twoFactorSecret", `(?<twoFactorSecret>.*)`)
+    .replace("csrfToken", `(?<csrfToken>.*)`)
     .replaceAll("ANY", `.*`);
   const exp = new RegExp(regexp);
   const accounts = csvish
@@ -48,6 +50,7 @@ export function parseAccountList(
         password,
         username,
         twoFactorSecret,
+        csrfToken,
       } = values;
       return {
         username,
@@ -56,6 +59,7 @@ export function parseAccountList(
         emailPassword,
         authToken,
         twoFactorSecret,
+        csrfToken,
       };
     });
   return accounts;

@@ -155,6 +155,35 @@ test("reports uninitialized accounts as idle without opening sessions", async ()
   );
 });
 
+test("loads mixed legacy and provider account formats", async () => {
+  process.env.ACCOUNTS_LIST = [
+    "legacy:password:legacy@example.com:" + "a".repeat(40) + ":mail-password",
+    [
+      "provider",
+      "password",
+      "provider@example.com",
+      "JBSWY3DPEHPK3PXP",
+      "b".repeat(160),
+      "c".repeat(40),
+    ].join(":"),
+  ].join("\r\n");
+  const pool = new AccountPool(undefined, {
+    sessionFactory: async (account) =>
+      asBrowserSession({
+        account: account.username,
+        close: async () => {},
+      }),
+  });
+
+  const status = await pool.status();
+
+  assert.equal(status.summary.total, 2);
+  assert.deepEqual(
+    status.accounts.map((account) => account.username),
+    ["legacy", "provider"],
+  );
+});
+
 test("retries account-specific authorization and not-found failures", async () => {
   for (const status of [401, 403, 404]) {
     process.env.ACCOUNTS_LIST = accounts(2);
