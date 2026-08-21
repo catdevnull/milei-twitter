@@ -171,6 +171,8 @@ async function getSharedBrowser(): Promise<SharedBrowserState> {
         headless,
         args: [
           "--disable-session-crashed-bubble",
+          "--disable-gpu",
+          "--disable-software-rasterizer",
           "--no-first-run",
           "--no-default-browser-check",
         ],
@@ -854,6 +856,8 @@ export class BrowserTwitterSession {
           headless,
           args: [
             "--disable-session-crashed-bubble",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
             "--no-first-run",
             "--no-default-browser-check",
           ],
@@ -862,6 +866,14 @@ export class BrowserTwitterSession {
         const { browser } = await getSharedBrowser();
         context = await browser.newContext(contextOptions);
       }
+      await context.route("**/*", async (route) => {
+        const resourceType = route.request().resourceType();
+        if (["font", "image", "media"].includes(resourceType)) {
+          await route.abort();
+        } else {
+          await route.continue();
+        }
+      });
       const page = context.pages()[0] ?? (await context.newPage());
       page.on("console", (message) => {
         console.info(`[twitter-browser:${message.type()}] ${message.text()}`);
