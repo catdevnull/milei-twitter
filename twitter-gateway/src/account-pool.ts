@@ -13,7 +13,19 @@ type PoolEntry = {
   initializing?: Promise<BrowserTwitterSession>;
   rateLimitedUntil: number;
   session?: BrowserTwitterSession;
+  unavailableReason?:
+    | "initialization_failure"
+    | "rate_limited"
+    | "transient_failure";
 };
+
+export type AccountPoolState =
+  | "closing"
+  | "idle"
+  | "initializing"
+  | "rate_limited"
+  | "ready"
+  | "temporarily_unavailable";
 
 type AccountPoolOptions = {
   bootstrapConcurrency?: number;
@@ -131,6 +143,66 @@ export class AccountPool {
     throw new AllAccountsRateLimitedError(retryAt);
   }
 
+  async status() {
+    const entries = await this.entries();
+    const now = Date.now();
+    const accounts = entries.map((entry) => {
+      const cooldownActive = entry.rateLimitedUntil > now;
+      let state: AccountPoolState;
+      if (cooldownActive && entry.unavailableReason === "rate_limited") {
+        state = "rate_limited";
+      } else if (cooldownActive) {
+        state = "temporarily_unavailable";
+      } else if (entry.initializing) {
+        state = "initializing";
+      } else if (entry.closing) {
+        state = "closing";
+      } else if (entry.session) {
+        state = "ready";
+      } else {
+        state = "idle";
+      }
+      return {
+        username: entry.account.username,
+        state,
+        in_flight: entry.inFlight,
+        session_active: Boolean(entry.session),
+        cooldown_until: cooldownActive
+          ? new Date(entry.rateLimitedUntil).toISOString()
+          : null,
+        cooldown_remaining_ms: cooldownActive
+          ? Math.max(0, entry.rateLimitedUntil - now)
+          : 0,
+        unavailable_reason: cooldownActive
+          ? (entry.unavailableReason ?? "transient_failure")
+          : null,
+      };
+    });
+    const states: AccountPoolState[] = [
+      "idle",
+      "initializing",
+      "ready",
+      "closing",
+      "rate_limited",
+      "temporarily_unavailable",
+    ];
+    const stateCounts = Object.fromEntries(
+      states.map((state) => [
+        state,
+        accounts.filter((account) => account.state === state).length,
+      ]),
+    ) as Record<AccountPoolState, number>;
+    return {
+      generated_at: new Date(now).toISOString(),
+      summary: {
+        total: accounts.length,
+        in_flight: accounts.reduce((total, account) => total + account.in_flight, 0),
+        ...stateCounts,
+      },
+      accounts,
+    };
+  }
+
   private entries() {
     this.entriesPromise ??= loadAccounts().then((accounts) =>
       accounts.map((account) => ({
@@ -192,6 +264,7 @@ export class AccountPool {
           uninitialized.rateLimitedUntil =
             Date.now() +
             Number(process.env.ACCOUNT_INITIALIZATION_RETRY_MS ?? 60_000);
+          uninitialized.unavailableReason = "initialization_failure";
           console.error(
             `[twitter-gateway] could not initialize @${uninitialized.account.username}; trying another account`,
             error,
@@ -249,6 +322,7 @@ export class AccountPool {
     this.advance(entries, entry);
     try {
       entry.session = await initialization;
+      entry.unavailableReason = undefined;
       console.info(
         `[twitter-gateway] @${entry.account.username} session ready`,
       );
@@ -282,6 +356,7 @@ export class AccountPool {
       entry.rateLimitedUntil,
       retryAt && retryAt > Date.now() ? retryAt : Date.now() + cooldown,
     );
+    entry.unavailableReason = "rate_limited";
     if (wasAvailable) {
       console.warn(
         `[twitter-gateway] @${entry.account.username} rate limited; draining and rotating account`,
@@ -295,6 +370,7 @@ export class AccountPool {
       Date.now() +
         Number(process.env.ACCOUNT_TRANSIENT_FAILURE_COOLDOWN_MS ?? 60_000),
     );
+    entry.unavailableReason = "transient_failure";
   }
 
   private release(entry: PoolEntry) {

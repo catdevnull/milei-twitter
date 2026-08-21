@@ -50,6 +50,50 @@ Returns an HTML page with service status, request statistics, and a list of avai
 
 ## Twitter Endpoints
 
+### Account Pool Status
+
+```
+GET /twitter/accounts/status
+```
+
+Returns the current browser-session and cooldown state for every configured X
+account. The response never includes passwords, email addresses, auth tokens,
+or proxy credentials. Reading this endpoint does not initialize idle sessions.
+
+**Success Response:** `HTTP 200`
+
+```json
+{
+  "generated_at": "2026-08-21T17:00:00.000Z",
+  "summary": {
+    "total": 10,
+    "in_flight": 1,
+    "idle": 7,
+    "initializing": 0,
+    "ready": 1,
+    "closing": 0,
+    "rate_limited": 1,
+    "temporarily_unavailable": 1
+  },
+  "accounts": [
+    {
+      "username": "example_account",
+      "state": "rate_limited",
+      "in_flight": 0,
+      "session_active": false,
+      "cooldown_until": "2026-08-21T17:12:00.000Z",
+      "cooldown_remaining_ms": 720000,
+      "unavailable_reason": "rate_limited"
+    }
+  ]
+}
+```
+
+Possible `state` values are `idle`, `initializing`, `ready`, `closing`,
+`rate_limited`, and `temporarily_unavailable`.
+
+---
+
 ### Search Tweets
 
 ```
@@ -433,6 +477,13 @@ HTTP 503
 ---
 
 ## Examples
+
+### Inspect account and rate-limit status
+
+```bash
+curl "https://api.url/twitter/accounts/status" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
 
 ### Search for latest tweets about a topic
 

@@ -108,6 +108,51 @@ test("drains a rate-limited account and retries on another account", async () =>
   assert.equal(result, "account1");
   assert.deepEqual(visited, ["account0", "account1"]);
   assert.deepEqual(closed, ["account0"]);
+
+  const status = await pool.status();
+  assert.deepEqual(status.summary, {
+    total: 2,
+    in_flight: 0,
+    idle: 0,
+    initializing: 0,
+    ready: 1,
+    closing: 0,
+    rate_limited: 1,
+    temporarily_unavailable: 0,
+  });
+  assert.deepEqual(status.accounts[0], {
+    username: "account0",
+    state: "rate_limited",
+    in_flight: 0,
+    session_active: false,
+    cooldown_until: status.accounts[0]?.cooldown_until,
+    cooldown_remaining_ms: status.accounts[0]?.cooldown_remaining_ms,
+    unavailable_reason: "rate_limited",
+  });
+  assert.ok((status.accounts[0]?.cooldown_remaining_ms ?? 0) > 0);
+  assert.equal("password" in status.accounts[0]!, false);
+  assert.equal("authToken" in status.accounts[0]!, false);
+});
+
+test("reports uninitialized accounts as idle without opening sessions", async () => {
+  process.env.ACCOUNTS_LIST = accounts(2);
+  let initialized = 0;
+  const pool = new AccountPool(undefined, {
+    sessionFactory: async () => {
+      initialized += 1;
+      throw new Error("should not initialize");
+    },
+  });
+
+  const status = await pool.status();
+
+  assert.equal(initialized, 0);
+  assert.equal(status.summary.total, 2);
+  assert.equal(status.summary.idle, 2);
+  assert.deepEqual(
+    status.accounts.map((account) => account.state),
+    ["idle", "idle"],
+  );
 });
 
 test("retries account-specific authorization and not-found failures", async () => {

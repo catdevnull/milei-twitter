@@ -12,9 +12,8 @@ import { TwitterGateway, TwitterUserNotFoundError } from "./gateway.ts";
 
 const app = new Hono();
 const requests = new RequestDatabase();
-const gateway = new TwitterGateway(
-  new AccountPool((event) => requests.record(event)),
-);
+const accountPool = new AccountPool((event) => requests.record(event));
+const gateway = new TwitterGateway(accountPool);
 
 function required(value: string | undefined, name: string) {
   if (!value) {
@@ -78,6 +77,7 @@ app.get("/", (c) => {
       <li><code>GET /twitter/friends/list?user_id=…&amp;cursor=…</code></li>
       <li><code>GET /twitter/user/:user_id/tweets?cursor=…</code></li>
       <li><code>GET /twitter/user/:user_id/tweets-and-replies?cursor=…</code></li>
+      <li><code>GET /twitter/accounts/status</code></li>
     </ul>
     <p>Pagination cursors are returned as <code>next_cursor</code>. Tweet and user objects include the original GraphQL result under <code>raw_twitter</code>.</p>
     <p>Twitter routes require <code>Authorization: Bearer YOUR_API_KEY</code>. <a href="/health">Health check</a>.</p>
@@ -88,6 +88,10 @@ app.get("/", (c) => {
 app.get("/health", (c) => c.json({ ok: true }));
 
 app.use("/twitter/*", apiAuth);
+
+app.get("/twitter/accounts/status", async (c) =>
+  c.json(await accountPool.status()),
+);
 
 app.get("/twitter/search", async (c) => {
   const query = required(c.req.query("query"), "query");
