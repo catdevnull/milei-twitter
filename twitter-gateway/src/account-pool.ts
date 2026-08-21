@@ -112,7 +112,7 @@ export class AccountPool {
         return await work(entry.session!);
       } catch (error) {
         if (error instanceof TwitterApiError) {
-          if (error.status === 429) this.markRateLimited(entry);
+          if (error.status === 429) this.markRateLimited(entry, error.retryAt);
           else if ([401, 403, 404].includes(error.status)) {
             this.markTemporarilyUnavailable(entry);
           } else throw error;
@@ -273,14 +273,14 @@ export class AccountPool {
     }
   }
 
-  private markRateLimited(entry: PoolEntry) {
+  private markRateLimited(entry: PoolEntry, retryAt?: number) {
     const wasAvailable = entry.rateLimitedUntil <= Date.now();
     const cooldown = Number(
       process.env.ACCOUNT_RATE_LIMIT_COOLDOWN_MS ?? 900_000,
     );
     entry.rateLimitedUntil = Math.max(
       entry.rateLimitedUntil,
-      Date.now() + cooldown,
+      retryAt && retryAt > Date.now() ? retryAt : Date.now() + cooldown,
     );
     if (wasAvailable) {
       console.warn(

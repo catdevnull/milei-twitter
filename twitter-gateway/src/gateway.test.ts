@@ -10,6 +10,7 @@ import { TwitterGateway } from "./gateway.ts";
 
 test("uses X's current replies timeline operation", async () => {
   let capturedOperation: string | undefined;
+  let capturedVariables: Record<string, unknown> | undefined;
   const session = {
     graphqlTemplate: async (
       _cacheKey: string,
@@ -19,7 +20,13 @@ test("uses X's current replies timeline operation", async () => {
       capturedOperation = operation;
       return { url: "https://x.com", variables: {}, headers: {} };
     },
-    fetchGraphql: async () => ({}),
+    fetchGraphql: async (
+      _template: unknown,
+      variables: Record<string, unknown>,
+    ) => {
+      capturedVariables = variables;
+      return {};
+    },
   } as unknown as BrowserTwitterSession;
   const accounts = {
     run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
@@ -29,6 +36,7 @@ test("uses X's current replies timeline operation", async () => {
   await new TwitterGateway(accounts).tweets("333469835", true);
 
   assert.equal(capturedOperation, TIMELINE_OPERATION_NAME);
+  assert.equal(capturedVariables?.count, 100);
 });
 
 test("recaptures a stale search template after a 404", async () => {
@@ -55,9 +63,27 @@ test("recaptures a stale search template after a 404", async () => {
       await callback(session),
   } as AccountPool;
 
-  await new TwitterGateway(accounts).search("from:example", "Latest");
+  await new TwitterGateway(accounts).search("from:example", "Latest", "cursor");
 
   assert.equal(captures, 2);
   assert.equal(invalidations, 1);
   assert.equal(requests, 2);
+});
+
+test("returns the browser-captured first search page", async () => {
+  let pageUrl: string | undefined;
+  const session = {
+    captureGraphqlJson: async (url: string) => {
+      pageUrl = url;
+      return {};
+    },
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+
+  await new TwitterGateway(accounts).search("from:example", "Latest");
+
+  assert.match(pageUrl ?? "", /q=from%3Aexample/);
 });

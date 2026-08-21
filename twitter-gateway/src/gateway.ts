@@ -20,6 +20,11 @@ export class TwitterGateway {
       url.searchParams.set("q", query);
       url.searchParams.set("src", "typed_query");
       url.searchParams.set("f", type === "Latest" ? "live" : "top");
+      if (!cursor) {
+        return timelineResponse(
+          await session.captureGraphqlJson(url.toString(), "SearchTimeline"),
+        );
+      }
       const variables = { cursor, product: type, rawQuery: query };
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         const template = await session.graphqlTemplate(
@@ -93,6 +98,7 @@ export class TwitterGateway {
       const json = await session.fetchGraphql(template, {
         userId,
         cursor,
+        count: 100,
       });
       return timelineResponse(json, userId);
     });

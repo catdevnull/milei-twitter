@@ -45,6 +45,7 @@ export class TwitterApiError extends Error {
     readonly status: number,
     readonly statusText: string,
     readonly body: string,
+    readonly retryAt?: number,
   ) {
     super(`Twitter API request failed: ${status} ${statusText} ${body}`);
     this.name = "TwitterApiError";
@@ -871,6 +872,44 @@ export class BrowserTwitterSession {
     return await this.captureGraphqlTemplate(pageUrl, operationName);
   }
 
+  async captureGraphqlJson(pageUrl: string, operationName: string) {
+    await this.ensureReady();
+    const page = await this.context.newPage();
+    const startedAt = new Date();
+    let response: Awaited<ReturnType<Page["waitForResponse"]> | undefined>;
+    let requestError: unknown;
+    try {
+      [response] = await Promise.all([
+        page.waitForResponse(
+          (candidate) => isGraphqlOperation(candidate.url(), [operationName]),
+          { timeout: Number(process.env.TWITTER_CAPTURE_TIMEOUT_MS ?? 60_000) },
+        ),
+        page.goto(pageUrl, { waitUntil: "domcontentloaded" }),
+      ]);
+      if (!response.ok()) {
+        throw new TwitterApiError(
+          response.status(),
+          response.statusText(),
+          await response.text(),
+        );
+      }
+      return await response.json();
+    } catch (error) {
+      requestError = error;
+      throw error;
+    } finally {
+      if (response) {
+        await this.recordApiRequest(
+          new URL(response.url()),
+          startedAt,
+          response.status(),
+          requestError,
+        );
+      }
+      if (this.ready) await page.close().catch(() => {});
+    }
+  }
+
   async graphqlTemplate(
     cacheKey: string,
     pageUrl: string,
@@ -929,10 +968,18 @@ export class BrowserTwitterSession {
           status = response.status;
           await this.absorbSetCookie(url, response.headers);
           if (!response.ok) {
+            const resetSeconds = Number(response.headers.get("x-rate-limit-reset"));
+            const retryAfterSeconds = Number(response.headers.get("retry-after"));
+            const retryAt = Number.isFinite(resetSeconds) && resetSeconds > 0
+              ? resetSeconds * 1_000
+              : Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+                ? Date.now() + retryAfterSeconds * 1_000
+                : undefined;
             throw new TwitterApiError(
               response.status,
               response.statusText,
               await response.text(),
+              retryAt,
             );
           }
           const json = await response.json();
@@ -959,7 +1006,9 @@ export class BrowserTwitterSession {
     operationName: string,
     operationAliases: readonly string[] = [operationName],
   ): Promise<TwitterGraphqlRequestTemplate> {
-    const page = await this.ensurePage();
+    const page = this.ready
+      ? await this.context.newPage()
+      : await this.ensurePage();
     const startedAt = new Date();
     let response: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     let requestError: unknown;
@@ -1349,7 +1398,7 @@ export class BrowserTwitterSession {
         )?.[1];
         if (!capturedTransactionId) throw error;
         console.warn(
-          "[twitter-browser] transaction solver timed out; using captured transaction ID",
+          "[twitter-browser] transaction solver failed; using captured transaction ID",
         );
         headers.set("x-client-transaction-id", capturedTransactionId);
       }
@@ -1596,7 +1645,7 @@ export class BrowserTwitterSession {
             if (!solve) throw new Error("Transaction solver is not installed");
             return await solve(path, method);
           },
-          { path: url.pathname, method },
+          { path: `${url.pathname}${url.search}`, method },
         ),
         new Promise<never>((_, reject) => {
           timer = setTimeout(

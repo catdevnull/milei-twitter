@@ -153,9 +153,12 @@ app.onError((error, c) => {
     return c.json({ error: error.message }, 404);
   }
   if (error instanceof AllAccountsRateLimitedError) {
+    // X's reset timestamps and the gateway clock can differ by a few seconds.
+    // Retrying on the exact boundary can renew a sliding rate-limit window.
+    const retrySafetySeconds = 10;
     const retryAfter = Math.max(
       1,
-      Math.ceil((error.retryAt - Date.now()) / 1000),
+      Math.ceil((error.retryAt - Date.now()) / 1000) + retrySafetySeconds,
     );
     c.header("Retry-After", String(retryAfter));
     return c.json({ error: error.message, retry_after: retryAfter }, 503);
