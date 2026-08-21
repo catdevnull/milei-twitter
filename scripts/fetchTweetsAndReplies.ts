@@ -9,10 +9,18 @@
  *
  * Env:
  *   SOCIALAPI_KEY=...
+ *   SOCIALAPI_BASE_URL=https://api.socialapi.me
  */
 
-import { createWriteStream, existsSync, mkdirSync, rmSync } from "node:fs";
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  rmSync,
+} from "node:fs";
 import { dirname } from "node:path";
+import { createInterface } from "node:readline";
 
 type SocialApiTweet = {
   id_str?: string;
@@ -27,6 +35,8 @@ type TimelineResponse = {
   next_cursor?: string | null;
   tweets: SocialApiTweet[];
 };
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function getArg(flag: string, fallback?: string): string | undefined {
   const idx = process.argv.findIndex(
@@ -43,32 +53,76 @@ function asString(value: unknown): string | undefined {
   return String(value);
 }
 
+async function existingTweetIds(path: string): Promise<Set<string>> {
+  const ids = new Set<string>();
+  if (!existsSync(path)) return ids;
+  const lines = createInterface({
+    input: createReadStream(path),
+    crlfDelay: Infinity,
+  });
+  for await (const line of lines) {
+    if (!line) continue;
+    const tweet = JSON.parse(line) as SocialApiTweet;
+    const id = asString(tweet.id_str ?? tweet.id);
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
 async function fetchPage(
+  baseUrl: string,
   apiKey: string,
   userId: string,
   kind: "tweets" | "tweets-and-replies",
   cursor?: string
 ): Promise<TimelineResponse> {
-  const baseUrl = `https://api.socialapi.me/twitter/user/${encodeURIComponent(userId)}/${kind}`;
+  const endpoint = `${baseUrl.replace(/\/$/, "")}/twitter/user/${encodeURIComponent(userId)}/${kind}`;
   const url = cursor
-    ? `${baseUrl}?cursor=${encodeURIComponent(cursor)}`
-    : baseUrl;
+    ? `${endpoint}?cursor=${encodeURIComponent(cursor)}`
+    : endpoint;
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "application/json",
-    },
-  });
+  let json: TimelineResponse | undefined;
+  for (let attempt = 1; attempt <= 12; attempt += 1) {
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json",
+        },
+      });
+    } catch (error) {
+      if (attempt === 12) throw error;
+      const delayMs = Math.min(30_000, attempt * 2_000);
+      console.warn(
+        `Network request failed; retrying in ${Math.ceil(delayMs / 1_000)}s (attempt ${attempt}/12)`
+      );
+      await sleep(delayMs);
+      continue;
+    }
 
-  if (!res.ok) {
+    if (res.ok) {
+      json = (await res.json()) as TimelineResponse;
+      break;
+    }
+
     const body = await res.text();
-    throw new Error(
-      `Request failed: ${res.status} ${res.statusText} — ${body}`
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt === 12) {
+      throw new Error(
+        `Request failed: ${res.status} ${res.statusText} — ${body}`
+      );
+    }
+    const retryAfter = Number(res.headers.get("retry-after"));
+    const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1_000
+      : Math.min(30_000, attempt * 2_000);
+    console.warn(
+      `Request failed (${res.status}); retrying in ${Math.ceil(delayMs / 1_000)}s (attempt ${attempt}/12)`
     );
+    await sleep(delayMs);
   }
 
-  const json = (await res.json()) as TimelineResponse;
   if (!json || !Array.isArray(json.tweets)) {
     throw new Error(
       `Unexpected response shape: ${JSON.stringify(json).slice(0, 500)}...`
@@ -79,6 +133,10 @@ async function fetchPage(
 
 async function main(): Promise<void> {
   const apiKey = process.env.SOCIALAPI_KEY;
+  const baseUrl =
+    getArg("--base-url") ??
+    process.env.SOCIALAPI_BASE_URL ??
+    "https://api.socialapi.me";
   const userId = getArg("--user-id");
   const outPath =
     getArg("--out") ?? `./data/${userId ?? "unknown"}.tweets-and-replies.jsonl`;
@@ -118,16 +176,17 @@ async function main(): Promise<void> {
     process.exit(1);
   });
 
-  let seenTweetIds = new Set<string>();
+  const seenTweetIds = await existingTweetIds(outPath);
   let page = 0;
   let cursor: string | undefined = startCursor;
+  const seenCursors = new Set<string>(cursor ? [cursor] : []);
   let totalFetched = 0;
   let totalWritten = 0;
 
   try {
     while (true) {
       page += 1;
-      const response = await fetchPage(apiKey, userId, kind, cursor);
+      const response = await fetchPage(baseUrl, apiKey, userId, kind, cursor);
 
       const tweets = response.tweets ?? [];
       totalFetched += tweets.length;
@@ -151,7 +210,13 @@ async function main(): Promise<void> {
       if (!hasNext) break;
       if (maxPages > 0 && page >= maxPages) break;
 
-      cursor = response.next_cursor ?? undefined;
+      const nextCursor = response.next_cursor ?? undefined;
+      if (nextCursor && seenCursors.has(nextCursor)) {
+        console.warn("Stopping because Twitter returned a repeated cursor");
+        break;
+      }
+      if (nextCursor) seenCursors.add(nextCursor);
+      cursor = nextCursor;
     }
   } finally {
     writeStream.end();
