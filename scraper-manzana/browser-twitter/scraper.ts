@@ -270,6 +270,18 @@ async function getAccountList() {
   return await readFile(accountsFilePath, "utf-8");
 }
 
+function accountListFormat(source: string) {
+  if (process.env.ACCOUNTS_FILE_FORMAT) return process.env.ACCOUNTS_FILE_FORMAT;
+  const fields = source.split(/\r?\n/).find(Boolean)?.split(":") ?? [];
+  if (fields.length === 5 && /^[0-9a-f]{40}$/i.test(fields[3] ?? "")) {
+    return "username:password:email:authToken:emailPassword";
+  }
+  if (fields.length === 5) {
+    return "username:password:email:emailPassword:authToken";
+  }
+  return undefined;
+}
+
 async function firstAccount(): Promise<AccountInfo> {
   const accounts = parseAccountList(
     await getAccountList(),
@@ -306,25 +318,36 @@ export function selectProxyLine(
   return available[Math.max(0, accountIndex) % available.length];
 }
 
+let proxyLinesPromise: Promise<string[]> | undefined;
+
+async function proxyLines() {
+  proxyLinesPromise ??= (async () => {
+    const response = await undiciFetch(process.env.WEBSHARE_PROXY_LIST_URL!);
+    if (!response.ok) {
+      throw new Error(
+        `Could not download proxy list: ${response.status} ${response.statusText}`,
+      );
+    }
+    return (await response.text()).split(/\r?\n/g);
+  })();
+  try {
+    return await proxyLinesPromise;
+  } catch (error) {
+    proxyLinesPromise = undefined;
+    throw error;
+  }
+}
+
 async function resolveProxyUrl(account?: AccountInfo): Promise<string | undefined> {
   if (process.env.PROXY_URL) return normalizeProxyLine(process.env.PROXY_URL);
   if (!process.env.WEBSHARE_PROXY_LIST_URL) return undefined;
-
-  const response = await undiciFetch(process.env.WEBSHARE_PROXY_LIST_URL);
-  if (!response.ok) {
-    throw new Error(
-      `Could not download proxy list: ${response.status} ${response.statusText}`,
-    );
-  }
-  const accounts = parseAccountList(
-    await getAccountList(),
-    process.env.ACCOUNTS_FILE_FORMAT,
-  );
+  const accountSource = await getAccountList();
+  const accounts = parseAccountList(accountSource, accountListFormat(accountSource));
   const accountIndex = account
     ? Math.max(0, accounts.findIndex(({ username }) => username === account.username))
     : 0;
   const proxyLine = selectProxyLine(
-    (await response.text()).split(/\r?\n/g),
+    await proxyLines(),
     accountIndex,
   );
   if (!proxyLine) throw new Error("Downloaded proxy list was empty");
