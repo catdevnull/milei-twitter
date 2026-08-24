@@ -1,6 +1,6 @@
 import { db } from "$lib/db";
 import { and, desc, gt, isNotNull, sql } from "drizzle-orm";
-import { likedTweets, retweets, scraps, tweets } from "../../../../schema";
+import { likedTweets, retweets, scraps } from "../../../../schema";
 import { likesCutoffSql } from "$lib/consts";
 
 const SCRAPE_INTERVAL_MINUTES = 30;
@@ -9,8 +9,6 @@ const SCRAPE_GRACE_MINUTES = 8;
 const MAX_SCRAP_AGE_MINUTES =
   SCRAPE_INTERVAL_MINUTES * MISSED_SCRAPES_BEFORE_FAILURE +
   SCRAPE_GRACE_MINUTES;
-const MAX_NEW_TWEET_AGE_HOURS = 6;
-const MILEI_USER_ID = "4020276615";
 
 export async function GET() {
   const errors: Array<string> = [];
@@ -20,11 +18,6 @@ export async function GET() {
       isNotNull(scraps.totalTweetsSeen),
       gt(scraps.totalTweetsSeen, 0),
     ),
-  });
-  const lastCapturedTweet = await db.query.tweets.findFirst({
-    columns: { capturedAt: true },
-    orderBy: desc(tweets.capturedAt),
-    where: sql`${tweets.twitterScraperJson}->>'userId' = ${MILEI_USER_ID}`,
   });
   // const lastScrapWithLikes = await db
   //   .select({
@@ -67,14 +60,6 @@ export async function GET() {
       errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);
     }
   } else errors.push("no hay scraps");
-  if (lastCapturedTweet) {
-    const delta = +new Date() - +lastCapturedTweet.capturedAt;
-    if (delta > MAX_NEW_TWEET_AGE_HOURS * 60 * 60 * 1000) {
-      errors.push(
-        `último tweet nuevo de Milei hace ${delta}ms (>${MAX_NEW_TWEET_AGE_HOURS}h)`,
-      );
-    }
-  } else errors.push("no hay tweets de Milei");
   if (lastScrapWithRetweets && lastScrapWithRetweets.length > 0) {
     const delta = +new Date() - +lastScrapWithRetweets[0].finishedAt;
     if (delta > 16 * 60 * 60 * 1000) {
