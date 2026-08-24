@@ -4,4 +4,5 @@ deploy:
 	env $(cat .env.production) pnpm db:migrate
 	# Dokku may advance its branch with generated "Automated commit" commits.
 	# Replace those only when the remote is still at the revision we fetched.
+	git fetch dokku master
 	git push --force-with-lease dokku master
