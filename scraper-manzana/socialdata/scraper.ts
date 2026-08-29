@@ -15,21 +15,26 @@ import { nanoid } from "nanoid";
 import { fetch } from "undici";
 import type { TwitterCompatTweet } from "../twitter-compat.ts";
 
-function headers() {
-  const SOCIALDATA_API_KEY = process.env.SOCIALDATA_API_KEY;
-  if (!SOCIALDATA_API_KEY) {
-    throw new Error("SOCIALDATA_API_KEY is not set");
-  }
+export type TwitterApiSource = {
+  apiKey: string;
+  baseUrl: string;
+  name: string;
+  userIdOrHandle: string;
+};
+
+function headers(apiKey: string) {
   return {
-    Authorization: `Bearer ${SOCIALDATA_API_KEY}`,
+    Authorization: `Bearer ${apiKey}`,
     Accept: "application/json",
   };
 }
 
-async function get(url: string): Promise<unknown> {
-  console.debug(`--> ${url}`);
-  const response = await fetch(url, { headers: headers() });
-  console.debug(`--> ${response.status} ${response.statusText}`);
+async function get(url: string, source: TwitterApiSource): Promise<unknown> {
+  console.debug(`[${source.name}] --> ${url}`);
+  const response = await fetch(url, { headers: headers(source.apiKey) });
+  console.debug(
+    `[${source.name}] --> ${response.status} ${response.statusText}`,
+  );
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const json = (await response.json()) as any;
   if (json.status === "error") {
@@ -38,23 +43,29 @@ async function get(url: string): Promise<unknown> {
   return json;
 }
 
-async function getUser(userIdOrHandle: string) {
+async function getUser(source: TwitterApiSource, userIdOrHandle: string) {
   const response = await get(
-    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userIdOrHandle}`,
+    `${source.baseUrl}/twitter/user/${userIdOrHandle}`,
+    source,
   );
   return z.union([SocialDataUser, SocialDataGenericResponse]).parse(response);
 }
 
-async function getTweetsAndReplies(userIdOrHandle: string, cursor?: string) {
+async function getTweetsAndRepliesFrom(
+  source: TwitterApiSource,
+  userIdOrHandle: string,
+  cursor?: string,
+) {
   let userId = userIdOrHandle;
   if (!userIdOrHandle.match(/^\d+$/)) {
-    const user = await getUser(userIdOrHandle);
+    const user = await getUser(source, userIdOrHandle);
     if ("status" in user) return user;
     userId = user.id_str;
   }
   const param = cursor ? `cursor=${cursor}` : "";
   const response = await get(
-    `${process.env.SOCIALDATA_SELFHOSTED_URL}/twitter/user/${userId}/tweets-and-replies?${param}`,
+    `${source.baseUrl}/twitter/user/${userId}/tweets-and-replies?${param}`,
+    source,
   );
   const parsed = z
     .union([SocialDataTweetsResponse, SocialDataErrorResponse])
@@ -67,6 +78,7 @@ async function getTweetsAndReplies(userIdOrHandle: string, cursor?: string) {
 }
 
 async function* getTweetsAndRepliesIterator(
+  source: TwitterApiSource,
   userIdOrHandle: string,
   initialCursor?: string,
 ) {
@@ -79,12 +91,12 @@ async function* getTweetsAndRepliesIterator(
       if (seenCursors.has(cursor)) break;
       seenCursors.add(cursor);
     }
-    const _res = await getTweetsAndReplies(userIdOrHandle, cursor);
+    const _res = await getTweetsAndRepliesFrom(source, userIdOrHandle, cursor);
     if ("status" in _res) {
       throw new Error(JSON.stringify(_res));
     }
     res = _res;
-    nextCursor = res.next_cursor;
+    nextCursor = res.next_cursor ?? undefined;
     yield res.tweets.map(intoTwitterScraperTweet);
     if (!res.next_cursor) {
       break;
@@ -191,6 +203,27 @@ export async function scrapNewTweets(
   lastTweetIds?: string[],
   initialCursor?: string,
 ): Promise<Scrap> {
+  const apiKey = process.env.SOCIALDATA_API_KEY;
+  const baseUrl = process.env.SOCIALDATA_SELFHOSTED_URL;
+  if (!apiKey) throw new Error("SOCIALDATA_API_KEY is not set");
+  if (!baseUrl) throw new Error("SOCIALDATA_SELFHOSTED_URL is not set");
+  return await scrapNewTweetsFromApi(
+    {
+      apiKey,
+      baseUrl: baseUrl.replace(/\/$/, ""),
+      name: "SocialAPI",
+      userIdOrHandle: "jmilei",
+    },
+    lastTweetIds,
+    initialCursor,
+  );
+}
+
+export async function scrapNewTweetsFromApi(
+  source: TwitterApiSource,
+  lastTweetIds?: string[],
+  initialCursor?: string,
+): Promise<Scrap> {
   const tweets: NonNullable<Scrap["tweets"]> = [];
   const retweets: Array<Retweet> = [];
   const seen = new Set<string>();
@@ -200,7 +233,8 @@ export async function scrapNewTweets(
     let finished = false;
     let sawTweetWithinDate = false;
     for await (const scrappedTweets of getTweetsAndRepliesIterator(
-      "jmilei",
+      source,
+      source.userIdOrHandle,
       initialCursor,
     )) {
       if (finished) break;

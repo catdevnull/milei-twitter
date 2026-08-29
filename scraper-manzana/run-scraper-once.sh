@@ -25,7 +25,6 @@ curl -sf -X POST "$CRON_URL" -H 'Content-Type: application/json' -d '{
 }' >/dev/null || true
 
 if timeout --kill-after=2m 25m \
-  xvfb-run -a --server-args="-screen 0 1280x900x24" \
   pnpm exec tsx cron-runner.ts 9>&-; then
   curl -sf "${CRON_URL}?status=ok" >/dev/null || true
 else

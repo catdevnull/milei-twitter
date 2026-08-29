@@ -26,7 +26,7 @@ export const SocialDataBaseTweet = z.object({
   id_str: z.string(),
   text: z.null(),
   full_text: z.string(),
-  source: z.string(),
+  source: z.string().nullable(),
   truncated: z.boolean(),
   in_reply_to_status_id_str: z.string().nullable(),
   in_reply_to_user_id_str: z.string().nullable(),
@@ -38,31 +38,33 @@ export const SocialDataBaseTweet = z.object({
   reply_count: z.number(),
   retweet_count: z.number(),
   favorite_count: z.number(),
-  lang: z.string(),
-  entities: z.object({
-    user_mentions: z
-      .array(
-        z.object({
-          id_str: z.string(),
-          name: z.string(),
-          screen_name: z.string(),
-          indices: z.array(z.number()),
-        })
-      )
-      .default([]),
-    urls: z
-      .array(
-        z.object({
-          display_url: z.string(),
-          expanded_url: z.string().optional(),
-          indices: z.array(z.number()),
-          url: z.string(),
-        })
-      )
-      .default([]),
-    hashtags: z.array(z.unknown()).default([]),
-    symbols: z.array(z.unknown()).default([]),
-  }),
+  lang: z.string().nullable(),
+  entities: z
+    .object({
+      user_mentions: z
+        .array(
+          z.object({
+            id_str: z.string(),
+            name: z.string(),
+            screen_name: z.string(),
+            indices: z.array(z.number()),
+          }),
+        )
+        .default([]),
+      urls: z
+        .array(
+          z.object({
+            display_url: z.string(),
+            expanded_url: z.string().optional(),
+            indices: z.array(z.number()),
+            url: z.string(),
+          }),
+        )
+        .default([]),
+      hashtags: z.array(z.unknown()).default([]),
+      symbols: z.array(z.unknown()).default([]),
+    })
+    .default({}),
   views_count: z.number().nullable(),
   bookmark_count: z.number(),
 });
@@ -75,7 +77,7 @@ export const SocialDataTweet = SocialDataBaseTweet.extend({
 export type SocialDataTweet = z.infer<typeof SocialDataTweet>;
 
 export const SocialDataTweetsResponse = z.object({
-  next_cursor: z.string(),
+  next_cursor: z.string().nullable(),
   tweets: z.array(SocialDataTweet),
 });
 export type SocialDataTweetsResponse = z.infer<typeof SocialDataTweetsResponse>;

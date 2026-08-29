@@ -32,7 +32,9 @@ Variables necesarias:
 - `API_URL` (opcional, default `https://milei.nulo.lol`)
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
-- Variables del scraper de Twitter/SocialData según el modo usado.
+- `TWITTER_GATEWAY_API_KEY` for the primary Twitter gateway.
+- `TWITTER_GATEWAY_URL` (optional, default `https://docial.nulo.lol`).
+- SocialAPI variables for the fallback.
 
 En `absolute-slop`, esto encaja como un Compose app separado del Dokku app
 `milei`. La plantilla está en `deploy/scraper/`:

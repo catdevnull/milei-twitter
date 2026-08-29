@@ -1,6 +1,6 @@
 FROM node:22 AS base
 RUN apt-get update && \
-    apt-get install -y ca-certificates curl jq sqlite3 tini xauth && \
+    apt-get install -y ca-certificates curl jq sqlite3 tini && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -23,8 +23,6 @@ RUN set -eux; \
     echo "${supercronic_sha1}  /usr/local/bin/supercronic" | sha1sum -c -; \
     chmod +x /usr/local/bin/supercronic
 RUN pnpm install --filter=api --filter=scraper-manzana --prod
-COPY scraper-manzana/ensure-rebrowser-patches.mjs ensure-rebrowser-patches.mjs
-RUN pnpm run rebrowser:ensure && pnpm exec playwright install --with-deps chromium
 WORKDIR /app
 COPY . .
 WORKDIR /app/scraper-manzana

@@ -1,11 +1,11 @@
-import { scrapNewTweetsWithBrowser } from "./browser-twitter/scraper.ts";
+import { scrapNewTweets as scrapNewTweetsWithGateway } from "./twitter-gateway/scraper.ts";
 import { scrapNewTweets as scrapNewTweetsWithSocialdata } from "./socialdata/scraper.ts";
 import { fetch } from "undici";
 import pRetry from "p-retry";
 import type { Scrap } from "api/schema.ts";
 
 const MIN_TWEETS_PER_SCRAPE = 10;
-const BROWSER_SCRAPER_RETRIES = 1;
+const GATEWAY_SCRAPER_RETRIES = 1;
 
 function errorMessage(error: unknown) {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
@@ -49,24 +49,24 @@ function assertEnoughTweets(scrap: Scrap, source: string) {
   return scrap;
 }
 
-async function scrapNewTweetsWithBrowserRetries(
+async function scrapNewTweetsWithGatewayRetries(
   lastIds: string[],
   timeoutMs: number,
 ) {
   return await pRetry(
     async (attempt) => {
       const scrap = await withTimeout(
-        scrapNewTweetsWithBrowser(lastIds),
+        scrapNewTweetsWithGateway(lastIds),
         timeoutMs,
-        `Browser scraper attempt ${attempt}`,
+        `Twitter gateway attempt ${attempt}`,
       );
-      return assertEnoughTweets(scrap, `Browser scraper attempt ${attempt}`);
+      return assertEnoughTweets(scrap, `Twitter gateway attempt ${attempt}`);
     },
     {
-      retries: BROWSER_SCRAPER_RETRIES,
+      retries: GATEWAY_SCRAPER_RETRIES,
       onFailedAttempt: (error) => {
         console.warn(
-          `[cron] browser scraper attempt ${error.attemptNumber} failed; retrying`,
+          `[cron] Twitter gateway attempt ${error.attemptNumber} failed; retrying`,
           error,
         );
       },
@@ -104,11 +104,17 @@ export async function notifyTelegram(message: string) {
 
 export async function scrapNewTweetsWithFallback(lastIds: string[]) {
   try {
-    const browserTimeoutMs =
-      envNumber("BROWSER_SCRAPER_TIMEOUT_MS") ?? 5 * 60 * 1000;
-    return await scrapNewTweetsWithBrowserRetries(lastIds, browserTimeoutMs);
-  } catch (browserError) {
-    console.error("[cron] browser scraper failed", browserError);
+    const gatewayTimeoutMs =
+      envNumber("TWITTER_GATEWAY_TIMEOUT_MS") ?? 5 * 60 * 1000;
+    return await scrapNewTweetsWithGatewayRetries(lastIds, gatewayTimeoutMs);
+  } catch (gatewayError) {
+    console.error("[cron] Twitter gateway failed", gatewayError);
+    await notifyTelegram(
+      [
+        "milei-twitter gateway failed; falling back to SocialAPI.",
+        errorMessage(gatewayError),
+      ].join("\n\n"),
+    );
 
     try {
       return assertEnoughTweets(
@@ -117,11 +123,11 @@ export async function scrapNewTweetsWithFallback(lastIds: string[]) {
       );
     } catch (socialdataError) {
       throw new AggregateError(
-        [browserError, socialdataError],
+        [gatewayError, socialdataError],
         [
           "Both tweet sources failed.",
-          `Browser: ${errorMessage(browserError)}`,
-          `SocialData: ${errorMessage(socialdataError)}`,
+          `Gateway: ${errorMessage(gatewayError)}`,
+          `SocialAPI: ${errorMessage(socialdataError)}`,
         ].join("\n"),
       );
     }
