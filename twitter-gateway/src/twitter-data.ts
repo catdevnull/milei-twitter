@@ -168,6 +168,22 @@ function tweetUser(result: JsonRecord) {
   return record(record(core?.user_results)?.result);
 }
 
+function completeNestedTweet(input: unknown): JsonRecord | undefined {
+  const tweet = socialTweet(input);
+  if (!tweet || typeof tweet.tweet_created_at !== "string") return undefined;
+  const user = record(tweet.user);
+  if (
+    typeof user?.id_str !== "string" ||
+    typeof user.name !== "string" ||
+    typeof user.screen_name !== "string" ||
+    typeof user.created_at !== "string" ||
+    typeof user.profile_image_url_https !== "string"
+  ) {
+    return undefined;
+  }
+  return tweet;
+}
+
 export function socialTweet(input: unknown): JsonRecord | undefined {
   const result = unwrapResult(input);
   const parsed = parseTweetResult(result);
@@ -192,8 +208,8 @@ export function socialTweet(input: unknown): JsonRecord | undefined {
     user: socialUser(tweetUser(result)),
     quoted_status_id_str: parsed.quotedStatusId ?? null,
     is_quote_status: parsed.isQuoted,
-    quoted_status: quoted ? (socialTweet(quoted) ?? null) : null,
-    retweeted_status: retweeted ? (socialTweet(retweeted) ?? null) : null,
+    quoted_status: quoted ? (completeNestedTweet(quoted) ?? null) : null,
+    retweeted_status: retweeted ? (completeNestedTweet(retweeted) ?? null) : null,
     quote_count: number(legacy.quote_count) ?? 0,
     reply_count: parsed.replies ?? 0,
     retweet_count: parsed.retweets ?? 0,

@@ -87,6 +87,7 @@ export const TIMELINE_OPERATION_ALIASES = [
   TIMELINE_OPERATION_NAME,
   "UserTweetsAndReplies",
 ] as const;
+export const ORIGINALS_TIMELINE_OPERATION_NAME = "UserOriginalsTimeline";
 
 export function isGraphqlOperation(
   requestUrl: string,
@@ -352,18 +353,20 @@ async function proxyLines() {
   }
 }
 
-async function resolveProxyUrl(account?: AccountInfo): Promise<string | undefined> {
+async function resolveProxyUrl(
+  account?: AccountInfo,
+): Promise<string | undefined> {
   if (process.env.PROXY_URL) return normalizeProxyLine(process.env.PROXY_URL);
   if (!process.env.WEBSHARE_PROXY_LIST_URL) return undefined;
   const accountSource = await getAccountList();
   const accounts = parseAccountSource(accountSource);
   const accountIndex = account
-    ? Math.max(0, accounts.findIndex(({ username }) => username === account.username))
+    ? Math.max(
+        0,
+        accounts.findIndex(({ username }) => username === account.username),
+      )
     : 0;
-  const proxyLine = selectProxyLine(
-    await proxyLines(),
-    accountIndex,
-  );
+  const proxyLine = selectProxyLine(await proxyLines(), accountIndex);
   if (!proxyLine) throw new Error("Downloaded proxy list was empty");
   return normalizeProxyLine(proxyLine);
 }
@@ -1080,7 +1083,10 @@ export class BrowserTwitterSession {
     sharedSolverInitPromise = undefined;
     sharedSolverPagePromise = undefined;
     const page = await previous?.catch(() => undefined);
-    await page?.context().close().catch(() => {});
+    await page
+      ?.context()
+      .close()
+      .catch(() => {});
     await this.installTransactionSolver();
   }
 
@@ -1110,13 +1116,18 @@ export class BrowserTwitterSession {
           status = response.status;
           await this.absorbSetCookie(url, response.headers);
           if (!response.ok) {
-            const resetSeconds = Number(response.headers.get("x-rate-limit-reset"));
-            const retryAfterSeconds = Number(response.headers.get("retry-after"));
-            const retryAt = Number.isFinite(resetSeconds) && resetSeconds > 0
-              ? resetSeconds * 1_000
-              : Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-                ? Date.now() + retryAfterSeconds * 1_000
-                : undefined;
+            const resetSeconds = Number(
+              response.headers.get("x-rate-limit-reset"),
+            );
+            const retryAfterSeconds = Number(
+              response.headers.get("retry-after"),
+            );
+            const retryAt =
+              Number.isFinite(resetSeconds) && resetSeconds > 0
+                ? resetSeconds * 1_000
+                : Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+                  ? Date.now() + retryAfterSeconds * 1_000
+                  : undefined;
             throw new TwitterApiError(
               response.status,
               response.statusText,
@@ -1159,11 +1170,12 @@ export class BrowserTwitterSession {
         const headers = await response.allHeaders();
         const resetSeconds = Number(headers["x-rate-limit-reset"]);
         const retryAfterSeconds = Number(headers["retry-after"]);
-        const retryAt = Number.isFinite(resetSeconds) && resetSeconds > 0
-          ? resetSeconds * 1_000
-          : Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-            ? Date.now() + retryAfterSeconds * 1_000
-            : undefined;
+        const retryAt =
+          Number.isFinite(resetSeconds) && resetSeconds > 0
+            ? resetSeconds * 1_000
+            : Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+              ? Date.now() + retryAfterSeconds * 1_000
+              : undefined;
         throw new TwitterApiError(
           response.status(),
           response.statusText(),

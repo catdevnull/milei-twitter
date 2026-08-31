@@ -1,6 +1,6 @@
 import { db } from "$lib/db";
 import { and, desc, gt, isNotNull, sql } from "drizzle-orm";
-import { likedTweets, retweets, scraps } from "../../../../schema";
+import { likedTweets, retweets, scraps, tweets } from "../../../../schema";
 import { likesCutoffSql } from "$lib/consts";
 
 const SCRAPE_INTERVAL_MINUTES = 30;
@@ -9,6 +9,7 @@ const SCRAPE_GRACE_MINUTES = 8;
 const MAX_SCRAP_AGE_MINUTES =
   SCRAPE_INTERVAL_MINUTES * MISSED_SCRAPES_BEFORE_FAILURE +
   SCRAPE_GRACE_MINUTES;
+const MAX_NEW_TWEET_CAPTURE_AGE_HOURS = 24;
 
 export async function GET() {
   const errors: Array<string> = [];
@@ -44,6 +45,9 @@ export async function GET() {
     .where(
       sql`(select count(*) from ${retweets} where ${scraps.id} = ${retweets.scrapId}) > 0`,
     );
+  const lastCapturedTweet = await db.query.tweets.findFirst({
+    orderBy: desc(tweets.capturedAt),
+  });
   // const lastLikedTweet = await db.query.likedTweets.findFirst({
   //   orderBy: desc(likedTweets.lastSeenAt),
   //   where: likesCutoffSql,
@@ -60,6 +64,14 @@ export async function GET() {
       errors.push(`solo ${lastScrap.totalTweetsSeen} tweets vistos (<10)`);
     }
   } else errors.push("no hay scraps");
+  if (lastCapturedTweet) {
+    const delta = +new Date() - +lastCapturedTweet.capturedAt;
+    if (delta > MAX_NEW_TWEET_CAPTURE_AGE_HOURS * 60 * 60 * 1_000) {
+      errors.push(
+        `último tweet nuevo capturado hace ${delta}ms (>${MAX_NEW_TWEET_CAPTURE_AGE_HOURS}h)`,
+      );
+    }
+  } else errors.push("no hay tweets capturados");
   if (lastScrapWithRetweets && lastScrapWithRetweets.length > 0) {
     const delta = +new Date() - +lastScrapWithRetweets[0].finishedAt;
     if (delta > 16 * 60 * 60 * 1000) {

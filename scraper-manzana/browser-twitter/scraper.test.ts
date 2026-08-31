@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ORIGINALS_TIMELINE_OPERATION_NAME,
   extractChallengeCode,
   extractGraphqlQueryId,
   selectProxyLine,
@@ -16,9 +17,7 @@ import {
 test("parses mixed legacy and provider accounts for proxy assignment", () => {
   const accounts = parseAccountSource(
     [
-      "legacy:password:legacy@example.com:" +
-        "a".repeat(40) +
-        ":mail-password",
+      "legacy:password:legacy@example.com:" + "a".repeat(40) + ":mail-password",
       [
         "provider",
         "password",
@@ -49,6 +48,10 @@ test("captures X's current replies timeline operation", () => {
     "UserRepliesTimeline",
     "UserTweetsAndReplies",
   ]);
+});
+
+test("captures X's current originals timeline operation", () => {
+  assert.equal(ORIGINALS_TIMELINE_OPERATION_NAME, "UserOriginalsTimeline");
 });
 
 test("recognizes both replies timeline operation names used by X", () => {

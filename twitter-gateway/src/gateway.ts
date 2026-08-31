@@ -1,5 +1,6 @@
 import type { BrowserTwitterSession } from "scraper-manzana/browser-twitter";
 import {
+  ORIGINALS_TIMELINE_OPERATION_NAME,
   TIMELINE_OPERATION_NAME,
   TwitterApiError,
 } from "scraper-manzana/browser-twitter";
@@ -10,6 +11,55 @@ import {
   timelineResponse,
   usersResponse,
 } from "./twitter-data.ts";
+
+const COMBINED_CURSOR_PREFIX = "combined:";
+
+type CombinedCursor = {
+  originals: string | null;
+  replies: string | null;
+};
+
+function decodeCombinedCursor(cursor?: string): CombinedCursor | undefined {
+  if (!cursor?.startsWith(COMBINED_CURSOR_PREFIX)) return undefined;
+  try {
+    return JSON.parse(
+      Buffer.from(cursor.slice(COMBINED_CURSOR_PREFIX.length), "base64url").toString(),
+    ) as CombinedCursor;
+  } catch {
+    return undefined;
+  }
+}
+
+function encodeCombinedCursor(cursor: CombinedCursor) {
+  if (!cursor.originals && !cursor.replies) return null;
+  return `${COMBINED_CURSOR_PREFIX}${Buffer.from(JSON.stringify(cursor)).toString("base64url")}`;
+}
+
+function mergeTimelinePages(
+  originals: ReturnType<typeof timelineResponse> | null,
+  replies: ReturnType<typeof timelineResponse> | null,
+) {
+  const seen = new Set<string>();
+  const tweets = [...(originals?.tweets ?? []), ...(replies?.tweets ?? [])]
+    .filter((tweet) => {
+      const id = typeof tweet.id_str === "string" ? tweet.id_str : undefined;
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .sort(
+      (left, right) =>
+        Date.parse(String(right.tweet_created_at ?? "")) -
+        Date.parse(String(left.tweet_created_at ?? "")),
+    );
+  return {
+    next_cursor: encodeCombinedCursor({
+      originals: originals?.next_cursor ?? null,
+      replies: replies?.next_cursor ?? null,
+    }),
+    tweets,
+  };
+}
 
 export class TwitterGateway {
   constructor(private readonly accounts = new AccountPool()) {}
@@ -53,9 +103,9 @@ export class TwitterGateway {
       let json: unknown;
       if (numeric) {
         const template = await session.graphqlTemplate(
-          "UserTweets",
+          ORIGINALS_TIMELINE_OPERATION_NAME,
           "https://x.com/JMilei",
-          "UserTweets",
+          ORIGINALS_TIMELINE_OPERATION_NAME,
         );
         json = await session.fetchGraphql(template, { userId: identifier });
       } else {
@@ -83,20 +133,51 @@ export class TwitterGateway {
 
   tweets(userId: string, includeReplies: boolean, cursor?: string) {
     return this.accounts.run(async (session) => {
-      const suffix = includeReplies ? "with_replies" : "";
-      const operation = includeReplies ? TIMELINE_OPERATION_NAME : "UserTweets";
-      const pageUrl = `https://x.com/JMilei/${suffix}`.replace(/\/$/, "");
-      const template = await session.graphqlTemplate(
-        operation,
-        pageUrl,
-        operation,
+      const originalsTemplate = await session.graphqlTemplate(
+        ORIGINALS_TIMELINE_OPERATION_NAME,
+        "https://x.com/JMilei",
+        ORIGINALS_TIMELINE_OPERATION_NAME,
       );
-      const json = await session.fetchGraphql(template, {
-        userId,
-        cursor,
-        count: 100,
-      });
-      return timelineResponse(json, userId);
+      if (!includeReplies) {
+        return timelineResponse(
+          await session.fetchGraphql(originalsTemplate, {
+            userId,
+            cursor,
+            count: 100,
+          }),
+          userId,
+        );
+      }
+
+      const combinedCursor = decodeCombinedCursor(cursor);
+      const originalsCursor = combinedCursor?.originals;
+      const repliesCursor = combinedCursor?.replies;
+      const repliesTemplate = await session.graphqlTemplate(
+        TIMELINE_OPERATION_NAME,
+        "https://x.com/JMilei/with_replies",
+        TIMELINE_OPERATION_NAME,
+      );
+      const [originals, replies] = await Promise.all([
+        originalsCursor === null
+          ? null
+          : session
+              .fetchGraphql(originalsTemplate, {
+                userId,
+                cursor: originalsCursor,
+                count: 100,
+              })
+              .then((json) => timelineResponse(json, userId)),
+        repliesCursor === null
+          ? null
+          : session
+              .fetchGraphql(repliesTemplate, {
+                userId,
+                cursor: repliesCursor,
+                count: 100,
+              })
+              .then((json) => timelineResponse(json, userId)),
+      ]);
+      return mergeTimelinePages(originals, replies);
     });
   }
 

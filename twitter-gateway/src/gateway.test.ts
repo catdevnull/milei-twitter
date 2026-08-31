@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { BrowserTwitterSession } from "scraper-manzana/browser-twitter";
 import {
+  ORIGINALS_TIMELINE_OPERATION_NAME,
   TIMELINE_OPERATION_NAME,
   TwitterApiError,
 } from "scraper-manzana/browser-twitter";
@@ -9,22 +10,22 @@ import type { AccountPool } from "./account-pool.ts";
 import { TwitterGateway } from "./gateway.ts";
 
 test("uses X's current replies timeline operation", async () => {
-  let capturedOperation: string | undefined;
-  let capturedVariables: Record<string, unknown> | undefined;
+  const capturedOperations: string[] = [];
+  const capturedVariables: Record<string, unknown>[] = [];
   const session = {
     graphqlTemplate: async (
       _cacheKey: string,
       _pageUrl: string,
       operation: string,
     ) => {
-      capturedOperation = operation;
-      return { url: "https://x.com", variables: {}, headers: {} };
+      capturedOperations.push(operation);
+      return { url: `https://x.com/${operation}`, variables: {}, headers: {} };
     },
     fetchGraphql: async (
       _template: unknown,
       variables: Record<string, unknown>,
     ) => {
-      capturedVariables = variables;
+      capturedVariables.push(variables);
       return {};
     },
   } as unknown as BrowserTwitterSession;
@@ -33,10 +34,14 @@ test("uses X's current replies timeline operation", async () => {
       await callback(session),
   } as AccountPool;
 
-  await new TwitterGateway(accounts).tweets("333469835", true);
+  await new TwitterGateway(accounts).tweets("4020276615", true);
 
-  assert.equal(capturedOperation, TIMELINE_OPERATION_NAME);
-  assert.equal(capturedVariables?.count, 100);
+  assert.deepEqual(capturedOperations, [
+    ORIGINALS_TIMELINE_OPERATION_NAME,
+    TIMELINE_OPERATION_NAME,
+  ]);
+  assert.equal(capturedVariables.length, 2);
+  assert.ok(capturedVariables.every((variables) => variables.count === 100));
 });
 
 test("rebuilds the transaction solver after a strict search 404", async () => {

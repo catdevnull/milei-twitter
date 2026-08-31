@@ -6,6 +6,7 @@ import type { Scrap } from "api/schema.ts";
 
 const MIN_TWEETS_PER_SCRAPE = 10;
 const GATEWAY_SCRAPER_RETRIES = 1;
+const DEFAULT_MAX_LATEST_TWEET_AGE_HOURS = 24;
 
 function errorMessage(error: unknown) {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
@@ -44,6 +45,35 @@ function assertEnoughTweets(scrap: Scrap, source: string) {
   if (tweetsSeen < MIN_TWEETS_PER_SCRAPE) {
     throw new Error(
       `${source} returned ${tweetsSeen} tweets (<${MIN_TWEETS_PER_SCRAPE})`,
+    );
+  }
+  const newestTweetAt = Math.max(
+    ...(scrap.tweets ?? [])
+      .map((tweet) => {
+        try {
+          const value = JSON.parse(tweet.twitterScraperJson) as {
+            timeParsed?: string;
+            timestamp?: number;
+          };
+          if (value.timeParsed) return new Date(value.timeParsed).getTime();
+          if (value.timestamp) return value.timestamp * 1_000;
+        } catch {
+          // The API will validate the payload later; freshness is best-effort
+          // for malformed individual records.
+        }
+        return Number.NaN;
+      })
+      .filter(Number.isFinite),
+  );
+  const maxAgeHours =
+    envNumber("SCRAPER_MAX_LATEST_TWEET_AGE_HOURS") ??
+    DEFAULT_MAX_LATEST_TWEET_AGE_HOURS;
+  if (
+    Number.isFinite(newestTweetAt) &&
+    Date.now() - newestTweetAt > maxAgeHours * 60 * 60 * 1_000
+  ) {
+    throw new Error(
+      `${source} newest tweet is ${new Date(newestTweetAt).toISOString()} (>${maxAgeHours}h old)`,
     );
   }
   return scrap;

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findBottomCursor, timelineResponse } from "./twitter-data.ts";
+import {
+  findBottomCursor,
+  socialTweet,
+  timelineResponse,
+} from "./twitter-data.ts";
 
 test("selects the bottom cursor when a timeline also has a top cursor", () => {
   assert.equal(
@@ -53,4 +57,34 @@ test("filters non-author entries from a user's timeline", () => {
     response.tweets.map((item) => item.id_str),
     ["1"],
   );
+});
+
+test("drops incomplete quoted tweets without dropping the parent tweet", () => {
+  const result = socialTweet({
+    rest_id: "parent",
+    core: {
+      user_results: {
+        result: {
+          rest_id: "owner",
+          core: { name: "Owner", screen_name: "owner" },
+          legacy: { id_str: "owner" },
+        },
+      },
+    },
+    legacy: {
+      id_str: "parent",
+      created_at: "Mon Aug 31 16:35:25 +0000 2026",
+      full_text: "parent tweet",
+      entities: {},
+    },
+    quoted_status_result: {
+      result: {
+        rest_id: "partial-quote",
+        legacy: { id_str: "partial-quote", full_text: "missing author" },
+      },
+    },
+  });
+
+  assert.ok(result);
+  assert.equal(result.quoted_status, null);
 });
