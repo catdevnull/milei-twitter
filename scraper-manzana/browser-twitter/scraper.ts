@@ -123,6 +123,10 @@ export function replaceGraphqlQueryId(
   return { ...template, url: url.toString() };
 }
 
+export function twitterTransactionPath(url: URL) {
+  return url.pathname;
+}
+
 type SharedBrowserState = {
   browser: Browser;
   xvfb?: ChildProcessWithoutNullStreams;
@@ -1862,7 +1866,7 @@ export class BrowserTwitterSession {
             if (!solve) throw new Error("Transaction solver is not installed");
             return await solve(path, method);
           },
-          { path: `${url.pathname}${url.search}`, method },
+          { path: twitterTransactionPath(url), method },
         ),
         new Promise<never>((_, reject) => {
           timer = setTimeout(

@@ -12,6 +12,7 @@ import {
   TIMELINE_OPERATION_ALIASES,
   TIMELINE_OPERATION_NAME,
   TIMELINE_USER_ID,
+  twitterTransactionPath,
 } from "./scraper.ts";
 
 test("parses mixed legacy and provider accounts for proxy assignment", () => {
@@ -92,6 +93,17 @@ test("refreshes a stale GraphQL query ID from X's bundle", () => {
   assert.equal(
     refreshed.url,
     "https://x.com/i/api/graphql/fresh-id/SearchTimeline?variables=%7B%7D",
+  );
+});
+
+test("signs only the pathname for X client transactions", () => {
+  assert.equal(
+    twitterTransactionPath(
+      new URL(
+        "https://x.com/i/api/graphql/query-id/Followers?variables=%7B%7D&features=%7B%7D",
+      ),
+    ),
+    "/i/api/graphql/query-id/Followers",
   );
 });
 

@@ -7,9 +7,26 @@ config_dir="/etc/twitter-gateway"
 state_dir="/var/lib/twitter-gateway"
 service_user="twitter-gateway"
 
-if ! command -v node >/dev/null || ! command -v npm >/dev/null; then
+node_major=0
+if command -v node >/dev/null 2>&1; then
+  node_major="$(node --eval 'process.stdout.write(process.versions.node.split(".")[0])')"
+fi
+
+# node:sqlite is available in Node 22+. Ubuntu 24.04 ships Node 18 by default,
+# so install the supported runtime explicitly instead of accepting any Node.
+if (( node_major < 22 )); then
   apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs npm rsync
+  DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
+  curl --fail --silent --show-error --location \
+    https://deb.nodesource.com/setup_22.x \
+    --output /tmp/nodesource_setup_22.sh
+  bash /tmp/nodesource_setup_22.sh
+  DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+fi
+
+if ! command -v rsync >/dev/null 2>&1; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y rsync
 fi
 
 if ! command -v pnpm >/dev/null; then

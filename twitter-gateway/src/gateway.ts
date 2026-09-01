@@ -193,8 +193,21 @@ export class TwitterGateway {
         `https://x.com/JMilei/${route}`,
         operation,
       );
-      const json = await session.fetchGraphql(template, { userId, cursor });
-      return usersResponse(json);
+      let lastError: unknown;
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        try {
+          return usersResponse(
+            await session.fetchGraphql(template, { userId, cursor }),
+          );
+        } catch (error) {
+          lastError = error;
+          if (!(error instanceof TwitterApiError) || error.status !== 404) {
+            throw error;
+          }
+          if (attempt < 4) await session.resetTransactionSolver();
+        }
+      }
+      throw lastError;
     });
   }
 }

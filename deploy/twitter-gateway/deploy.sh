@@ -5,7 +5,12 @@ deploy_host="${DEPLOY_HOST:-110.172.148.79}"
 deploy_user="${DEPLOY_USER:-alwyzon}"
 deploy_target="${deploy_user}@${deploy_host}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-staging_dir="/home/${deploy_user}/milei-twitter-deploy"
+if [[ "${deploy_user}" == "root" ]]; then
+  default_staging_dir="/root/milei-twitter-deploy"
+else
+  default_staging_dir="/home/${deploy_user}/milei-twitter-deploy"
+fi
+staging_dir="${DEPLOY_STAGING_DIR:-${default_staging_dir}}"
 
 ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 

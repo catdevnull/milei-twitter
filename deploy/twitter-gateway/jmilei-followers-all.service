@@ -1,0 +1,25 @@
+[Unit]
+Description=Download all Milei followers
+After=network-online.target twitter-gateway.service
+Wants=network-online.target
+Requires=twitter-gateway.service
+
+[Service]
+Type=simple
+User=twitter-gateway
+Group=twitter-gateway
+WorkingDirectory=/opt/milei-twitter/twitter-gateway
+EnvironmentFile=/etc/twitter-gateway/followers-job.env
+ExecStart=/usr/bin/node --import tsx ../scripts/fetchFollowers.ts --base-url http://127.0.0.1:3000 --user-id 4020276615 --limit all --out /var/lib/twitter-gateway/followers/jmilei-followers-100000.jsonl --state /var/lib/twitter-gateway/followers/jmilei-followers-100000.state.json --delay-ms 250
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/twitter-gateway
+
+[Install]
+WantedBy=multi-user.target
