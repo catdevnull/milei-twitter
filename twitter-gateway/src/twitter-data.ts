@@ -243,4 +243,29 @@ export function usersResponse(json: unknown) {
   };
 }
 
+export function aboutAccountResponse(json: unknown) {
+  const root = record(json);
+  const data = record(root?.data);
+  const byScreenName = record(data?.user_result_by_screen_name);
+  const result = unwrapResult(byScreenName?.result);
+  if (!result) return undefined;
+  const core = record(result.core) ?? {};
+  const about = record(result.about_profile) ?? {};
+  const usernameChanges = record(about.username_changes) ?? {};
+  return {
+    id_str: string(result.rest_id),
+    screen_name: string(core.screen_name),
+    created_at: toIso(string(core.created_at)),
+    account_based_in: string(about.account_based_in) ?? null,
+    location_accurate: boolean(about.location_accurate) ?? null,
+    source: string(about.source) ?? null,
+    username_changes: {
+      count: number(usernameChanges.count) ?? 0,
+      last_changed_at_msec:
+        string(usernameChanges.last_changed_at_msec) ?? null,
+    },
+    raw_twitter: result,
+  };
+}
+
 export type { TwitterGraphqlRequestTemplate };

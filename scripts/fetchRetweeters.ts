@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Downloads the retweeters (reposters) of specific tweets, one JSONL per
+// tweet, resumable via per-tweet state files and deduplicated by user id.
 
 import {
   appendFileSync,
@@ -9,7 +11,7 @@ import {
   renameSync,
   writeFileSync,
 } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 
 type TwitterUser = {
@@ -18,7 +20,7 @@ type TwitterUser = {
   [key: string]: unknown;
 };
 
-type FollowersResponse = {
+type EngagementResponse = {
   next_cursor?: string | null;
   users?: TwitterUser[];
 };
@@ -27,8 +29,11 @@ type State = {
   cursor: string | null;
   page: number;
   unique: number;
+  finished?: boolean;
   updated_at: string;
 };
+
+const EMPTY_PAGE_LIMIT = 15;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -72,14 +77,11 @@ function saveState(path: string, state: State) {
 async function fetchPage(
   baseUrl: string,
   apiKey: string,
-  targetUserId: string,
+  tweetId: string,
   cursor?: string,
-  expectMore = false,
 ) {
-  const url = new URL("/twitter/followers/list", baseUrl);
-  url.searchParams.set("user_id", targetUserId);
+  const url = new URL(`/twitter/tweet/${tweetId}/retweeted-by`, baseUrl);
   if (cursor) url.searchParams.set("cursor", cursor);
-  if (expectMore) url.searchParams.set("expect_more", "1");
 
   for (let attempt = 1; attempt <= 30; attempt += 1) {
     const response = await fetch(url, {
@@ -90,9 +92,9 @@ async function fetchPage(
       signal: AbortSignal.timeout(180_000),
     }).catch(() => undefined);
     if (response?.ok) {
-      const json = (await response.json()) as FollowersResponse;
+      const json = (await response.json()) as EngagementResponse;
       if (!Array.isArray(json.users)) {
-        throw new Error("Invalid followers response: users is not an array");
+        throw new Error("Invalid response: users is not an array");
       }
       return json;
     }
@@ -106,11 +108,99 @@ async function fetchPage(
       ? retryAfter * 1_000
       : Math.min(60_000, attempt * 5_000);
     console.warn(
-      `followers status=${response?.status ?? "network"}; retry=${Math.ceil(delay / 1_000)}s attempt=${attempt}/30`,
+      `retweeted-by status=${response?.status ?? "network"}; retry=${Math.ceil(delay / 1_000)}s attempt=${attempt}/30`,
     );
     await sleep(delay);
   }
-  throw new Error("Follower request retries exhausted");
+  throw new Error("Retweeter request retries exhausted");
+}
+
+async function fetchTweet(
+  baseUrl: string,
+  apiKey: string,
+  tweetId: string,
+  outDir: string,
+  delayMs: number,
+) {
+  const outPath = join(outDir, `retweeters-${tweetId}.jsonl`);
+  const statePath = `${outPath}.state.json`;
+  const seen = await existingIds(outPath);
+  const saved = existsSync(statePath)
+    ? (JSON.parse(readFileSync(statePath, "utf8")) as State)
+    : undefined;
+  if (saved?.finished) {
+    console.log(`tweet=${tweetId} already finished with ${saved.unique} users`);
+    return;
+  }
+  let cursor = saved?.cursor ?? undefined;
+  let page = saved?.page ?? 0;
+  const seenCursors = new Set<string>(cursor ? [cursor] : []);
+
+  console.log(
+    `tweet=${tweetId} existing=${seen.size} out=${outPath}`,
+  );
+  let consecutiveStale = 0;
+  for (;;) {
+    const response = await fetchPage(baseUrl, apiKey, tweetId, cursor ?? undefined);
+    page += 1;
+    let written = 0;
+    for (const user of response.users ?? []) {
+      const id = userId(user);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      appendFileSync(outPath, `${JSON.stringify(user)}\n`);
+      written += 1;
+    }
+
+    const nextCursor = response.next_cursor ?? null;
+    // X keeps serving empty or fully-duplicate pages once a list is
+    // exhausted (with an advancing or repeating cursor); treat a run of
+    // pages without new users as the natural end instead of looping.
+    consecutiveStale = written === 0 ? consecutiveStale + 1 : 0;
+    if (!nextCursor || consecutiveStale >= EMPTY_PAGE_LIMIT) {
+      saveState(statePath, {
+        cursor: null,
+        page,
+        unique: seen.size,
+        finished: true,
+        updated_at: new Date().toISOString(),
+      });
+      console.log(
+        `tweet=${tweetId} exhausted after ${page} pages (${consecutiveStale} without progress); unique=${seen.size}`,
+      );
+      break;
+    }
+    saveState(statePath, {
+      cursor: nextCursor,
+      page,
+      unique: seen.size,
+      updated_at: new Date().toISOString(),
+    });
+    console.log(
+      `tweet=${tweetId} page=${page} fetched=${response.users?.length ?? 0} wrote=${written} unique=${seen.size} next_cursor=${Boolean(nextCursor)}`,
+    );
+    if (!nextCursor) break;
+    if (seenCursors.has(nextCursor)) {
+      if (written === 0) {
+        saveState(statePath, {
+          cursor: null,
+          page,
+          unique: seen.size,
+          finished: true,
+          updated_at: new Date().toISOString(),
+        });
+        console.log(
+          `tweet=${tweetId} cursor stalled on page ${page} without progress; unique=${seen.size}`,
+        );
+        break;
+      }
+      throw new Error(`Repeated cursor at page ${page} for tweet ${tweetId}`);
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+    if (delayMs > 0) await sleep(delayMs);
+  }
+  console.log(`Done tweet=${tweetId} unique=${seen.size} pages=${page}`);
 }
 
 async function main() {
@@ -120,90 +210,21 @@ async function main() {
     "--base-url",
     process.env.TWITTER_GATEWAY_URL ?? "https://docial.nulo.lol",
   )!;
-  const targetUserId = arg("--user-id");
-  const limitArgument = arg("--limit", "100000")!;
-  const fetchAll = limitArgument.toLowerCase() === "all";
-  const limit = fetchAll ? Number.POSITIVE_INFINITY : Number(limitArgument);
-  const outPath = arg(
-    "--out",
-    `./data/${targetUserId ?? "unknown"}.followers.jsonl`,
-  )!;
-  const statePath = arg("--state", `${outPath}.state.json`)!;
+  const tweets = (arg("--tweets") ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const outDir = arg("--out-dir", "./data/engagement")!;
   const delayMs = Number(arg("--delay-ms", "250"));
-  const minimumExpected = Number(arg("--minimum-expected", "0"));
 
-  if (!apiKey || !targetUserId) {
-    throw new Error(
-      "Required: TWITTER_GATEWAY_API_KEY and --user-id (plus optional --limit and --out)",
-    );
-  }
-  if (!fetchAll && (!Number.isInteger(limit) || limit <= 0)) {
-    throw new Error("--limit must be a positive integer or 'all'");
-  }
-  if (!Number.isInteger(minimumExpected) || minimumExpected < 0) {
-    throw new Error("--minimum-expected must be a non-negative integer");
-  }
-  mkdirSync(dirname(outPath), { recursive: true });
+  if (!apiKey) throw new Error("Required: TWITTER_GATEWAY_API_KEY");
+  if (tweets.length === 0) throw new Error("Required: --tweets id1,id2,...");
+  mkdirSync(outDir, { recursive: true });
 
-  const seen = await existingIds(outPath);
-  const saved = existsSync(statePath)
-    ? (JSON.parse(readFileSync(statePath, "utf8")) as State)
-    : undefined;
-  let cursor = saved?.cursor ?? undefined;
-  let page = saved?.page ?? 0;
-  const seenCursors = new Set<string>(cursor ? [cursor] : []);
-
-  const targetLabel = fetchAll ? "all" : String(limit);
-  console.log(
-    `Fetching followers user_id=${targetUserId} target=${targetLabel} existing=${seen.size} out=${outPath}`,
-  );
-  while (seen.size < limit) {
-    const response = await fetchPage(
-      baseUrl,
-      apiKey,
-      targetUserId,
-      cursor ?? undefined,
-      seen.size < minimumExpected,
-    );
-    page += 1;
-    let written = 0;
-    for (const user of response.users ?? []) {
-      const id = userId(user);
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-      appendFileSync(outPath, `${JSON.stringify(user)}\n`);
-      written += 1;
-      if (seen.size >= limit) break;
-    }
-
-    const nextCursor = response.next_cursor ?? null;
-    if (!nextCursor && seen.size < minimumExpected) {
-      throw new Error(
-        `Follower timeline ended prematurely at ${seen.size}; expected at least ${minimumExpected}`,
-      );
-    }
-    saveState(statePath, {
-      cursor: nextCursor,
-      page,
-      unique: seen.size,
-      updated_at: new Date().toISOString(),
-    });
-    console.log(
-      `page=${page} fetched=${response.users?.length ?? 0} wrote=${written} unique=${seen.size}/${targetLabel} next_cursor=${Boolean(nextCursor)}`,
-    );
-    if (seen.size >= limit) break;
-    if (!nextCursor) {
-      if (fetchAll) break;
-      throw new Error(`Follower timeline ended at ${seen.size}`);
-    }
-    if (seenCursors.has(nextCursor)) {
-      throw new Error(`Twitter returned a repeated cursor at ${seen.size}`);
-    }
-    seenCursors.add(nextCursor);
-    cursor = nextCursor;
-    if (delayMs > 0) await sleep(delayMs);
+  for (const tweetId of tweets) {
+    await fetchTweet(baseUrl, apiKey, tweetId, outDir, delayMs);
   }
-  console.log(`Done. unique=${seen.size} pages=${page} file=${outPath}`);
+  console.log(`All tweets done: ${tweets.length}`);
 }
 
 main().catch((error) => {

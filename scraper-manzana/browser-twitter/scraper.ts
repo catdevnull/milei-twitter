@@ -1052,6 +1052,90 @@ export class BrowserTwitterSession {
     sharedTemplatePromises.delete(sharedCacheKey);
   }
 
+  /**
+   * Builds a template for operations the frontend no longer fires, using the
+   * query ID from X's JavaScript bundles and request shape cloned from a
+   * related captured template (seed).
+   */
+  async graphqlTemplateFromRegistry(
+    cacheKey: string,
+    pageUrl: string,
+    operationName: string,
+    seed: {
+      variables: Record<string, unknown>;
+      features?: Record<string, unknown>;
+      fieldToggles?: Record<string, unknown>;
+    },
+  ): Promise<TwitterGraphqlRequestTemplate> {
+    const cached = this.templateCache.get(cacheKey);
+    if (cached) return cached;
+    const queryId = await this.findOperationQueryId(pageUrl, operationName);
+    const url = new URL(`https://x.com/i/api/graphql/${queryId}/${operationName}`);
+    const headers = await this.apiHeaders(url, {}, "GET");
+    const headerRecord: Record<string, string> = {};
+    for (const [name, value] of headers.entries()) {
+      headerRecord[name] = value;
+    }
+    const template: TwitterGraphqlRequestTemplate = {
+      url: url.toString(),
+      variables: seed.variables,
+      features: seed.features,
+      fieldToggles: seed.fieldToggles,
+      headers: headerRecord,
+    };
+    this.templateCache.set(cacheKey, template);
+    return template;
+  }
+
+  private async findOperationQueryId(
+    pageUrl: string,
+    operationName: string,
+  ): Promise<string> {
+    const page = this.ready
+      ? await this.context.newPage()
+      : await this.ensurePage();
+    const chunkUrls = new Set<string>();
+    const onRequest = (request: Request) => {
+      const url = request.url();
+      if (url.endsWith(".js") && url.includes("twimg.com")) chunkUrls.add(url);
+    };
+    try {
+      page.on("request", onRequest);
+      await page.goto(pageUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(4_000);
+      const scriptSources = (await page
+        .evaluate(() =>
+          Array.from(document.querySelectorAll("script[src]"))
+            .map((script) => (script as HTMLScriptElement).src)
+            .filter((source) => source.includes("twimg.com")),
+        )
+        .catch(() => [] as string[])) as string[];
+      for (const source of scriptSources) chunkUrls.add(source);
+      // Bounded scan: the engagement chunk loads early, and scanning every
+      // chunk through the proxy can exceed the account pool's time budget.
+      let scanned = 0;
+      for (const chunkUrl of chunkUrls) {
+        if (scanned >= 30) break;
+        scanned += 1;
+        const javascript = (await page
+          .evaluate(
+            async (source) => await (await fetch(source)).text(),
+            chunkUrl,
+          )
+          .catch(() => "")) as string;
+        if (!javascript) continue;
+        const queryId = extractGraphqlQueryId(javascript, operationName);
+        if (queryId) return queryId;
+      }
+    } finally {
+      page.off("request", onRequest);
+      if (this.ready) await page.close().catch(() => {});
+    }
+    throw new Error(
+      `Could not find X query ID for ${operationName} in bundles or chunks`,
+    );
+  }
+
   async fetchGraphql(
     template: TwitterGraphqlRequestTemplate,
     variableOverrides: Record<string, unknown> = {},

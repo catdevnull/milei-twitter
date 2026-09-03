@@ -1,4 +1,7 @@
-import type { BrowserTwitterSession } from "scraper-manzana/browser-twitter";
+import type {
+  BrowserTwitterSession,
+  TwitterGraphqlRequestTemplate,
+} from "scraper-manzana/browser-twitter";
 import {
   ORIGINALS_TIMELINE_OPERATION_NAME,
   TIMELINE_OPERATION_NAME,
@@ -6,6 +9,7 @@ import {
 } from "scraper-manzana/browser-twitter";
 import { AccountPool } from "./account-pool.ts";
 import {
+  aboutAccountResponse,
   extractProfileResult,
   socialUser,
   timelineResponse,
@@ -123,12 +127,36 @@ export class TwitterGateway {
     });
   }
 
-  followers(userId: string, cursor?: string) {
-    return this.userList(userId, "followers", "Followers", cursor);
+  about(username: string) {
+    return this.accounts.run(async (session) => {
+      const screenName = username.replace(/^@/, "");
+      const template = await session.graphqlTemplate(
+        "AboutAccountQuery",
+        `https://x.com/${encodeURIComponent(screenName)}/about`,
+        "AboutAccountQuery",
+      );
+      const response = aboutAccountResponse(
+        await session.fetchGraphql(template, { screenName }),
+      );
+      if (!response) throw new TwitterUserNotFoundError(screenName);
+      return response;
+    });
+  }
+
+  followers(userId: string, cursor?: string, expectMore = false) {
+    return this.userList(userId, "followers", "Followers", cursor, expectMore);
   }
 
   followings(userId: string, cursor?: string) {
     return this.userList(userId, "following", "Following", cursor);
+  }
+
+  favoriters(tweetId: string, cursor?: string) {
+    return this.engagementUsers(tweetId, "likes", "Favoriters", cursor);
+  }
+
+  retweeters(tweetId: string, cursor?: string) {
+    return this.engagementUsers(tweetId, "retweets", "Retweeters", cursor);
   }
 
   tweets(userId: string, includeReplies: boolean, cursor?: string) {
@@ -186,6 +214,7 @@ export class TwitterGateway {
     route: "followers" | "following",
     operation: "Followers" | "Following",
     cursor?: string,
+    expectMore = false,
   ) {
     return this.accounts.run(async (session: BrowserTwitterSession) => {
       const template = await session.graphqlTemplate(
@@ -196,9 +225,22 @@ export class TwitterGateway {
       let lastError: unknown;
       for (let attempt = 1; attempt <= 4; attempt += 1) {
         try {
-          return usersResponse(
+          const response = usersResponse(
             await session.fetchGraphql(template, { userId, cursor }),
           );
+          if (
+            expectMore &&
+            cursor &&
+            response.users.length === 0 &&
+            !response.next_cursor
+          ) {
+            throw new TwitterApiError(
+              404,
+              "Premature Empty Timeline",
+              "Expected more follower pages",
+            );
+          }
+          return response;
         } catch (error) {
           lastError = error;
           if (!(error instanceof TwitterApiError) || error.status !== 404) {
@@ -209,6 +251,57 @@ export class TwitterGateway {
       }
       throw lastError;
     });
+  }
+
+  private engagementUsers(
+    tweetId: string,
+    route: "likes" | "retweets",
+    operation: "Favoriters" | "Retweeters",
+    cursor?: string,
+  ) {
+    return this.accounts.run(async (session: BrowserTwitterSession) => {
+      const template = await this.engagementTemplate(
+        session,
+        tweetId,
+        route,
+        operation,
+      );
+      return usersResponse(
+        await session.fetchGraphql(template, {
+          tweetId,
+          cursor,
+          count: 100,
+          includePromotedContent: false,
+        }),
+      );
+    });
+  }
+
+  private async engagementTemplate(
+    session: BrowserTwitterSession,
+    tweetId: string,
+    route: "likes" | "retweets",
+    operation: "Favoriters" | "Retweeters",
+  ): Promise<TwitterGraphqlRequestTemplate> {
+    const retweetersTemplate = await session.graphqlTemplate(
+      "Retweeters",
+      `https://x.com/x/status/${tweetId}/retweets`,
+      "Retweeters",
+    );
+    if (operation === "Retweeters") return retweetersTemplate;
+    // X removed the "Liked by" screen, so Favoriters can no longer be
+    // captured from the UI. The operation still exists server-side: build
+    // the request from the bundle registry, cloning the Retweeters shape.
+    return await session.graphqlTemplateFromRegistry(
+      "Favoriters",
+      `https://x.com/x/status/${tweetId}/retweets`,
+      "Favoriters",
+      {
+        variables: retweetersTemplate.variables,
+        features: retweetersTemplate.features,
+        fieldToggles: retweetersTemplate.fieldToggles,
+      },
+    );
   }
 }
 

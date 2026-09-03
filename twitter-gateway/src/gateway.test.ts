@@ -44,6 +44,65 @@ test("uses X's current replies timeline operation", async () => {
   assert.ok(capturedVariables.every((variables) => variables.count === 100));
 });
 
+test("uses the engagement user-list operations with portable cursors", async () => {
+  const calls: Array<{ operation: string; variables: Record<string, unknown> }> = [];
+  const registryCalls: string[] = [];
+  const session = {
+    graphqlTemplate: async (
+      _cacheKey: string,
+      _pageUrl: string,
+      operation: string,
+    ) => ({ url: `https://x.com/${operation}`, variables: {}, headers: {} }),
+    graphqlTemplateFromRegistry: async (
+      _cacheKey: string,
+      _pageUrl: string,
+      operation: string,
+    ) => {
+      registryCalls.push(operation);
+      return { url: `https://x.com/${operation}`, variables: {}, headers: {} };
+    },
+    fetchGraphql: async (
+      template: { url: string },
+      variables: Record<string, unknown>,
+    ) => {
+      calls.push({ operation: template.url.split("/").at(-1)!, variables });
+      return {};
+    },
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+  const gateway = new TwitterGateway(accounts);
+
+  await gateway.favoriters("123", "likes-cursor");
+  await gateway.retweeters("123", "retweets-cursor");
+
+  // Favoriters is no longer fired by X's UI, so it must be built from the
+  // bundle registry instead of captured from the page.
+  assert.deepEqual(registryCalls, ["Favoriters"]);
+  assert.deepEqual(calls, [
+    {
+      operation: "Favoriters",
+      variables: {
+        tweetId: "123",
+        cursor: "likes-cursor",
+        count: 100,
+        includePromotedContent: false,
+      },
+    },
+    {
+      operation: "Retweeters",
+      variables: {
+        tweetId: "123",
+        cursor: "retweets-cursor",
+        count: 100,
+        includePromotedContent: false,
+      },
+    },
+  ]);
+});
+
 test("rebuilds the transaction solver after a strict search 404", async () => {
   let requests = 0;
   let resets = 0;
@@ -108,6 +167,41 @@ test("rebuilds the transaction solver after a strict follower 404", async () => 
     userId: "4020276615",
     cursor: "next-page",
   });
+  assert.equal(requests, 2);
+  assert.equal(resets, 1);
+});
+
+test("rejects a premature empty follower page when more are expected", async () => {
+  let requests = 0;
+  let resets = 0;
+  const session = {
+    graphqlTemplate: async () => ({
+      url: "https://x.com/Followers",
+      variables: {},
+      headers: {},
+    }),
+    fetchGraphql: async () => {
+      requests += 1;
+      return requests === 1
+        ? {}
+        : { cursorType: "Bottom", value: "recovered-cursor" };
+    },
+    resetTransactionSolver: async () => {
+      resets += 1;
+    },
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+
+  const response = await new TwitterGateway(accounts).followers(
+    "4020276615",
+    "previous-cursor",
+    true,
+  );
+
+  assert.equal(response.next_cursor, "recovered-cursor");
   assert.equal(requests, 2);
   assert.equal(resets, 1);
 });

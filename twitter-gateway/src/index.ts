@@ -73,6 +73,9 @@ app.get("/", (c) => {
     <ul>
       <li><code>GET /twitter/search?query=…&amp;type=Latest|Top&amp;cursor=…</code></li>
       <li><code>GET /twitter/user/:user_id_or_username</code></li>
+      <li><code>GET /twitter/user/:username/about</code></li>
+      <li><code>GET /twitter/tweet/:tweet_id/liking-users?cursor=…</code></li>
+      <li><code>GET /twitter/tweet/:tweet_id/retweeted-by?cursor=…</code></li>
       <li><code>GET /twitter/followers/list?user_id=…&amp;cursor=…</code></li>
       <li><code>GET /twitter/friends/list?user_id=…&amp;cursor=…</code></li>
       <li><code>GET /twitter/user/:user_id/tweets?cursor=…</code></li>
@@ -109,6 +112,7 @@ app.get("/twitter/followers/list", async (c) =>
     await gateway.followers(
       userId(c.req.query("user_id")),
       c.req.query("cursor"),
+      c.req.query("expect_more") === "1",
     ),
   ),
 );
@@ -120,6 +124,28 @@ app.get("/twitter/friends/list", async (c) =>
       c.req.query("cursor"),
     ),
   ),
+);
+
+app.get("/twitter/tweet/:tweetId/liking-users", async (c) =>
+  c.json(
+    await gateway.favoriters(
+      userId(c.req.param("tweetId")),
+      c.req.query("cursor"),
+    ),
+  ),
+);
+
+app.get("/twitter/tweet/:tweetId/retweeted-by", async (c) =>
+  c.json(
+    await gateway.retweeters(
+      userId(c.req.param("tweetId")),
+      c.req.query("cursor"),
+    ),
+  ),
+);
+
+app.get("/twitter/user/:username/about", async (c) =>
+  c.json(await gateway.about(required(c.req.param("username"), "username"))),
 );
 
 app.get("/twitter/user/:userId/tweets", async (c) =>

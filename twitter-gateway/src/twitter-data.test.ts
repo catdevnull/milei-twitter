@@ -1,10 +1,66 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  aboutAccountResponse,
   findBottomCursor,
   socialTweet,
   timelineResponse,
 } from "./twitter-data.ts";
+
+test("parses About this account metadata", () => {
+  assert.deepEqual(
+    aboutAccountResponse({
+      data: {
+        user_result_by_screen_name: {
+          result: {
+            rest_id: "123",
+            core: {
+              screen_name: "example",
+              created_at: "Wed Dec 06 02:59:51 +0000 2023",
+            },
+            about_profile: {
+              account_based_in: "Argentina",
+              location_accurate: true,
+              source: "Argentina Android App",
+              username_changes: {
+                count: "2",
+                last_changed_at_msec: "1725330158431",
+              },
+            },
+          },
+        },
+      },
+    }),
+    {
+      id_str: "123",
+      screen_name: "example",
+      created_at: "2023-12-06T02:59:51.000Z",
+      account_based_in: "Argentina",
+      location_accurate: true,
+      source: "Argentina Android App",
+      username_changes: {
+        count: 2,
+        last_changed_at_msec: "1725330158431",
+      },
+      raw_twitter: {
+        rest_id: "123",
+        core: {
+          screen_name: "example",
+          created_at: "Wed Dec 06 02:59:51 +0000 2023",
+        },
+        about_profile: {
+          account_based_in: "Argentina",
+          location_accurate: true,
+          source: "Argentina Android App",
+          username_changes: {
+            count: "2",
+            last_changed_at_msec: "1725330158431",
+          },
+        },
+      },
+    },
+  );
+});
 
 test("selects the bottom cursor when a timeline also has a top cursor", () => {
   assert.equal(
