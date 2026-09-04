@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ORIGINALS_TIMELINE_OPERATION_NAME,
+  REPOSTS_TIMELINE_OPERATION_NAME,
   extractChallengeCode,
   extractGraphqlQueryId,
   selectProxyLine,
@@ -53,6 +54,10 @@ test("captures X's current replies timeline operation", () => {
 
 test("captures X's current originals timeline operation", () => {
   assert.equal(ORIGINALS_TIMELINE_OPERATION_NAME, "UserOriginalsTimeline");
+});
+
+test("captures X's current reposts timeline operation", () => {
+  assert.equal(REPOSTS_TIMELINE_OPERATION_NAME, "UserRepostsTimeline");
 });
 
 test("recognizes both replies timeline operation names used by X", () => {

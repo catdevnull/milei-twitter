@@ -13,8 +13,8 @@ if [[ ! "${api_user_name}" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
   exit 1
 fi
 
-deploy_host="${DEPLOY_HOST:-110.172.148.79}"
-deploy_user="${DEPLOY_USER:-alwyzon}"
+deploy_host="${DEPLOY_HOST:-23.134.76.51}"
+deploy_user="${DEPLOY_USER:-root}"
 deploy_target="${deploy_user}@${deploy_host}"
 ssh_options=(
   -o BatchMode=yes

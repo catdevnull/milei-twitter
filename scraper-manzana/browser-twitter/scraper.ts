@@ -88,6 +88,7 @@ export const TIMELINE_OPERATION_ALIASES = [
   "UserTweetsAndReplies",
 ] as const;
 export const ORIGINALS_TIMELINE_OPERATION_NAME = "UserOriginalsTimeline";
+export const REPOSTS_TIMELINE_OPERATION_NAME = "UserRepostsTimeline";
 
 export function isGraphqlOperation(
   requestUrl: string,
@@ -1070,7 +1071,9 @@ export class BrowserTwitterSession {
     const cached = this.templateCache.get(cacheKey);
     if (cached) return cached;
     const queryId = await this.findOperationQueryId(pageUrl, operationName);
-    const url = new URL(`https://x.com/i/api/graphql/${queryId}/${operationName}`);
+    const url = new URL(
+      `https://x.com/i/api/graphql/${queryId}/${operationName}`,
+    );
     const headers = await this.apiHeaders(url, {}, "GET");
     const headerRecord: Record<string, string> = {};
     for (const [name, value] of headers.entries()) {

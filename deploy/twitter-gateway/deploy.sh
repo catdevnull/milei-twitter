@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-deploy_host="${DEPLOY_HOST:-110.172.148.79}"
-deploy_user="${DEPLOY_USER:-alwyzon}"
+deploy_host="${DEPLOY_HOST:-23.134.76.51}"
+deploy_user="${DEPLOY_USER:-root}"
 deploy_target="${deploy_user}@${deploy_host}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 if [[ "${deploy_user}" == "root" ]]; then

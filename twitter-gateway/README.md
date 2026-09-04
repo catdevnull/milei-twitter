@@ -21,7 +21,7 @@ Create an API user directly in production from your local checkout:
 pnpm --filter twitter-gateway user:create:prod -- alice
 ```
 
-This SSHes to `alwyzon@110.172.148.79`, adds the user to
+This SSHes to `root@23.134.76.51`, adds the user to
 `/etc/twitter-gateway/api-users.txt`, and prints the generated API key. The
 running service picks it up without a restart. Set `DEPLOY_HOST` or
 `DEPLOY_USER` to override the SSH destination.
