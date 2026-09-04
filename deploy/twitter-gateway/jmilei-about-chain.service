@@ -1,0 +1,13 @@
+[Unit]
+Description=Chain About download phases A->B->C->D
+After=network-online.target twitter-gateway.service jmilei-about.service
+Requires=twitter-gateway.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/jmilei-about-chain.sh
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target

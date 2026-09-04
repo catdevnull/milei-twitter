@@ -1,0 +1,19 @@
+[Unit]
+Description=Download About payloads for JMilei audience usernames
+After=network-online.target twitter-gateway.service
+Wants=network-online.target
+Requires=twitter-gateway.service
+
+[Service]
+Type=simple
+User=twitter-gateway
+Group=twitter-gateway
+WorkingDirectory=/opt/milei-twitter/twitter-gateway
+EnvironmentFile=/etc/twitter-gateway/followers-job.env
+ExecStart=/usr/bin/node --max-old-space-size=2048 --import tsx ../scripts/fetchAbout.ts --base-url http://127.0.0.1:3000 --usernames-file /var/lib/twitter-gateway/about/current-usernames.txt --out /var/lib/twitter-gateway/about/jmilei-about.jsonl --concurrency 12
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=60s
+
+[Install]
+WantedBy=multi-user.target
