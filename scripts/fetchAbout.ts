@@ -188,7 +188,7 @@ async function main() {
         const record = await fetchAbout(baseUrl, apiKey, username);
         if (record.missing) {
           missing += 1;
-          appendFileSync(failedPath, `${JSON.stringify(record)}\n`);
+          appendFileSync(missingPath, `${JSON.stringify(record)}\n`);
         } else {
           completed += 1;
           saveRecord(outPath, record);
