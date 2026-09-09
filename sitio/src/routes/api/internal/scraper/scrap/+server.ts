@@ -6,6 +6,7 @@ import {
   retweets,
   scraperTokens,
   scraps,
+  tweetSnapshots,
   tweets,
 } from "../../../../../schema.js";
 import { zScrap, type PostScrapRes } from "api/schema.js";
@@ -92,6 +93,21 @@ export async function POST({ request }: { request: Request }) {
           set: values,
           where: gt(tweets.capturedAt, tweet.capturedAt),
         });
+    }
+    if (scrap.tweetSnapshot) {
+      await tx
+        .insert(tweetSnapshots)
+        .values(
+          scrap.tweetSnapshot.tweets.map((tweet) => ({
+            tweetId: tweet.id_str,
+            scrapedAt: scrap.tweetSnapshot!.capturedAt,
+            tweetedAt: new Date(tweet.tweet_created_at),
+            favoriteCount: tweet.favorite_count,
+            viewsCount: tweet.views_count,
+            tweetJson: tweet,
+          })),
+        )
+        .onConflictDoNothing();
     }
     return dbScrap.id;
   });

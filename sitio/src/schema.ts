@@ -8,6 +8,7 @@ import {
   timestamp,
   serial,
   jsonb,
+  bigint,
 } from "drizzle-orm/pg-core";
 import z from "zod";
 
@@ -87,6 +88,24 @@ export const tweets = pgTable(
   },
   (table) => ({
     capturedAtIdx: index("db_tweets_captured_at_idx").on(table.capturedAt),
+  }),
+);
+
+export const tweetSnapshots = pgTable(
+  "db_tweet_snapshots",
+  {
+    tweetId: text("tweet_id").notNull(),
+    scrapedAt: timestamp("scraped_at", { withTimezone: true }).notNull(),
+    tweetedAt: timestamp("tweeted_at", { withTimezone: true }).notNull(),
+    favoriteCount: bigint("favorite_count", { mode: "number" }).notNull(),
+    viewsCount: bigint("views_count", { mode: "number" }),
+    tweetJson: jsonb("tweet_json").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.tweetId, table.scrapedAt] }),
+    tweetedAtIdx: index("db_tweet_snapshots_tweeted_at_idx").on(
+      table.tweetedAt,
+    ),
   }),
 );
 

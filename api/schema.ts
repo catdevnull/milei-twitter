@@ -22,12 +22,28 @@ export const zTweet = z.object({
   twitterScraperJson: z.string(),
   capturedAt: z.coerce.date(),
 });
+export const zSnapshotTweet = z
+  .object({
+    tweet_created_at: z.string(),
+    id_str: z.string(),
+    full_text: z.string(),
+    favorite_count: z.number(),
+    views_count: z.number().nullable(),
+    retweeted_status: z.null(),
+  })
+  .passthrough();
+export const zTweetSnapshot = z.object({
+  capturedAt: z.coerce.date(),
+  source: z.literal("twitter-gateway"),
+  tweets: z.array(zSnapshotTweet).length(40),
+});
 export const zScrap = z.object({
   uid: z.string({ description: "a unique id (nanoid)" }),
   finishedAt: z.coerce.date(),
   totalTweetsSeen: z.number(),
   likedTweets: z.array(zLikedTweet).optional(),
   retweets: z.array(zRetweet).optional(),
+  tweetSnapshot: zTweetSnapshot.optional(),
 
   tweets: z
     .array(zTweet, {

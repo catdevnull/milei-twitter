@@ -31,7 +31,8 @@ function tweet(index: number) {
       statuses_count: 0,
       created_at: "2009-07-16T00:00:00.000Z",
       profile_banner_url: null,
-      profile_image_url_https: "https://pbs.twimg.com/profile_images/example.jpg",
+      profile_image_url_https:
+        "https://pbs.twimg.com/profile_images/example.jpg",
       can_dm: false,
     },
     quoted_status_id_str: null,
@@ -51,15 +52,15 @@ function tweet(index: number) {
 
 test("fetches the site cron timeline through the authenticated gateway", async () => {
   let authorization: string | undefined;
-  let requestedUrl: string | undefined;
+  const requestedUrls: string[] = [];
   const server = createServer((request, response) => {
     authorization = request.headers.authorization;
-    requestedUrl = request.url;
+    if (request.url) requestedUrls.push(request.url);
     response.setHeader("content-type", "application/json");
     response.end(
       JSON.stringify({
         next_cursor: null,
-        tweets: Array.from({ length: 20 }, (_, index) => tweet(index)),
+        tweets: Array.from({ length: 40 }, (_, index) => tweet(index)),
       }),
     );
   });
@@ -73,11 +74,12 @@ test("fetches the site cron timeline through the authenticated gateway", async (
   process.env.TWITTER_GATEWAY_API_KEY = "test-key";
   try {
     const scrap = await scrapNewTweets([]);
-    assert.equal(scrap.totalTweetsSeen, 20);
-    assert.equal(
-      requestedUrl,
+    assert.equal(scrap.totalTweetsSeen, 40);
+    assert.equal(scrap.tweetSnapshot?.tweets.length, 40);
+    assert.deepEqual(requestedUrls, [
       "/twitter/user/4020276615/tweets-and-replies",
-    );
+      "/twitter/user/4020276615/tweets-and-replies",
+    ]);
     assert.equal(authorization, "Bearer test-key");
   } finally {
     if (oldUrl === undefined) delete process.env.TWITTER_GATEWAY_URL;
