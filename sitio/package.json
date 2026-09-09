@@ -17,7 +17,6 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed-historic-likes": "node --experimental-strip-types ./src/lib/db/seedHistoricLikes.ts",
-    "db:seed-tweet-history": "node --experimental-strip-types ./scripts/seedTweetHistory.ts",
     "knip": "knip"
   },
   "dependencies": {
