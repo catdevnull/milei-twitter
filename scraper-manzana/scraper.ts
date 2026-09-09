@@ -163,3 +163,9 @@ export async function scrapNewTweetsWithFallback(lastIds: string[]) {
     }
   }
 }
+
+export async function scrapNewTweetsWithGatewayOnly(lastIds: string[]) {
+  const gatewayTimeoutMs =
+    envNumber("TWITTER_GATEWAY_TIMEOUT_MS") ?? 5 * 60 * 1000;
+  return await scrapNewTweetsWithGatewayRetries(lastIds, gatewayTimeoutMs);
+}

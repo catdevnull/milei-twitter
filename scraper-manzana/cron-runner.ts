@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { sendScrapToApi } from "./dbs/scraps/index.ts";
-import {
-  notifyTelegram,
-  scrapNewTweetsWithFallback,
-} from "./scraper.ts";
+import { notifyTelegram, scrapNewTweetsWithGatewayOnly } from "./scraper.ts";
 
 const zLastTweetIds = z.array(z.string());
 
@@ -30,7 +27,7 @@ export async function runCronOnce() {
 
   const apiUrl = process.env.API_URL ?? "https://milei.nulo.lol";
   const lastTweetIds = await fetchLastTweetIds(apiUrl);
-  const scrap = await scrapNewTweetsWithFallback(lastTweetIds);
+  const scrap = await scrapNewTweetsWithGatewayOnly(lastTweetIds);
 
   if (scrap.tweets?.length === 0) {
     throw new Error("No tweets found");
