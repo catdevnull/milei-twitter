@@ -39,8 +39,8 @@ Each successful cron scrape also stores a gateway-only snapshot of Milei's 40
 most recent non-retweets in `db_tweet_snapshots`, keyed by tweet ID and scrape
 time. The full normalized gateway tweet objects are kept, including
 `raw_twitter`, `favorite_count`, and `views_count`. The cron does not fall back
-to SocialAPI. `/internal/tweet-history` shows the history and uses an existing
-scraper API token as its password.
+to SocialAPI. The unlinked, `noindex` route `/internal/tweet-history` shows the
+history.
 
 En `absolute-slop`, esto encaja como un Compose app separado del Dokku app
 `milei`. La plantilla está en `deploy/scraper/`:
