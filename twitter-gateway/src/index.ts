@@ -8,7 +8,11 @@ import {
 import { AccountPool, AllAccountsRateLimitedError } from "./account-pool.ts";
 import { apiAuth } from "./auth.ts";
 import { RequestDatabase } from "./database.ts";
-import { TwitterGateway, TwitterUserNotFoundError } from "./gateway.ts";
+import {
+  TwitterGateway,
+  TwitterTweetNotFoundError,
+  TwitterUserNotFoundError,
+} from "./gateway.ts";
 
 const app = new Hono();
 const requests = new RequestDatabase();
@@ -29,6 +33,16 @@ function userId(value: string | undefined) {
   if (!/^\d+$/.test(id)) {
     throw new HTTPException(422, {
       message: "user_id must be a numeric Twitter ID",
+    });
+  }
+  return id;
+}
+
+function tweetId(value: string | undefined) {
+  const id = required(value, "tweet_id");
+  if (!/^\d+$/.test(id)) {
+    throw new HTTPException(422, {
+      message: "tweet_id must be a numeric Twitter ID",
     });
   }
   return id;
@@ -74,6 +88,7 @@ app.get("/", (c) => {
       <li><code>GET /twitter/search?query=…&amp;type=Latest|Top&amp;cursor=…</code></li>
       <li><code>GET /twitter/user/:user_id_or_username</code></li>
       <li><code>GET /twitter/user/:username/about</code></li>
+      <li><code>GET /twitter/tweet/:tweet_id</code></li>
       <li><code>GET /twitter/tweet/:tweet_id/liking-users?cursor=…</code></li>
       <li><code>GET /twitter/tweet/:tweet_id/retweeted-by?cursor=…</code></li>
       <li><code>GET /twitter/followers/list?user_id=…&amp;cursor=…</code></li>
@@ -129,7 +144,7 @@ app.get("/twitter/friends/list", async (c) =>
 app.get("/twitter/tweet/:tweetId/liking-users", async (c) =>
   c.json(
     await gateway.favoriters(
-      userId(c.req.param("tweetId")),
+      tweetId(c.req.param("tweetId")),
       c.req.query("cursor"),
     ),
   ),
@@ -138,10 +153,14 @@ app.get("/twitter/tweet/:tweetId/liking-users", async (c) =>
 app.get("/twitter/tweet/:tweetId/retweeted-by", async (c) =>
   c.json(
     await gateway.retweeters(
-      userId(c.req.param("tweetId")),
+      tweetId(c.req.param("tweetId")),
       c.req.query("cursor"),
     ),
   ),
+);
+
+app.get("/twitter/tweet/:tweetId", async (c) =>
+  c.json(await gateway.tweet(tweetId(c.req.param("tweetId")))),
 );
 
 app.get("/twitter/user/:username/about", async (c) =>
@@ -180,6 +199,9 @@ app.onError((error, c) => {
     return c.json({ error: error.message }, error.status);
   }
   if (error instanceof TwitterUserNotFoundError) {
+    return c.json({ error: error.message }, 404);
+  }
+  if (error instanceof TwitterTweetNotFoundError) {
     return c.json({ error: error.message }, 404);
   }
   if (error instanceof AllAccountsRateLimitedError) {

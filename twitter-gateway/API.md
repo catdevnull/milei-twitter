@@ -208,6 +208,45 @@ Fetch a user's profile. The `identifier` can be a numeric Twitter user ID or a u
 
 ---
 
+### Get Tweet
+
+```
+GET /twitter/tweet/:tweet_id
+```
+
+Fetch a single tweet by its numeric Twitter ID.
+
+**Path Parameters:**
+
+| Parameter  | Type   | Description               |
+|------------|--------|---------------------------|
+| `tweet_id` | string | Numeric Twitter tweet ID  |
+
+**Error Responses:**
+
+- `422` — Missing or non-numeric `tweet_id`:
+  ```json
+  { "error": "tweet_id must be a numeric Twitter ID" }
+  ```
+- `404` — Tweet not found:
+  ```json
+  { "error": "Twitter tweet <tweet_id> was not found" }
+  ```
+
+**Success Response:** `HTTP 200`
+
+```json
+{
+  "tweet_created_at": "2026-08-06T02:27:41.000Z",
+  "id_str": "2085191048230248704",
+  "full_text": "Tweet text",
+  "user": { "...": "User object (see User schema below)" },
+  "raw_twitter": { "...": "Full raw GraphQL result object" }
+}
+```
+
+---
+
 ### Get User Tweets
 
 ```
@@ -410,6 +449,10 @@ HTTP 422
 ```
 
 ```json
+{ "error": "tweet_id must be a numeric Twitter ID" }
+```
+
+```json
 { "error": "type must be Latest or Top" }
 ```
 
@@ -421,6 +464,10 @@ HTTP 404
 
 ```json
 { "error": "Twitter user <identifier> was not found" }
+```
+
+```json
+{ "error": "Twitter tweet <tweet_id> was not found" }
 ```
 
 ### Rate Limited

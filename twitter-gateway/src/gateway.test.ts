@@ -8,7 +8,113 @@ import {
   TwitterApiError,
 } from "scraper-manzana/browser-twitter";
 import { AccountPool } from "./account-pool.ts";
-import { TwitterGateway } from "./gateway.ts";
+import { TwitterGateway, TwitterTweetNotFoundError } from "./gateway.ts";
+
+test("fetches one tweet by ID through TweetDetail", async () => {
+  let capturedPageUrl: string | undefined;
+  let capturedOperation: string | undefined;
+  let capturedVariables: Record<string, unknown> | undefined;
+  const tweet = {
+    rest_id: "123",
+    core: {
+      user_results: {
+        result: {
+          rest_id: "456",
+          legacy: { id_str: "456", name: "Author", screen_name: "author" },
+        },
+      },
+    },
+    legacy: {
+      id_str: "123",
+      user_id_str: "456",
+      created_at: "Thu Sep 03 18:47:08 +0000 2026",
+      full_text: "the requested tweet",
+      entities: {},
+    },
+  };
+  const session = {
+    graphqlTemplate: async (
+      _cacheKey: string,
+      pageUrl: string,
+      operation: string,
+    ) => {
+      capturedPageUrl = pageUrl;
+      capturedOperation = operation;
+      return { url: "https://x.com/TweetDetail", variables: {}, headers: {} };
+    },
+    fetchGraphql: async (
+      _template: unknown,
+      variables: Record<string, unknown>,
+    ) => {
+      capturedVariables = variables;
+      return { tweet_results: { result: tweet } };
+    },
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+
+  const response = await new TwitterGateway(accounts).tweet("123");
+
+  assert.equal(capturedPageUrl, "https://x.com/i/status/123");
+  assert.equal(capturedOperation, "TweetDetail");
+  assert.deepEqual(capturedVariables, { focalTweetId: "123" });
+  assert.equal(response.id_str, "123");
+  assert.equal(response.full_text, "the requested tweet");
+});
+
+test("selects the requested tweet instead of a reply in TweetDetail", async () => {
+  const result = (id: string) => ({
+    rest_id: id,
+    core: {
+      user_results: {
+        result: {
+          rest_id: "456",
+          legacy: { id_str: "456", name: "Author", screen_name: "author" },
+        },
+      },
+    },
+    legacy: { id_str: id, user_id_str: "456", full_text: id, entities: {} },
+  });
+  const session = {
+    graphqlTemplate: async () => ({
+      url: "https://x.com/TweetDetail",
+      variables: {},
+      headers: {},
+    }),
+    fetchGraphql: async () => [
+      { tweet_results: { result: result("reply") } },
+      { tweet_results: { result: result("123") } },
+    ],
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+
+  assert.equal((await new TwitterGateway(accounts).tweet("123")).id_str, "123");
+});
+
+test("reports a missing tweet", async () => {
+  const session = {
+    graphqlTemplate: async () => ({
+      url: "https://x.com/TweetDetail",
+      variables: {},
+      headers: {},
+    }),
+    fetchGraphql: async () => ({}),
+  } as unknown as BrowserTwitterSession;
+  const accounts = {
+    run: async <T>(callback: (value: BrowserTwitterSession) => Promise<T>) =>
+      await callback(session),
+  } as AccountPool;
+
+  await assert.rejects(
+    new TwitterGateway(accounts).tweet("123"),
+    TwitterTweetNotFoundError,
+  );
+});
 
 test("merges X's current originals, replies, and reposts timelines", async () => {
   const capturedOperations: string[] = [];

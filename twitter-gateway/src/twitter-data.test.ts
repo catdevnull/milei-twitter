@@ -5,6 +5,7 @@ import {
   findBottomCursor,
   socialTweet,
   timelineResponse,
+  tweetResponse,
 } from "./twitter-data.ts";
 
 test("parses About this account metadata", () => {
@@ -143,4 +144,34 @@ test("drops incomplete quoted tweets without dropping the parent tweet", () => {
 
   assert.ok(result);
   assert.equal(result.quoted_status, null);
+});
+
+test("finds a requested tweet in a TweetDetail response", () => {
+  const tweet = (id: string) => ({
+    tweet_results: {
+      result: {
+        rest_id: id,
+        core: {
+          user_results: {
+            result: {
+              rest_id: "owner",
+              legacy: { id_str: "owner", screen_name: "owner" },
+            },
+          },
+        },
+        legacy: {
+          id_str: id,
+          user_id_str: "owner",
+          full_text: `tweet ${id}`,
+          entities: {},
+        },
+      },
+    },
+  });
+
+  assert.equal(
+    tweetResponse([tweet("reply"), tweet("target")], "target")?.id_str,
+    "target",
+  );
+  assert.equal(tweetResponse([tweet("reply")], "target"), undefined);
 });

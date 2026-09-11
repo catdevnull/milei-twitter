@@ -14,6 +14,7 @@ import {
   extractProfileResult,
   socialUser,
   timelineResponse,
+  tweetResponse,
   usersResponse,
 } from "./twitter-data.ts";
 
@@ -168,6 +169,22 @@ export class TwitterGateway {
 
   retweeters(tweetId: string, cursor?: string) {
     return this.engagementUsers(tweetId, "retweets", "Retweeters", cursor);
+  }
+
+  tweet(tweetId: string) {
+    return this.accounts.run(async (session) => {
+      const template = await session.graphqlTemplate(
+        "TweetDetail",
+        `https://x.com/i/status/${tweetId}`,
+        "TweetDetail",
+      );
+      const tweet = tweetResponse(
+        await session.fetchGraphql(template, { focalTweetId: tweetId }),
+        tweetId,
+      );
+      if (!tweet) throw new TwitterTweetNotFoundError(tweetId);
+      return tweet;
+    });
   }
 
   tweets(userId: string, includeReplies: boolean, cursor?: string) {
@@ -330,5 +347,12 @@ export class TwitterUserNotFoundError extends Error {
   constructor(readonly identifier: string) {
     super(`Twitter user ${identifier} was not found`);
     this.name = "TwitterUserNotFoundError";
+  }
+}
+
+export class TwitterTweetNotFoundError extends Error {
+  constructor(readonly tweetId: string) {
+    super(`Twitter tweet ${tweetId} was not found`);
+    this.name = "TwitterTweetNotFoundError";
   }
 }

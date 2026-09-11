@@ -236,6 +236,12 @@ export function timelineResponse(json: unknown, userId?: string) {
   };
 }
 
+export function tweetResponse(json: unknown, tweetId: string) {
+  return extractTweetResults(json)
+    .map(socialTweet)
+    .find((tweet) => tweet?.id_str === tweetId);
+}
+
 export function usersResponse(json: unknown) {
   return {
     next_cursor: findBottomCursor(json) ?? null,
