@@ -1,5 +1,6 @@
 <script lang="ts">
   import TweetHistoryChart from "./TweetHistoryChart.svelte";
+  import LikeDropBadge from "./LikeDropBadge.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -8,6 +9,11 @@
   const date = new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
+  });
+  const percent = new Intl.NumberFormat("es-AR", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
   });
 </script>
 
@@ -18,10 +24,35 @@
 
 <main class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
   <header>
-    <h1 class="text-2xl font-semibold">Tweet engagement history</h1>
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="text-2xl font-semibold">Tweet engagement history</h1>
+      {#if data.isMock}
+        <span
+          class="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800 ring-1 ring-inset ring-blue-600/20"
+          >Demo con datos simulados</span
+        >
+      {/if}
+    </div>
     <p class="text-sm text-muted-foreground">
       {data.tweets.length} tweets with recorded snapshots
     </p>
+    <p class="mt-3 max-w-4xl text-sm text-muted-foreground">
+      La señal compara cada snapshot con el anterior. Verde significa que no
+      hubo bajas; amarillo, que hubo al menos una baja; rojo, que una caída fue
+      de 100 likes o más y representó al menos 1% del valor anterior. Es un
+      indicio para investigar, no una prueba concluyente de bots.
+    </p>
+    {#if data.isMock}
+      <a
+        class="mt-2 inline-block text-sm underline"
+        href="/internal/tweet-history">Volver a los datos reales</a
+      >
+    {:else}
+      <a
+        class="mt-2 inline-block text-sm underline"
+        href="/internal/tweet-history?mock=1">Ver demo con datos simulados</a
+      >
+    {/if}
   </header>
 
   {#if data.selectedTweetId}
@@ -31,14 +62,18 @@
     <section class="rounded-lg border p-4">
       <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div class="max-w-3xl">
-          <a
-            href={`https://x.com/JMilei/status/${data.selectedTweetId}`}
-            target="_blank"
-            rel="noreferrer"
-            class="font-medium underline"
-          >
-            {data.selectedTweetId}
-          </a>
+          {#if data.isMock}
+            <span class="font-medium">{data.selectedTweetId}</span>
+          {:else}
+            <a
+              href={`https://x.com/JMilei/status/${data.selectedTweetId}`}
+              target="_blank"
+              rel="noreferrer"
+              class="font-medium underline"
+            >
+              {data.selectedTweetId}
+            </a>
+          {/if}
           <p class="mt-2 whitespace-pre-wrap text-sm">{selected?.text}</p>
         </div>
         <span class="text-sm text-muted-foreground">
@@ -56,6 +91,7 @@
               <tr>
                 <th class="px-3 py-2">Scraped</th>
                 <th class="px-3 py-2 text-right">Likes</th>
+                <th class="px-3 py-2 text-right">Δ likes</th>
                 <th class="px-3 py-2 text-right">Views</th>
               </tr>
             </thead>
@@ -67,6 +103,17 @@
                   </td>
                   <td class="px-3 py-2 text-right tabular-nums">
                     {number.format(observation.favoriteCount)}
+                  </td>
+                  <td
+                    class:text-red-700={observation.likeDelta !== null &&
+                      observation.likeDelta < 0}
+                    class:font-semibold={observation.likeDelta !== null &&
+                      observation.likeDelta < 0}
+                    class="px-3 py-2 text-right tabular-nums"
+                  >
+                    {observation.likeDelta === null
+                      ? "—"
+                      : `${observation.likeDelta > 0 ? "+" : ""}${number.format(observation.likeDelta)}`}
                   </td>
                   <td class="px-3 py-2 text-right tabular-nums">
                     {observation.viewsCount === null
@@ -90,6 +137,7 @@
             <th class="px-3 py-2">Tweeted</th>
             <th class="px-3 py-2">Tweet</th>
             <th class="px-3 py-2 text-right">Likes</th>
+            <th class="px-3 py-2">Señal de bajas</th>
             <th class="px-3 py-2 text-right">Views</th>
             <th class="px-3 py-2">Last scraped</th>
           </tr>
@@ -105,13 +153,25 @@
               </td>
               <td class="max-w-xl px-3 py-2">
                 <a
-                  href={`?tweet=${tweet.tweetId}`}
+                  href={`?tweet=${tweet.tweetId}${data.isMock ? "&mock=1" : ""}`}
                   class="block truncate underline"
                   title={tweet.text}>{tweet.text || tweet.tweetId}</a
                 >
               </td>
               <td class="px-3 py-2 text-right tabular-nums">
                 {number.format(tweet.favoriteCount)}
+              </td>
+              <td class="px-3 py-2">
+                <LikeDropBadge stats={tweet.likeDrops} />
+                {#if tweet.likeDrops.dropEvents > 0}
+                  <div
+                    class="mt-1 whitespace-nowrap text-xs text-muted-foreground"
+                  >
+                    {tweet.likeDrops.dropEvents}
+                    {tweet.likeDrops.dropEvents === 1 ? "evento" : "eventos"} · máx.
+                    {percent.format(tweet.likeDrops.maxSingleDropRate)}
+                  </div>
+                {/if}
               </td>
               <td class="px-3 py-2 text-right tabular-nums">
                 {tweet.viewsCount === null
