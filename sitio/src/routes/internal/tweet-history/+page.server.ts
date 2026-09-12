@@ -3,14 +3,9 @@ import { classifyLikeDrops } from "$lib/data-processing/likeDrops";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { tweetSnapshots } from "../../../schema";
 import type { PageServerLoad } from "./$types";
-import { getMockTweetHistory } from "./mock";
 
 export const load: PageServerLoad = async ({ url }) => {
   const requestedTweetId = url.searchParams.get("tweet");
-  if (url.searchParams.get("mock") === "1") {
-    return getMockTweetHistory(requestedTweetId);
-  }
-
   const latestRows = await db
     .selectDistinctOn([tweetSnapshots.tweetId], {
       tweetId: tweetSnapshots.tweetId,
@@ -110,5 +105,5 @@ export const load: PageServerLoad = async ({ url }) => {
         : observation.favoriteCount - rawHistory[index - 1].favoriteCount,
   }));
 
-  return { tweets, selectedTweetId, history, isMock: false };
+  return { tweets, selectedTweetId, history };
 };

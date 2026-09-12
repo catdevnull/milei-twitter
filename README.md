@@ -40,8 +40,7 @@ most recent non-retweets in `db_tweet_snapshots`, keyed by tweet ID and scrape
 time. The full normalized gateway tweet objects are kept, including
 `raw_twitter`, `favorite_count`, and `views_count`. The cron does not fall back
 to SocialAPI. The unlinked, `noindex` route `/internal/tweet-history` shows the
-history. Use `/internal/tweet-history?mock=1` to preview the like-drop indicators
-with green, yellow, and red sample timelines without connecting to the database.
+history.
 
 En `absolute-slop`, esto encaja como un Compose app separado del Dokku app
 `milei`. La plantilla está en `deploy/scraper/`:
