@@ -540,6 +540,49 @@ export function extractChallengeCode(html: string): string | undefined {
   )?.[1];
 }
 
+// Rewrites X's ondemand.s chunk so that evaluating it exposes the module's
+// default export (via window._CHALLENGE, or window.__mileiChallengeDefault for
+// the assignment form). X's bundler has emitted that export in several shapes
+// over time; these are the ones OldTweetDeck's solver handles.
+export function patchChallengeScript(script: string): {
+  moduleId: string;
+  script: string;
+} {
+  const moduleId = script.match(/\.push\(\[\[\d+\],\{(\d+)[:(]/)?.[1];
+  if (!moduleId) throw new Error("Module ID not found");
+
+  const patches: Array<[RegExp, (...groups: string[]) => string]> = [
+    // r.d(t,{default:()=>x})
+    [
+      /default:\(\)=>([\w$]+)\}\)/,
+      (name) => `default:(window._CHALLENGE=()=>${name})})`,
+    ],
+    // r.d(t,["default",flag,x]): flag 0 means x is the value, else a getter.
+    [
+      /(\.d\([\w$]+,\["default",)(\d+),([\w$]+)(?=[,\]])/,
+      (prefix, flag, name) =>
+        `${prefix}${flag},(window._CHALLENGE=${flag === "0" ? `()=>${name}` : name},${name})`,
+    ],
+    // x.default=()=>...: the assigned arrow is the export itself; the solver
+    // page wraps window.__mileiChallengeDefault into _CHALLENGE after eval.
+    [
+      /([\w$]+\s*\.\s*default\s*=\s*)(?=\(\s*\)\s*=>)/,
+      (target) => `${target}window.__mileiChallengeDefault=`,
+    ],
+  ];
+  for (const [pattern, replacement] of patches) {
+    if (pattern.test(script)) {
+      return {
+        moduleId,
+        script: script.replace(pattern, (_match, ...groups: string[]) =>
+          replacement(...groups),
+        ),
+      };
+    }
+  }
+  throw new Error("Default export not found");
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object"
     ? (value as Record<string, unknown>)
@@ -1695,21 +1738,10 @@ export class BrowserTwitterSession {
     if (cookie) headers.set("cookie", cookie);
     if (csrf) headers.set("x-csrf-token", csrf);
     if (options.transactionId !== false) {
-      try {
-        headers.set(
-          "x-client-transaction-id",
-          await this.transactionId(method, url),
-        );
-      } catch (error) {
-        const capturedTransactionId = Object.entries(capturedHeaders).find(
-          ([name]) => name.toLowerCase() === "x-client-transaction-id",
-        )?.[1];
-        if (!capturedTransactionId) throw error;
-        console.warn(
-          "[twitter-browser] transaction solver failed; using captured transaction ID",
-        );
-        headers.set("x-client-transaction-id", capturedTransactionId);
-      }
+      headers.set(
+        "x-client-transaction-id",
+        await this.transactionId(method, url),
+      );
     }
     return headers;
   }
@@ -1737,6 +1769,7 @@ export class BrowserTwitterSession {
       return;
     }
     const setup = (async () => {
+      const challenge = patchChallengeScript(initData.challengeData);
       const { browser } = await getSharedBrowser();
       const solverContext = await browser.newContext();
       const solverPage = await solverContext.newPage();
@@ -1764,6 +1797,10 @@ export class BrowserTwitterSession {
             path: string,
             method: string,
           ) => Promise<string>;
+          __mileiChallengeDefault?: () => (
+            path: string,
+            method: string,
+          ) => Promise<string>;
           __mileiTwitterSolveTransaction?: (
             path: string,
             method: string,
@@ -1784,22 +1821,8 @@ export class BrowserTwitterSession {
           verification.setAttribute("content", data.verificationCode);
         }
 
-        const idMatch = data.challengeData.match(
-          /\.push\(\[\[\d+\],\{(\d+)[:(]/,
-        );
-        if (!idMatch) throw new Error("Module ID not found");
-        const id = idMatch[1];
-
-        const defaultMatch = data.challengeData.match(
-          /default:\(\)=>(\w+)\}\)/,
-        );
-        if (!defaultMatch) throw new Error("Default export not found");
-        const defaultVar = defaultMatch[1];
-        const patchedChallengeData = data.challengeData.replace(
-          `default:()=>${defaultVar}`,
-          `default:(window._CHALLENGE=()=>${defaultVar})`,
-        );
-        eval(patchedChallengeData);
+        const id = data.challenge.moduleId;
+        eval(data.challenge.script);
 
         const chunks = browserWindow.webpackChunk_twitter_responsive_web || [];
         const registry: Record<string, Function> = {};
@@ -1821,8 +1844,23 @@ export class BrowserTwitterSession {
 
         wreq.d = (
           exports: Record<string, unknown>,
-          definition: Record<string, () => unknown>,
+          definition: Record<string, () => unknown> | unknown[],
         ) => {
+          if (Array.isArray(definition)) {
+            // Newer bundles: flat [name, flag, value, ...]; a non-zero flag
+            // means value is a getter, otherwise it's the value itself.
+            for (let i = 0; i < definition.length; i += 3) {
+              const [key, flag, value] = definition.slice(i, i + 3);
+              Object.defineProperty(exports, key as string, {
+                enumerable: true,
+                get:
+                  flag && typeof value === "function"
+                    ? (value as () => unknown)
+                    : () => value,
+              });
+            }
+            return;
+          }
           for (const key in definition) {
             Object.defineProperty(exports, key, {
               enumerable: true,
@@ -1845,6 +1883,16 @@ export class BrowserTwitterSession {
         };
         wreq.o = (obj: object, prop: string) =>
           Object.prototype.hasOwnProperty.call(obj, prop);
+        // Names anonymous exported functions; only cosmetic for us.
+        wreq.dn = (fn: unknown) => {
+          if (typeof fn === "function" && !fn.name) {
+            Object.defineProperty(fn, "name", {
+              value: "default",
+              configurable: true,
+            });
+          }
+          return fn;
+        };
 
         const chunk = browserWindow
           .webpackChunk_twitter_responsive_web?.[1]?.[1] as
@@ -1853,10 +1901,14 @@ export class BrowserTwitterSession {
         if (!chunk || !chunk[id])
           throw new Error(`No chunk module with id ${id}`);
         chunk[id](chunks, cache, wreq);
+        if (browserWindow.__mileiChallengeDefault) {
+          const challengeDefault = browserWindow.__mileiChallengeDefault;
+          browserWindow._CHALLENGE = () => challengeDefault;
+        }
         const challenge = browserWindow._CHALLENGE?.();
         if (!challenge) throw new Error("Challenge export was not initialized");
         browserWindow.__mileiTwitterSolveTransaction = challenge();
-      }, initData);
+      }, { ...initData, challenge });
       return solverPage;
     })();
     const shared = setup.catch((error) => {

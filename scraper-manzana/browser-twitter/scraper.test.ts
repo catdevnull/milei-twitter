@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import vm from "node:vm";
 import {
   ORIGINALS_TIMELINE_OPERATION_NAME,
   REPOSTS_TIMELINE_OPERATION_NAME,
@@ -9,6 +10,7 @@ import {
   isGraphqlOperation,
   parseAccountSource,
   parseTweetResult,
+  patchChallengeScript,
   replaceGraphqlQueryId,
   TIMELINE_OPERATION_ALIASES,
   TIMELINE_OPERATION_NAME,
@@ -126,6 +128,55 @@ test("returns undefined when the page has no responsive-web challenge", () => {
   assert.equal(
     extractChallengeCode('<script src="entry-client.js">'),
     undefined,
+  );
+});
+
+// Evaluates a patched ondemand.s chunk against a stub webpack runtime and
+// returns whatever the solver page would read as the challenge export.
+function challengeExport(script: string) {
+  const { moduleId, script: patched } = patchChallengeScript(script);
+  const sandbox: Record<string, any> = {};
+  sandbox.window = sandbox.self = sandbox;
+  vm.runInNewContext(patched, sandbox);
+  const factory = sandbox.webpackChunk_twitter_responsive_web[0][1][moduleId];
+  const wreq = Object.assign(() => ({}), { d: () => {}, dn: (f: unknown) => f });
+  factory({}, {}, wreq);
+  return sandbox.__mileiChallengeDefault ?? sandbox._CHALLENGE?.();
+}
+
+const chunk = (body: string) =>
+  `(self.webpackChunk_twitter_responsive_web=self.webpackChunk_twitter_responsive_web||[]).push([[59924],{564498(n,t,W){${body}}}]);`;
+
+test("patches the getter-object default export", () => {
+  const exported = challengeExport(
+    chunk('function r(){return "solver"}W.d(t,{default:()=>r})'),
+  );
+  assert.equal(exported(), "solver");
+});
+
+test("patches the array default export with a plain value", () => {
+  const exported = challengeExport(
+    chunk('function r(){return "solver"}W.dn(r),W.d(t,["default",0,r])'),
+  );
+  assert.equal(exported(), "solver");
+});
+
+test("patches the array default export with a getter", () => {
+  const exported = challengeExport(
+    chunk('function r(){return "solver"}let g=()=>r;W.d(t,["default",1,g])'),
+  );
+  assert.equal(exported(), "solver");
+});
+
+test("patches the assigned default export", () => {
+  const exported = challengeExport(chunk('t.default=()=>"solver"'));
+  assert.equal(exported(), "solver");
+});
+
+test("rejects challenge chunks without a known default export", () => {
+  assert.throws(
+    () => patchChallengeScript(chunk('W.d(t,["other",0,r])')),
+    /Default export not found/,
   );
 });
 
