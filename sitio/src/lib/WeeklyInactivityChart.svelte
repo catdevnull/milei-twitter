@@ -22,7 +22,12 @@
   );
 
   export let weeks: WeeklyInactivity[];
-  let metric: "meanMs" | "medianMs" = "meanMs";
+  let metric: "maxMs" | "meanMs" | "medianMs" = "maxMs";
+  const metricLabels = {
+    maxMs: "Máximo",
+    meanMs: "Promedio",
+    medianMs: "Mediana",
+  };
   let canvas: HTMLCanvasElement;
   let chart: Chart<"line", (number | null)[]> | undefined;
   $: hasData = weeks.some((week) => week.count > 0);
@@ -68,7 +73,7 @@
       labels: weeks.map((week) => weekDate(week.week)),
       datasets: [
         {
-          label: metric === "meanMs" ? "Promedio" : "Mediana",
+          label: metricLabels[metric],
           data: values,
           borderColor: "#f97316",
           backgroundColor: "#f97316",
@@ -109,7 +114,7 @@
                 return `Semana del ${weekDate(week.week)}${week.partial ? " (parcial)" : ""}`;
               },
               label: (item) =>
-                `${metric === "meanMs" ? "Promedio" : "Mediana"}: ${formatDuration(weeks[item.dataIndex][metric])}`,
+                `${metricLabels[metric]}: ${formatDuration(weeks[item.dataIndex][metric])}`,
               afterLabel: (item) =>
                 `${weeks[item.dataIndex].count} rachas registradas`,
             },
@@ -162,6 +167,12 @@
     <div class="flex gap-1" role="group" aria-label="Medida semanal">
       <button
         type="button"
+        aria-pressed={metric === "maxMs"}
+        class="metric-button"
+        onclick={() => (metric = "maxMs")}>Máximo</button
+      >
+      <button
+        type="button"
         aria-pressed={metric === "meanMs"}
         class="metric-button"
         onclick={() => (metric = "meanMs")}>Promedio</button
@@ -178,12 +189,14 @@
     <div
       class="relative h-44"
       role="img"
-      aria-label={`${metric === "meanMs" ? "Promedio" : "Mediana"} semanal de la duración de las rachas de inactividad.`}
+      aria-label={`${metricLabels[metric]} semanal de la duración de las rachas de inactividad.`}
     >
       <canvas bind:this={canvas} aria-hidden="true"></canvas>
     </div>
     <p class="mt-1 text-xs text-muted-foreground">
-      Semana de inicio · Triángulo: semana parcial · Hueco: sin datos
+      {metric === "maxMs"
+        ? "Pausa más larga de cada semana"
+        : "Semana de inicio"} · Triángulo: semana parcial · Hueco: sin datos
     </p>
   {:else}
     <p class="py-4 text-sm text-muted-foreground">
@@ -199,10 +212,10 @@
         >
         <thead
           ><tr
-            ><th scope="col" class="py-1">Semana</th><th scope="col"
-              >Promedio</th
-            ><th scope="col">Mediana</th><th scope="col" class="text-right"
-              >Rachas</th
+            ><th scope="col" class="py-1">Semana</th><th scope="col">Máximo</th
+            ><th scope="col">Promedio</th><th scope="col">Mediana</th><th
+              scope="col"
+              class="text-right">Rachas</th
             ></tr
           ></thead
         >
@@ -210,9 +223,11 @@
           >{#each weeks as week}<tr
               ><th scope="row" class="py-1 font-normal"
                 >{weekDate(week.week)}{week.partial ? " (parcial)" : ""}</th
-              ><td>{formatDuration(week.meanMs)}</td><td
-                >{formatDuration(week.medianMs)}</td
-              ><td class="text-right">{week.count}</td></tr
+              ><td>{formatDuration(week.maxMs)}</td><td
+                >{formatDuration(week.meanMs)}</td
+              ><td>{formatDuration(week.medianMs)}</td><td class="text-right"
+                >{week.count}</td
+              ></tr
             >{/each}</tbody
         >
       </table>

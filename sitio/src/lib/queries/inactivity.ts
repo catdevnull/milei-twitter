@@ -52,6 +52,7 @@ export function weeklyInactivityQuery(
   return sql`${inactivityGapsQuery(observedUntil, startingFrom)}
     SELECT to_char(date_trunc('week', start AT TIME ZONE ${tz}), 'YYYY-MM-DD') AS week,
       avg(extract(epoch FROM ("end" - start)) * 1000) AS "meanMs",
+      max(extract(epoch FROM ("end" - start)) * 1000) AS "maxMs",
       percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ("end" - start)) * 1000) AS "medianMs",
       count(*)::integer AS count
     FROM gaps
@@ -65,6 +66,7 @@ export type WeeklyInactivity = {
   week: string;
   meanMs: number | null;
   medianMs: number | null;
+  maxMs: number | null;
   count: number;
   partial: boolean;
 };
@@ -77,6 +79,7 @@ export async function getWeeklyInactivity(
     week: string;
     meanMs: string;
     medianMs: number;
+    maxMs: string;
     count: number;
   }>(weeklyInactivityQuery(observedUntil, startingFrom));
   const byWeek = new Map(rows.map((row) => [row.week, row]));
@@ -94,6 +97,7 @@ export async function getWeeklyInactivity(
       week: key,
       meanMs: row ? Number(row.meanMs) : null,
       medianMs: row ? Number(row.medianMs) : null,
+      maxMs: row ? Number(row.maxMs) : null,
       count: row ? Number(row.count) : 0,
       partial:
         week.isBefore(first) ||
