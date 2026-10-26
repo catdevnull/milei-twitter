@@ -248,7 +248,7 @@
     />
   </section>
 
-  <InactivityRanking streaks={data.inactivityRanking} period={data.inactivityPeriod} />
+  <InactivityRanking streaks={data.inactivityRanking} period={data.inactivityPeriod} weekly={data.weeklyInactivity} />
 
   <section
     class="mx-auto w-full max-w-2xl bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"

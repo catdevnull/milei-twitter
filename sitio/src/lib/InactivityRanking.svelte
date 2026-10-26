@@ -4,8 +4,11 @@
   import { goto } from "$app/navigation";
   import * as Popover from "$lib/components/ui/popover";
   import { CalendarIcon } from "lucide-svelte";
+  import WeeklyInactivityChart from "$lib/WeeklyInactivityChart.svelte";
+  import type { WeeklyInactivity } from "$lib/queries/inactivity";
 
   export let streaks: { start: Date; end: Date; durationMs: number }[];
+  export let weekly: WeeklyInactivity[];
   export let period: {
     preset: string;
     from: string;
@@ -284,6 +287,8 @@
       </Popover.Content>
     </Popover.Root>
   </nav>
+
+  <WeeklyInactivityChart weeks={weekly} />
 
   {#if streaks.length > 0}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (The scroll region needs keyboard focus for arrow and Page Down scrolling.) -->
