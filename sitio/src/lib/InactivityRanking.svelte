@@ -185,7 +185,7 @@
   aria-labelledby="inactivity-heading"
 >
   <div
-    class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"
+    class="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"
   >
     <h2 id="inactivity-heading" class="text-lg font-bold">
       Rachas sin actividad
@@ -194,6 +194,9 @@
       {view === "all" ? "Ranking" : "Top 10"} · Hora argentina
     </p>
   </div>
+  <p class="mb-3 text-xs text-muted-foreground">
+    Tiempo entre dos actividades registradas de Milei en Twitter.
+  </p>
 
   <nav class="mb-4 flex items-center gap-0.5" aria-label="Período del ranking">
     {#each presets as preset}
