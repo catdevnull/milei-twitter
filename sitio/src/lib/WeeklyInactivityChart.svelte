@@ -51,14 +51,25 @@
       chart = undefined;
       return;
     }
+    const values = weeks.map((week) =>
+      week[metric] === null ? null : week[metric]! / 3_600_000,
+    );
+    const peak = values.reduce<number>(
+      (max, value) =>
+        value !== null && Number.isFinite(value) ? Math.max(max, value) : max,
+      0,
+    );
+    // Recompute bounds from the current filter and metric, including headroom
+    // for markers at the peak. Never reuse a previous range's upper bound.
+    const paddedPeak = Math.max(peak * 1.1, 1 / 60);
+    const step = 10 ** Math.floor(Math.log10(paddedPeak)) / 2;
+    const yMax = Math.ceil(paddedPeak / step) * step;
     const data = {
       labels: weeks.map((week) => weekDate(week.week)),
       datasets: [
         {
           label: metric === "meanMs" ? "Promedio" : "Mediana",
-          data: weeks.map((week) =>
-            week[metric] === null ? null : week[metric]! / 3_600_000,
-          ),
+          data: values,
           borderColor: "#f97316",
           backgroundColor: "#f97316",
           borderWidth: 2,
@@ -74,6 +85,8 @@
     };
     if (chart) {
       chart.data = data;
+      chart.options.scales!.y!.min = 0;
+      chart.options.scales!.y!.max = yMax;
       chart.update("none");
       return;
     }
@@ -114,6 +127,8 @@
           },
           y: {
             beginAtZero: true,
+            min: 0,
+            max: yMax,
             grid: { color: "rgba(163,163,163,0.2)" },
             ticks: {
               maxTicksLimit: 4,
