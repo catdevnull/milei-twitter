@@ -60,9 +60,11 @@
     <ol id="inactivity-streaks" class="space-y-2">
       {#each visibleStreaks as streak}
         <li class="streak-row tabular-nums" title={describe(streak)}>
-          <span class="text-right text-sm font-semibold" aria-hidden="true">
-            {formatDuration(streak.durationMs)}
-          </span>
+          <time
+            class="whitespace-nowrap text-xs text-muted-foreground"
+            datetime={streak.start.toISOString()}
+            aria-hidden="true">{shortDate.format(streak.start)}</time
+          >
           <span class="sr-only">{describe(streak)}</span>
           <div
             class="h-5 min-w-0 border-l border-neutral-300 dark:border-neutral-600"
@@ -73,17 +75,8 @@
               style:width={`${(streak.durationMs / maxDuration) * 100}%`}
             ></div>
           </div>
-          <span
-            class="streak-dates text-xs text-muted-foreground"
-            aria-hidden="true"
-          >
-            <time datetime={streak.start.toISOString()}
-              >{shortDate.format(streak.start)}</time
-            >
-            <span>→</span>
-            <time datetime={streak.end.toISOString()}
-              >{shortDate.format(streak.end)}</time
-            >
+          <span class="text-right text-sm font-semibold" aria-hidden="true">
+            {formatDuration(streak.durationMs)}
           </span>
         </li>
       {/each}
@@ -126,28 +119,15 @@
 <style>
   .streak-row {
     display: grid;
-    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) 4rem;
     align-items: center;
     column-gap: 0.75rem;
   }
 
-  .streak-dates {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    white-space: nowrap;
-  }
-
   @media (max-width: 479px) {
     .streak-row {
-      grid-template-columns: 3.5rem minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr) 3.5rem;
       column-gap: 0.5rem;
-      row-gap: 0.125rem;
-    }
-
-    .streak-dates {
-      grid-column: 2;
-      font-size: 0.6875rem;
     }
   }
 </style>
