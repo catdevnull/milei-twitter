@@ -178,7 +178,7 @@
     <div
       class="relative h-44"
       role="img"
-      aria-label={`${metric === "meanMs" ? "Promedio" : "Mediana"} semanal de la duración de las rachas de inactividad. Los valores y cantidades se encuentran en Ver datos semanales.`}
+      aria-label={`${metric === "meanMs" ? "Promedio" : "Mediana"} semanal de la duración de las rachas de inactividad.`}
     >
       <canvas bind:this={canvas} aria-hidden="true"></canvas>
     </div>
@@ -191,46 +191,33 @@
       período.
     </p>
   {/if}
-  <details class="mt-2 text-xs text-muted-foreground">
-    <summary
-      class="w-fit cursor-pointer rounded py-1 focus-visible:outline focus-visible:outline-2"
-      >Ver datos semanales</summary
-    >
-    <p class="my-2 leading-relaxed">
-      El promedio refleja las pausas largas; la mediana muestra la pausa típica.
-      Cada racha se asigna a la semana de su inicio, de lunes a domingo en
-      Argentina. Incluye todas las rachas del filtro, no solo las del ranking.
-      Las semanas con pocas rachas son menos representativas. No mide el tiempo
-      total desconectado.
-    </p>
-    {#if hasData}
-      <div class="max-h-48 overflow-auto">
-        <table class="w-full text-left tabular-nums">
-          <caption class="sr-only"
-            >Duración de las pausas por semana y cantidad de rachas</caption
-          >
-          <thead
-            ><tr
-              ><th scope="col" class="py-1">Semana</th><th scope="col"
-                >Promedio</th
-              ><th scope="col">Mediana</th><th scope="col" class="text-right"
-                >Rachas</th
-              ></tr
-            ></thead
-          >
-          <tbody
-            >{#each weeks as week}<tr
-                ><th scope="row" class="py-1 font-normal"
-                  >{weekDate(week.week)}{week.partial ? " (parcial)" : ""}</th
-                ><td>{formatDuration(week.meanMs)}</td><td
-                  >{formatDuration(week.medianMs)}</td
-                ><td class="text-right">{week.count}</td></tr
-              >{/each}</tbody
-          >
-        </table>
-      </div>
-    {/if}
-  </details>
+  {#if hasData}
+    <div class="sr-only">
+      <table class="w-full text-left tabular-nums">
+        <caption class="sr-only"
+          >Duración de las pausas por semana y cantidad de rachas</caption
+        >
+        <thead
+          ><tr
+            ><th scope="col" class="py-1">Semana</th><th scope="col"
+              >Promedio</th
+            ><th scope="col">Mediana</th><th scope="col" class="text-right"
+              >Rachas</th
+            ></tr
+          ></thead
+        >
+        <tbody
+          >{#each weeks as week}<tr
+              ><th scope="row" class="py-1 font-normal"
+                >{weekDate(week.week)}{week.partial ? " (parcial)" : ""}</th
+              ><td>{formatDuration(week.meanMs)}</td><td
+                >{formatDuration(week.medianMs)}</td
+              ><td class="text-right">{week.count}</td></tr
+            >{/each}</tbody
+        >
+      </table>
+    </div>
+  {/if}
 </div>
 
 <style>
