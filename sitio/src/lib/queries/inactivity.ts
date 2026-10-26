@@ -9,6 +9,8 @@ export const inactivityStart = new Date("2024-02-12T00:00:00-03:00");
 export function inactivityRankingQuery(
   observedUntil: Date,
   startingFrom = inactivityStart,
+  limit = 10,
+  offset = 0,
 ) {
   const start = new Date(Math.max(+inactivityStart, +startingFrom));
   return sql`
@@ -31,19 +33,21 @@ export function inactivityRankingQuery(
     FROM gaps
     WHERE start IS NOT NULL AND "end" > start
     ORDER BY "durationMs" DESC, start ASC
-    LIMIT 10
+    LIMIT ${limit} OFFSET ${offset}
   `;
 }
 
 export async function getInactivityRanking(
   observedUntil: Date,
   startingFrom = inactivityStart,
+  limit = 10,
+  offset = 0,
 ) {
   const rows = await db.execute<{
     start: string;
     end: string;
     durationMs: string;
-  }>(inactivityRankingQuery(observedUntil, startingFrom));
+  }>(inactivityRankingQuery(observedUntil, startingFrom, limit, offset));
 
   return rows.map((row) => ({
     start: new Date(row.start),

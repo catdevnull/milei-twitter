@@ -57,9 +57,82 @@
     }
   }
 
-  let expanded = false;
-  $: if (streaks) expanded = false;
-  $: visibleStreaks = expanded ? streaks : streaks.slice(0, 5);
+  let view: "five" | "ten" | "all" = "five";
+  let allStreaks: typeof streaks = [];
+  let hasMore = true;
+  let loadingMore = false;
+  let loadError = "";
+  let observedUntil: number | undefined;
+  let generation = 0;
+
+  function resetView(rows: typeof streaks) {
+    generation++;
+    view = "five";
+    allStreaks = rows;
+    hasMore = true;
+    loadingMore = false;
+    loadError = "";
+    observedUntil = undefined;
+  }
+  $: resetView(streaks);
+  $: visibleStreaks =
+    view === "all" ? allStreaks : streaks.slice(0, view === "ten" ? 10 : 5);
+
+  async function loadMore(first = false) {
+    if (loadingMore || (!first && !hasMore)) return;
+    const requestGeneration = generation;
+    loadingMore = true;
+    loadError = "";
+    const params = new URLSearchParams({
+      streakFrom: period.from,
+      streakTo: period.to,
+      offset: String(first ? 0 : allStreaks.length),
+    });
+    if (observedUntil !== undefined) params.set("until", String(observedUntil));
+    try {
+      const response = await fetch(`/api/inactivity?${params}`);
+      if (!response.ok) throw new Error("No se pudieron cargar las rachas.");
+      const result = await response.json();
+      if (requestGeneration !== generation) return;
+      const rows = result.streaks.map(
+        (row: { start: string; end: string; durationMs: number }) => ({
+          ...row,
+          start: new Date(row.start),
+          end: new Date(row.end),
+        }),
+      );
+      allStreaks = first ? rows : [...allStreaks, ...rows];
+      hasMore = result.hasMore;
+      observedUntil = result.until;
+    } catch {
+      if (requestGeneration === generation)
+        loadError = "No se pudieron cargar las rachas. Reintentá.";
+    } finally {
+      if (requestGeneration === generation) loadingMore = false;
+    }
+  }
+
+  function cycleView() {
+    if (view === "five") view = "ten";
+    else if (view === "ten") {
+      view = "all";
+      loadMore(true);
+    } else {
+      generation++;
+      loadingMore = false;
+      view = "five";
+    }
+  }
+
+  function scrollRanking(event: Event) {
+    const element = event.currentTarget as HTMLDivElement;
+    if (
+      view === "all" &&
+      !loadError &&
+      element.scrollTop + element.clientHeight >= element.scrollHeight - 80
+    )
+      loadMore();
+  }
   $: maxDuration = Math.max(1, ...streaks.map((streak) => streak.durationMs));
 
   const formatter = new Intl.DateTimeFormat("es-AR", {
@@ -114,7 +187,9 @@
     <h2 id="inactivity-heading" class="text-lg font-bold">
       Rachas sin actividad
     </h2>
-    <p class="text-xs text-muted-foreground">Top 10 · Hora argentina</p>
+    <p class="text-xs text-muted-foreground">
+      {view === "all" ? "Ranking" : "Top 10"} · Hora argentina
+    </p>
   </div>
 
   <nav class="mb-4 flex items-center gap-0.5" aria-label="Período del ranking">
@@ -211,39 +286,64 @@
   </nav>
 
   {#if streaks.length > 0}
-    <ol id="inactivity-streaks" class="space-y-2">
-      {#each visibleStreaks as streak}
-        <li class="streak-row tabular-nums" title={describe(streak)}>
-          <time
-            class="whitespace-nowrap text-xs text-muted-foreground"
-            datetime={streak.start.toISOString()}
-            aria-hidden="true">{formatShortDate(streak.start)}</time
-          >
-          <span class="sr-only">{describe(streak)}</span>
-          <div
-            class="h-5 min-w-0 border-l border-neutral-300 dark:border-neutral-600"
-            aria-hidden="true"
-          >
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (The scroll region needs keyboard focus for arrow and Page Down scrolling.) -->
+    <div
+      class:all-streaks={view === "all"}
+      onscroll={scrollRanking}
+      tabindex={view === "all" ? 0 : undefined}
+      role={view === "all" ? "region" : undefined}
+      aria-label={view === "all"
+        ? "Todas las rachas, lista desplazable"
+        : undefined}
+    >
+      <ol id="inactivity-streaks" class="space-y-2">
+        {#each visibleStreaks as streak}
+          <li class="streak-row tabular-nums" title={describe(streak)}>
+            <time
+              class="whitespace-nowrap text-xs text-muted-foreground"
+              datetime={streak.start.toISOString()}
+              aria-hidden="true">{formatShortDate(streak.start)}</time
+            >
+            <span class="sr-only">{describe(streak)}</span>
             <div
-              class="h-full rounded-r-sm bg-orange-400 dark:bg-orange-400"
-              style:width={`${(streak.durationMs / maxDuration) * 100}%`}
-            ></div>
-          </div>
-          <span class="text-right text-sm font-semibold" aria-hidden="true">
-            {formatDuration(streak.durationMs)}
-          </span>
-        </li>
-      {/each}
-    </ol>
+              class="h-5 min-w-0 border-l border-neutral-300 dark:border-neutral-600"
+              aria-hidden="true"
+            >
+              <div
+                class="h-full rounded-r-sm bg-orange-400 dark:bg-orange-400"
+                style:width={`${(streak.durationMs / maxDuration) * 100}%`}
+              ></div>
+            </div>
+            <span class="text-right text-sm font-semibold" aria-hidden="true">
+              {formatDuration(streak.durationMs)}
+            </span>
+          </li>
+        {/each}
+      </ol>
+      {#if view === "all"}
+        <div class="mt-3 text-center text-xs text-muted-foreground">
+          <p role="status">{loadingMore ? "Cargando rachas…" : loadError}</p>
+          {#if !loadingMore && (hasMore || loadError)}
+            <button
+              type="button"
+              class="min-h-9 rounded px-3 underline focus-visible:outline focus-visible:outline-2"
+              onclick={() => loadMore(observedUntil === undefined)}
+            >
+              {loadError ? "Reintentar" : "Cargar más rachas"}
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
     {#if streaks.length > 5}
       <button
         type="button"
         class="mt-2 min-h-9 rounded px-2 text-xs font-medium underline underline-offset-4 hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:bg-neutral-700"
-        aria-expanded={expanded}
+        aria-expanded={view !== "five"}
         aria-controls="inactivity-streaks"
-        onclick={() => (expanded = !expanded)}
+        onclick={cycleView}
       >
-        {expanded ? "Mostrar solo 5" : `Ver las ${streaks.length} rachas`}
+        {view === "five" ? "Ver 10" : view === "ten" ? "Ver todos" : "Ver 5"}
       </button>
     {/if}
   {:else}
@@ -272,6 +372,19 @@
 </section>
 
 <style>
+  .all-streaks {
+    max-height: 20rem;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding: 2px 0.5rem 2px 2px;
+  }
+
+  .all-streaks:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
   .range-preset[aria-current="true"],
   :global(.range-preset[data-selected="true"]) {
     background: hsl(var(--foreground));
