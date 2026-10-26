@@ -18,10 +18,18 @@
   });
   const shortDate = new Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
-    month: "2-digit",
+    month: "short",
     year: "2-digit",
     timeZone: tz,
   });
+
+  function formatShortDate(date: Date) {
+    return shortDate
+      .formatToParts(date)
+      .filter((part) => ["day", "month", "year"].includes(part.type))
+      .map((part) => part.value.replace(/\.$/, ""))
+      .join("/");
+  }
 
   // Use elapsed days so long gaps never wrap at 24h.
   function formatDuration(ms: number) {
@@ -63,7 +71,7 @@
           <time
             class="whitespace-nowrap text-xs text-muted-foreground"
             datetime={streak.start.toISOString()}
-            aria-hidden="true">{shortDate.format(streak.start)}</time
+            aria-hidden="true">{formatShortDate(streak.start)}</time
           >
           <span class="sr-only">{describe(streak)}</span>
           <div
