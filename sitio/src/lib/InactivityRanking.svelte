@@ -300,7 +300,7 @@
         {#each visibleStreaks as streak}
           <li class="streak-row tabular-nums" title={describe(streak)}>
             <time
-              class="whitespace-nowrap text-xs text-muted-foreground"
+              class="whitespace-nowrap text-right text-xs text-muted-foreground"
               datetime={streak.start.toISOString()}
               aria-hidden="true">{formatShortDate(streak.start)}</time
             >
@@ -414,7 +414,7 @@
     display: grid;
     grid-template-columns: 5.5rem minmax(0, 1fr) 4rem;
     align-items: center;
-    column-gap: 0.75rem;
+    column-gap: 0.5rem;
   }
 
   @media (max-width: 479px) {
