@@ -2,6 +2,8 @@
   import { tz } from "$lib/consts";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
+  import * as Popover from "$lib/components/ui/popover";
+  import { CalendarIcon } from "lucide-svelte";
 
   export let streaks: { start: Date; end: Date; durationMs: number }[];
   export let period: {
@@ -15,6 +17,7 @@
   $: to = period.to;
   let filterError = "";
   let loading = false;
+  let datesOpen = false;
   $: if (period) filterError = "";
 
   const presets = [
@@ -23,6 +26,7 @@
     { value: "1y", label: "1y", title: "Último año" },
     { value: "6m", label: "6m", title: "Últimos 6 meses" },
     { value: "3m", label: "3m", title: "Últimos 3 meses" },
+    { value: "1m", label: "1m", title: "Último mes" },
   ];
 
   function filterUrl(preset?: string) {
@@ -47,6 +51,7 @@
     loading = true;
     try {
       await goto(filterUrl(), { noScroll: true, keepFocus: true });
+      datesOpen = false;
     } finally {
       loading = false;
     }
@@ -112,7 +117,7 @@
     <p class="text-xs text-muted-foreground">Top 10 · Hora argentina</p>
   </div>
 
-  <nav class="mb-3 flex gap-1" aria-label="Período del ranking">
+  <nav class="mb-4 flex items-center gap-0.5" aria-label="Período del ranking">
     {#each presets as preset}
       <a
         href={filterUrl(preset.value)}
@@ -120,60 +125,90 @@
         aria-label={preset.title}
         aria-current={period.preset === preset.value ? "true" : undefined}
         title={preset.title}
-        class="range-preset rounded px-3 py-2 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:bg-neutral-700"
+        class="range-preset flex min-h-8 items-center rounded px-2 py-1 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:bg-neutral-700"
         >{preset.label}</a
       >
     {/each}
-  </nav>
-
-  <form class="mb-4 flex flex-wrap items-end gap-2" onsubmit={applyDates}>
-    <label
-      class="flex min-w-[8rem] flex-1 flex-col gap-1 text-xs text-muted-foreground"
-    >
-      Desde
-      <input
-        class="date-input"
-        type="date"
-        name="streakFrom"
-        bind:value={from}
-        max={period.today}
-        required
-        aria-describedby={filterError ? "streak-filter-error" : undefined}
-        aria-invalid={filterError ? "true" : undefined}
-      />
-    </label>
-    <label
-      class="flex min-w-[8rem] flex-1 flex-col gap-1 text-xs text-muted-foreground"
-    >
-      Hasta
-      <input
-        class="date-input"
-        type="date"
-        name="streakTo"
-        bind:value={to}
-        max={period.today}
-        required
-        aria-describedby={filterError ? "streak-filter-error" : undefined}
-        aria-invalid={filterError ? "true" : undefined}
-      />
-    </label>
-    <button
-      class="min-h-9 rounded border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:hover:bg-neutral-700"
-      type="submit"
-      disabled={loading}
-    >
-      {loading ? "Filtrando…" : "Aplicar"}
-    </button>
-    {#if filterError}
-      <p
-        id="streak-filter-error"
-        role="alert"
-        class="w-full text-xs text-red-700 dark:text-red-300"
+    <Popover.Root bind:open={datesOpen}>
+      <Popover.Trigger
+        class="range-preset ml-auto flex min-h-8 shrink-0 items-center gap-1.5 rounded px-2 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:bg-neutral-700"
+        data-selected={period.preset === "custom"}
+        aria-label="Elegir rango de fechas"
+        onclick={() => {
+          from = period.from;
+          to = period.to;
+          filterError = "";
+        }}
       >
-        {filterError}
-      </p>
-    {/if}
-  </form>
+        <CalendarIcon class="size-3.5" aria-hidden="true" />
+        {#if period.preset === "custom"}
+          <span class="hidden tabular-nums sm:inline"
+            >{formatShortDate(new Date(period.from + "T12:00:00-03:00"))} – {formatShortDate(
+              new Date(period.to + "T12:00:00-03:00"),
+            )}</span
+          >
+          <span class="sm:hidden">Fechas</span>
+        {:else}
+          Fechas
+        {/if}
+      </Popover.Trigger>
+      <Popover.Content
+        align="end"
+        class="w-80 max-w-[calc(100vw-2rem)]"
+        aria-label="Filtrar rachas por fechas"
+      >
+        <h3 class="text-sm font-semibold">Elegir fechas</h3>
+        <form class="mt-3 flex flex-wrap items-end gap-3" onsubmit={applyDates}>
+          <label
+            class="flex min-w-[7rem] flex-1 flex-col gap-1 text-xs text-muted-foreground"
+          >
+            Desde
+            <input
+              class="date-input"
+              type="date"
+              name="streakFrom"
+              bind:value={from}
+              max={period.today}
+              required
+              aria-describedby={filterError ? "streak-filter-error" : undefined}
+              aria-invalid={filterError ? "true" : undefined}
+            />
+          </label>
+          <label
+            class="flex min-w-[7rem] flex-1 flex-col gap-1 text-xs text-muted-foreground"
+          >
+            Hasta
+            <input
+              class="date-input"
+              type="date"
+              name="streakTo"
+              bind:value={to}
+              max={period.today}
+              required
+              aria-describedby={filterError ? "streak-filter-error" : undefined}
+              aria-invalid={filterError ? "true" : undefined}
+            />
+          </label>
+          <button
+            class="min-h-9 rounded border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:hover:bg-neutral-700"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Filtrando…" : "Aplicar"}
+          </button>
+          {#if filterError}
+            <p
+              id="streak-filter-error"
+              role="alert"
+              class="w-full text-xs text-red-700 dark:text-red-300"
+            >
+              {filterError}
+            </p>
+          {/if}
+        </form>
+      </Popover.Content>
+    </Popover.Root>
+  </nav>
 
   {#if streaks.length > 0}
     <ol id="inactivity-streaks" class="space-y-2">
@@ -237,7 +272,8 @@
 </section>
 
 <style>
-  .range-preset[aria-current="true"] {
+  .range-preset[aria-current="true"],
+  :global(.range-preset[data-selected="true"]) {
     background: hsl(var(--foreground));
     color: hsl(var(--background));
     box-shadow: inset 0 -2px 0 currentColor;

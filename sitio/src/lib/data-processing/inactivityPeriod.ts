@@ -23,6 +23,9 @@ export function getInactivityPeriod(params: URLSearchParams, now = new Date()) {
       case "3m":
         from = end.subtract(3, "month").format("YYYY-MM-DD");
         break;
+      case "1m":
+        from = end.subtract(1, "month").format("YYYY-MM-DD");
+        break;
       case "all":
         from = "2024-02-12";
         break;
