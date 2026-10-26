@@ -1,9 +1,59 @@
 <script lang="ts">
   import { tz } from "$lib/consts";
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
 
   export let streaks: { start: Date; end: Date; durationMs: number }[];
+  export let period: {
+    preset: string;
+    from: string;
+    to: string;
+    today: string;
+  };
+
+  $: from = period.from;
+  $: to = period.to;
+  let filterError = "";
+  let loading = false;
+  $: if (period) filterError = "";
+
+  const presets = [
+    { value: "all", label: "Todo", title: "Todo el historial" },
+    { value: "5y", label: "5y", title: "Últimos 5 años" },
+    { value: "1y", label: "1y", title: "Último año" },
+    { value: "6m", label: "6m", title: "Últimos 6 meses" },
+    { value: "3m", label: "3m", title: "Últimos 3 meses" },
+  ];
+
+  function filterUrl(preset?: string) {
+    const url = new URL($page.url);
+    for (const key of ["streakPeriod", "streakFrom", "streakTo"])
+      url.searchParams.delete(key);
+    if (preset) url.searchParams.set("streakPeriod", preset);
+    else {
+      url.searchParams.set("streakFrom", from);
+      url.searchParams.set("streakTo", to);
+    }
+    return url.pathname + url.search;
+  }
+
+  async function applyDates(event: SubmitEvent) {
+    event.preventDefault();
+    filterError = "";
+    if (from > to) {
+      filterError = "La fecha de inicio debe ser anterior o igual a la de fin.";
+      return;
+    }
+    loading = true;
+    try {
+      await goto(filterUrl(), { noScroll: true, keepFocus: true });
+    } finally {
+      loading = false;
+    }
+  }
 
   let expanded = false;
+  $: if (streaks) expanded = false;
   $: visibleStreaks = expanded ? streaks : streaks.slice(0, 5);
   $: maxDuration = Math.max(1, ...streaks.map((streak) => streak.durationMs));
 
@@ -59,10 +109,71 @@
     <h2 id="inactivity-heading" class="text-lg font-bold">
       Rachas sin actividad
     </h2>
-    <p class="text-xs text-muted-foreground">
-      Top 10 histórico · Hora argentina
-    </p>
+    <p class="text-xs text-muted-foreground">Top 10 · Hora argentina</p>
   </div>
+
+  <nav class="mb-3 flex gap-1" aria-label="Período del ranking">
+    {#each presets as preset}
+      <a
+        href={filterUrl(preset.value)}
+        data-sveltekit-noscroll
+        aria-label={preset.title}
+        aria-current={period.preset === preset.value ? "true" : undefined}
+        title={preset.title}
+        class="range-preset rounded px-3 py-2 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:bg-neutral-700"
+        >{preset.label}</a
+      >
+    {/each}
+  </nav>
+
+  <form class="mb-4 flex flex-wrap items-end gap-2" onsubmit={applyDates}>
+    <label
+      class="flex min-w-[8rem] flex-1 flex-col gap-1 text-xs text-muted-foreground"
+    >
+      Desde
+      <input
+        class="date-input"
+        type="date"
+        name="streakFrom"
+        bind:value={from}
+        max={period.today}
+        required
+        aria-describedby={filterError ? "streak-filter-error" : undefined}
+        aria-invalid={filterError ? "true" : undefined}
+      />
+    </label>
+    <label
+      class="flex min-w-[8rem] flex-1 flex-col gap-1 text-xs text-muted-foreground"
+    >
+      Hasta
+      <input
+        class="date-input"
+        type="date"
+        name="streakTo"
+        bind:value={to}
+        max={period.today}
+        required
+        aria-describedby={filterError ? "streak-filter-error" : undefined}
+        aria-invalid={filterError ? "true" : undefined}
+      />
+    </label>
+    <button
+      class="min-h-9 rounded border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 dark:border-neutral-600 dark:hover:bg-neutral-700"
+      type="submit"
+      disabled={loading}
+    >
+      {loading ? "Filtrando…" : "Aplicar"}
+    </button>
+    {#if filterError}
+      <p
+        id="streak-filter-error"
+        role="alert"
+        class="w-full text-xs text-red-700 dark:text-red-300"
+      >
+        {filterError}
+      </p>
+    {/if}
+  </form>
 
   {#if streaks.length > 0}
     <ol id="inactivity-streaks" class="space-y-2">
@@ -102,7 +213,7 @@
     {/if}
   {:else}
     <p class="py-2 text-sm text-muted-foreground">
-      Todavía no hay suficientes actividades para calcular las rachas.
+      No hay suficientes actividades en este período. Probá ampliar el rango.
     </p>
   {/if}
 
@@ -114,7 +225,8 @@
     </summary>
     <p class="mt-1 leading-relaxed">
       Pausas entre tweets, retweets o likes registrados desde el 12 de febrero
-      de 2024. Solo se incluyen pausas que terminaron con otra actividad. Las
+      de 2024. Solo se incluyen pausas cuyo inicio y fin están dentro del rango
+      elegido. Las fechas incluyen el día completo en horario argentino. Las
       barras comparten escala desde cero. Las duraciones de un día o más se
       muestran en días y horas completas; el detalle exacto figura al pasar el
       cursor. Puede haber faltantes en los datos: no tener actividad registrada
@@ -125,6 +237,30 @@
 </section>
 
 <style>
+  .range-preset[aria-current="true"] {
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
+    box-shadow: inset 0 -2px 0 currentColor;
+  }
+
+  .date-input {
+    min-height: 2.25rem;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid rgb(163 163 163);
+    border-radius: 0.25rem;
+    background: transparent;
+    padding: 0.25rem 0.5rem;
+    color: inherit;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .date-input:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
   .streak-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) 4rem;

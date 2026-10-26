@@ -6,7 +6,11 @@ import { db } from "$lib/db";
 // Earlier likes do not have reliable timestamps (see the warning on the home page).
 export const inactivityStart = new Date("2024-02-12T00:00:00-03:00");
 
-export function inactivityRankingQuery(observedUntil: Date) {
+export function inactivityRankingQuery(
+  observedUntil: Date,
+  startingFrom = inactivityStart,
+) {
+  const start = new Date(Math.max(+inactivityStart, +startingFrom));
   return sql`
     WITH activity AS (
       SELECT ${likedTweets.firstSeenAt} AS at
@@ -20,7 +24,7 @@ export function inactivityRankingQuery(observedUntil: Date) {
     ), gaps AS (
       SELECT lag(at) OVER (ORDER BY at) AS start, at AS end
       FROM activity
-      WHERE at >= ${inactivityStart.toISOString()}::timestamptz
+      WHERE at >= ${start.toISOString()}::timestamptz
         AND at <= ${observedUntil.toISOString()}::timestamptz
     )
     SELECT start, "end", extract(epoch FROM ("end" - start)) * 1000 AS "durationMs"
@@ -31,12 +35,15 @@ export function inactivityRankingQuery(observedUntil: Date) {
   `;
 }
 
-export async function getInactivityRanking(observedUntil: Date) {
+export async function getInactivityRanking(
+  observedUntil: Date,
+  startingFrom = inactivityStart,
+) {
   const rows = await db.execute<{
     start: string;
     end: string;
     durationMs: string;
-  }>(inactivityRankingQuery(observedUntil));
+  }>(inactivityRankingQuery(observedUntil, startingFrom));
 
   return rows.map((row) => ({
     start: new Date(row.start),

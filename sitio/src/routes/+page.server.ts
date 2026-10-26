@@ -6,6 +6,7 @@ import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error, redirect } from "@sveltejs/kit";
 import { getStatsForDaysInTimePeriod } from "@/data-processing/days";
 import { getInactivityRanking } from "$lib/queries/inactivity";
+import { getInactivityPeriod } from "$lib/data-processing/inactivityPeriod";
 
 const tz = "America/Argentina/Buenos_Aires";
 
@@ -26,6 +27,15 @@ function getStartingFrom(query: string) {
 }
 
 export const load: PageServerLoad = async ({ url, setHeaders }) => {
+  let inactivityPeriod;
+  try {
+    inactivityPeriod = getInactivityPeriod(url.searchParams);
+  } catch (err) {
+    error(
+      400,
+      err instanceof Error ? err.message : "Rango de fechas inválido.",
+    );
+  }
   const query =
     url.searchParams.get("q") ?? "date:" + dayjs().tz(tz).format("YYYY-MM-DD");
   const startingFrom = getStartingFrom(query);
@@ -143,7 +153,7 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
         sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
       ),
     }),
-    getInactivityRanking(new Date()),
+    getInactivityRanking(inactivityPeriod.end, inactivityPeriod.start),
   ]);
   const t1 = performance.now();
   console.log("queries", t1 - t0);
@@ -179,7 +189,14 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
   ) {
     return redirect(
       302,
-      "/?q=date:" + dayjs().subtract(1, "day").tz(tz).format("YYYY-MM-DD"),
+      (() => {
+        const params = new URLSearchParams(url.searchParams);
+        params.set(
+          "q",
+          "date:" + dayjs().subtract(1, "day").tz(tz).format("YYYY-MM-DD"),
+        );
+        return "/?" + params;
+      })(),
     );
   }
 
@@ -202,5 +219,6 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     query,
     hourHeatmap,
     inactivityRanking,
+    inactivityPeriod,
   };
 };
