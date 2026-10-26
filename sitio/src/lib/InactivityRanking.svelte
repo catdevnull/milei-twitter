@@ -299,14 +299,14 @@
 
   .streak-row {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 4rem;
+    grid-template-columns: 5.5rem minmax(0, 1fr) 4rem;
     align-items: center;
     column-gap: 0.75rem;
   }
 
   @media (max-width: 479px) {
     .streak-row {
-      grid-template-columns: auto minmax(0, 1fr) 3.5rem;
+      grid-template-columns: 5.5rem minmax(0, 1fr) 3.5rem;
       column-gap: 0.5rem;
     }
   }
