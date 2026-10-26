@@ -22,12 +22,6 @@
   );
 
   export let weeks: WeeklyInactivity[];
-  let metric: "maxMs" | "meanMs" | "medianMs" = "maxMs";
-  const metricLabels = {
-    maxMs: "Máximo",
-    meanMs: "Promedio",
-    medianMs: "Mediana",
-  };
   let canvas: HTMLCanvasElement;
   let chart: Chart<"line", (number | null)[]> | undefined;
   $: hasData = weeks.some((week) => week.count > 0);
@@ -57,14 +51,14 @@
       return;
     }
     const values = weeks.map((week) =>
-      week[metric] === null ? null : week[metric]! / 3_600_000,
+      week.maxMs === null ? null : week.maxMs! / 3_600_000,
     );
     const peak = values.reduce<number>(
       (max, value) =>
         value !== null && Number.isFinite(value) ? Math.max(max, value) : max,
       0,
     );
-    // Recompute bounds from the current filter and metric, including headroom
+    // Recompute bounds from the current filter, including headroom
     // for markers at the peak. Never reuse a previous range's upper bound.
     const paddedPeak = Math.max(peak * 1.1, 1 / 60);
     const step = 10 ** Math.floor(Math.log10(paddedPeak)) / 2;
@@ -73,7 +67,7 @@
       labels: weeks.map((week) => weekDate(week.week)),
       datasets: [
         {
-          label: metricLabels[metric],
+          label: "Máximo",
           data: values,
           borderColor: "#f97316",
           backgroundColor: "#f97316",
@@ -114,7 +108,7 @@
                 return `Semana del ${weekDate(week.week)}${week.partial ? " (parcial)" : ""}`;
               },
               label: (item) =>
-                `${metricLabels[metric]}: ${formatDuration(weeks[item.dataIndex][metric])}`,
+                `Máximo: ${formatDuration(weeks[item.dataIndex].maxMs)}`,
               afterLabel: (item) =>
                 `${weeks[item.dataIndex].count} rachas registradas`,
             },
@@ -162,41 +156,17 @@
 </script>
 
 <div class="mb-5 border-b border-neutral-200 pb-3 dark:border-neutral-700">
-  <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-    <h3 class="text-sm font-semibold">Duración semanal de las pausas</h3>
-    <div class="flex gap-1" role="group" aria-label="Medida semanal">
-      <button
-        type="button"
-        aria-pressed={metric === "maxMs"}
-        class="metric-button"
-        onclick={() => (metric = "maxMs")}>Máximo</button
-      >
-      <button
-        type="button"
-        aria-pressed={metric === "meanMs"}
-        class="metric-button"
-        onclick={() => (metric = "meanMs")}>Promedio</button
-      >
-      <button
-        type="button"
-        aria-pressed={metric === "medianMs"}
-        class="metric-button"
-        onclick={() => (metric = "medianMs")}>Mediana</button
-      >
-    </div>
-  </div>
+  <h3 class="mb-2 text-sm font-semibold">Pausa más larga de cada semana</h3>
   {#if hasData}
     <div
       class="relative h-44"
       role="img"
-      aria-label={`${metricLabels[metric]} semanal de la duración de las rachas de inactividad.`}
+      aria-label="Máximo semanal de la duración de las rachas de inactividad."
     >
       <canvas bind:this={canvas} aria-hidden="true"></canvas>
     </div>
     <p class="mt-1 text-xs text-muted-foreground">
-      {metric === "maxMs"
-        ? "Pausa más larga de cada semana"
-        : "Semana de inicio"} · Triángulo: semana parcial · Hueco: sin datos
+      Semana de inicio · Triángulo: semana parcial · Hueco: sin datos
     </p>
   {:else}
     <p class="py-4 text-sm text-muted-foreground">
@@ -213,19 +183,14 @@
         <thead
           ><tr
             ><th scope="col" class="py-1">Semana</th><th scope="col">Máximo</th
-            ><th scope="col">Promedio</th><th scope="col">Mediana</th><th
-              scope="col"
-              class="text-right">Rachas</th
-            ></tr
+            ><th scope="col" class="text-right">Rachas</th></tr
           ></thead
         >
         <tbody
           >{#each weeks as week}<tr
               ><th scope="row" class="py-1 font-normal"
                 >{weekDate(week.week)}{week.partial ? " (parcial)" : ""}</th
-              ><td>{formatDuration(week.maxMs)}</td><td
-                >{formatDuration(week.meanMs)}</td
-              ><td>{formatDuration(week.medianMs)}</td><td class="text-right"
+              ><td>{formatDuration(week.maxMs)}</td><td class="text-right"
                 >{week.count}</td
               ></tr
             >{/each}</tbody
@@ -234,20 +199,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .metric-button {
-    min-height: 2rem;
-    border-radius: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
-  .metric-button[aria-pressed="true"] {
-    background: hsl(var(--foreground));
-    color: hsl(var(--background));
-  }
-  .metric-button:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
-</style>
