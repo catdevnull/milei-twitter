@@ -5,6 +5,7 @@ import type { PageServerLoad } from "./$types";
 import { dayjs, likesCutoffSql } from "$lib/consts";
 import { error, redirect } from "@sveltejs/kit";
 import { getStatsForDaysInTimePeriod } from "@/data-processing/days";
+import { getInactivityRanking } from "$lib/queries/inactivity";
 
 const tz = "America/Argentina/Buenos_Aires";
 
@@ -43,6 +44,7 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     monthData,
     hasNextMonth,
     heatTweets,
+    inactivityRanking,
   ] = await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
@@ -141,6 +143,7 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
         sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
       ),
     }),
+    getInactivityRanking(new Date()),
   ]);
   const t1 = performance.now();
   console.log("queries", t1 - t0);
@@ -198,5 +201,6 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     hasNextMonth: !!hasNextMonth,
     query,
     hourHeatmap,
+    inactivityRanking,
   };
 };
