@@ -37,7 +37,6 @@
   import StatsCalendar from "@/StatsCalendar.svelte";
   import StatsCalendarNavigation from "@/StatsCalendarNavigation.svelte";
   import HeatmapHours from "$lib/HeatmapHours.svelte";
-  import InactivityRanking from "$lib/InactivityRanking.svelte";
 
   export let data: PageData;
 
@@ -247,8 +246,6 @@
       hideIfNotExists={true}
     />
   </section>
-
-  <InactivityRanking streaks={data.inactivityRanking} period={data.inactivityPeriod} weekly={data.weeklyInactivity} />
 
   <section
     class="mx-auto w-full max-w-2xl bg-neutral-100 p-4 md:rounded-lg dark:bg-neutral-800"
