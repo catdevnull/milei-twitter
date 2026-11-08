@@ -42,14 +42,13 @@ time. The full normalized gateway tweet objects are kept, including
 to SocialAPI. The unlinked, `noindex` route `/internal/tweet-history` shows the
 history.
 
-En `absolute-slop`, esto encaja como un Compose app separado del Dokku app
-`milei`. La plantilla está en `deploy/scraper/`:
+En producción corre como el servicio `milei-scraper` de `uncloud.yaml`, junto
+al sitio, la base de datos y el gateway. Las variables van en
+`.uncloud/milei-scraper.env` (plantilla en
+`deploy/uncloud/env/milei-scraper.env.example`). Para desplegar:
 
 ```
-cd deploy/scraper
-cp .env.example .env.production
-# completar secretos
-docker compose up -d --build
+DEPLOY_SSH=usuario@host just deploy milei-scraper
 ```
 
 ## producción

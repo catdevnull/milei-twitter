@@ -24,14 +24,61 @@ function getStartingFrom(query: string) {
   }
 }
 
+// The weekday/hour heatmap covers the last 90 days and doesn't depend on the
+// selected day, so compute it at most every few minutes instead of on every
+// navigation (it reads ~12k tweet rows).
+const HEATMAP_TTL_MS = 5 * 60 * 1000;
+let heatmapCache: { computedAt: number; value: Promise<number[][]> } | null =
+  null;
+
+function getHourHeatmap(): Promise<number[][]> {
+  if (heatmapCache && Date.now() - heatmapCache.computedAt < HEATMAP_TTL_MS) {
+    return heatmapCache.value;
+  }
+  const value = computeHourHeatmap();
+  heatmapCache = { computedAt: Date.now(), value };
+  value.catch(() => {
+    if (heatmapCache?.value === value) heatmapCache = null;
+  });
+  return value;
+}
+
+async function computeHourHeatmap(): Promise<number[][]> {
+  const heatmapStart = dayjs().tz(tz).subtract(90, "day").startOf("day");
+  const heatmapEnd = dayjs().tz(tz).endOf("day");
+  const timestamp = sql<number>`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`;
+  const heatTweets = await db
+    .select({ timestamp })
+    .from(schema.tweets)
+    .where(
+      and(
+        gte(timestamp, +heatmapStart / 1000),
+        lte(timestamp, +heatmapEnd / 1000),
+      ),
+    );
+
+  const hourHeatmap: number[][] = Array.from({ length: 7 }, () =>
+    Array(24).fill(0),
+  );
+  for (const t of heatTweets) {
+    const d = new Date(Number(t.timestamp) * 1000);
+    // Assume fixed UTC-3 (America/Argentina/Buenos_Aires without DST)
+    let hour = d.getUTCHours() - 3;
+    let dow = d.getUTCDay(); // 0 = Sunday
+    if (hour < 0) {
+      hour += 24;
+      dow = (dow + 6) % 7; // previous day
+    }
+    hourHeatmap[dow][hour]++;
+  }
+  return hourHeatmap;
+}
+
 export const load: PageServerLoad = async ({ url, setHeaders }) => {
   const query =
     url.searchParams.get("q") ?? "date:" + dayjs().tz(tz).format("YYYY-MM-DD");
   const startingFrom = getStartingFrom(query);
   const endsAt = startingFrom.add(24, "hour");
-
-  const heatmapStart = dayjs().tz(tz).subtract(90, "day").startOf("day");
-  const heatmapEnd = dayjs().tz(tz).endOf("day");
 
   const t0 = performance.now();
   const [
@@ -42,7 +89,7 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
     firstLikedTweet,
     monthData,
     hasNextMonth,
-    heatTweets,
+    hourHeatmap,
   ] = await Promise.all([
     db.query.likedTweets.findMany({
       columns: {
@@ -115,58 +162,10 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
         startingFrom.add(1, "month").startOf("month").toDate(),
       ),
     }),
-    db.query.tweets.findMany({
-      columns: {},
-      extras: {
-        timestamp:
-          sql<number>`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`.as(
-            "timestamp",
-          ),
-        isRetweet:
-          sql<boolean>`(${schema.tweets.twitterScraperJson}->>'isRetweet')::boolean`.as(
-            "isRetweet",
-          ),
-      },
-      where: and(
-        gte(
-          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
-          +heatmapStart / 1000,
-        ),
-        lte(
-          sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
-          +heatmapEnd / 1000,
-        ),
-      ),
-      orderBy: desc(
-        sql`(${schema.tweets.twitterScraperJson}->>'timestamp')::numeric`,
-      ),
-    }),
+    getHourHeatmap(),
   ]);
   const t1 = performance.now();
   console.log("queries", t1 - t0);
-
-  console.time("heatmap");
-  const hourHeatmap: number[][] = Array.from({ length: 7 }, () =>
-    Array(24).fill(0),
-  );
-  const addToHeat = (d: Date) => {
-    // Assume fixed UTC-3 (America/Argentina/Buenos_Aires without DST)
-    const utcHour = d.getUTCHours();
-    let hour = utcHour - 3;
-    let dow = d.getUTCDay(); // 0 = Sunday
-    if (hour < 0) {
-      hour += 24;
-      dow = (dow + 6) % 7; // previous day
-    } else if (hour >= 24) {
-      hour -= 24;
-      dow = (dow + 1) % 7; // next day (not expected with -3 but kept generic)
-    }
-    hourHeatmap[dow][hour]++;
-  };
-  heatTweets.forEach((t: { timestamp: number }) => {
-    addToHeat(new Date(t.timestamp * 1000));
-  });
-  console.timeEnd("heatmap");
 
   if (
     likedTweets.length === 0 &&

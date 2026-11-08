@@ -34,3 +34,14 @@ fly.toml
 
 */*.zip
 old.dump
+
+# Local-only data that must never enter a build context (uc deploy builds
+# from the working tree, not from a clean git checkout like Dokku did).
+backups/
+data/
+research/
+seguidoresDeMilei/
+load-test-results/
+.uncloud/
+twitter-gateway/api-users.txt
+twitter-gateway/*.sqlite*

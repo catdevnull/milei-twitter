@@ -15,16 +15,15 @@ The command prints the new key once and appends it to `api-users.txt` as
 `name:key`. Set `API_AUTH_FILE` to use another file. The service reloads the
 file on each request, so new users work without a restart.
 
-Create an API user directly in production from your local checkout:
+Create an API user in production from the repository root:
 
 ```sh
-pnpm --filter twitter-gateway user:create:prod -- alice
+just gateway-user alice
 ```
 
-This SSHes to `root@23.134.76.51`, adds the user to
-`/etc/twitter-gateway/api-users.txt`, and prints the generated API key. The
-running service picks it up without a restart. Set `DEPLOY_HOST` or
-`DEPLOY_USER` to override the SSH destination.
+This runs the same command inside the production container, which appends
+the user to `/data/api-users.txt` and prints the generated API key. The
+running service picks it up without a restart.
 
 Call Twitter routes with:
 
@@ -103,14 +102,14 @@ recent status.
 
 ## Deploy
 
-The production host can be updated from the repository root with:
+Production runs the `twitter-gateway` service from the root `uncloud.yaml`
+(image: `docker/twitter-gateway.Dockerfile`). From the repository root:
 
 ```sh
-pnpm --filter twitter-gateway deploy
+DEPLOY_SSH=user@host just deploy twitter-gateway
 ```
 
-Override `DEPLOY_HOST` or `DEPLOY_USER` when needed. The command synchronizes
-the repository to `/opt/milei-twitter`, installs dependencies and Chromium,
-and restarts `twitter-gateway.service`. It preserves API users, Twitter
-accounts, SQLite data, and environment configuration under `/etc/twitter-gateway`
-and `/var/lib/twitter-gateway`.
+API users, Twitter accounts and the SQLite request log live in the service's
+`/data` volume, so they survive redeploys. Settings go in
+`.uncloud/twitter-gateway.env` (template in
+`deploy/uncloud/env/twitter-gateway.env.example`).

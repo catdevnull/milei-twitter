@@ -1,0 +1,94 @@
+# Uncloud deployment for milei.nulo.lol, the tweet scraper, the Twitter
+# gateway (docial.nulo.lol), the nightly Postgres backups, and the Cloudflare
+# Tunnel that carries all public traffic for the cluster.
+#
+#   DEPLOY_SSH=user@host just deploy           # build on the server + roll out
+#   DEPLOY_SSH=user@host just deploy milei     # just the site
+#
+# Images are built on the server (see Justfile) and never pulled from a
+# registry. Env files live in .uncloud/ (gitignored); see
+# deploy/uncloud/env/*.env.example for what each one needs.
+
+services:
+  milei:
+    build:
+      context: .
+      dockerfile: docker/sitio.Dockerfile
+      platforms: [linux/amd64]
+    image: milei/site:latest
+    pull_policy: never
+    env_file: .uncloud/milei.env
+    depends_on:
+      - milei-db
+
+  milei-db:
+    image: postgres:17.5
+    env_file: .uncloud/milei-db.env
+    environment:
+      POSTGRES_DB: milei
+    volumes:
+      - milei-db-data:/var/lib/postgresql/data
+    shm_size: 256m
+
+  milei-scraper:
+    build:
+      context: .
+      dockerfile: docker/scraper-manzana.Dockerfile
+      platforms: [linux/amd64]
+    image: milei/scraper:latest
+    pull_policy: never
+    env_file: .uncloud/milei-scraper.env
+    environment:
+      # Same cluster: talk to the gateway directly instead of via Cloudflare.
+      TWITTER_GATEWAY_URL: http://twitter-gateway.internal:3000
+
+  twitter-gateway:
+    build:
+      context: .
+      dockerfile: docker/twitter-gateway.Dockerfile
+      platforms: [linux/amd64]
+    image: milei/twitter-gateway:latest
+    pull_policy: never
+    env_file: .uncloud/twitter-gateway.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      SQLITE_PATH: /data/twitter-gateway.sqlite
+      ACCOUNTS_FILE_PATH: /data/accounts.txt
+      API_AUTH_FILE: /data/api-users.txt
+      TWITTER_DEBUG_DIR: /data/debug
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    volumes:
+      - twitter-gateway-data:/data
+    init: true
+    # Chromium's renderer leaks slowly (1.6 GB after ~11 days). Cap it so the
+    # kernel kills it and Docker restarts it instead of the machine swapping.
+    mem_limit: 2g
+
+  pg-backup:
+    build:
+      context: deploy/uncloud/pg-backup
+      platforms: [linux/amd64]
+    image: milei/pg-backup:latest
+    pull_policy: never
+    init: true
+    env_file: .uncloud/pg-backup.env   # bucket, endpoint, credentials
+    environment:
+      PG_TARGETS: >-
+        milei-db.internal:milei:MILEI_DB_PASSWORD
+        flybondi-db.internal:flybondi:FLYBONDI_DB_PASSWORD
+      S3_PREFIX: uncloud
+
+  # The only way in from the internet: an outbound Cloudflare Tunnel. The
+  # server publishes no ports. Public hostnames are routed to
+  # http://<service>.internal:<port> in the tunnel's Cloudflare config.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.7
+    command: tunnel --no-autoupdate run
+    env_file: .uncloud/cloudflared.env
+    deploy:
+      replicas: 2
+
+volumes:
+  milei-db-data:
+  twitter-gateway-data:

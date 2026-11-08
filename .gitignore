@@ -24,3 +24,9 @@ scraper-manzana/.twitter-debug/
 data/
 scripts/fetchTweetsBySearch.ts
 load-test-results/
+
+# Local DB backup tarballs (multi-GB).
+backups/
+
+# Uncloud deploy secrets (pulled from the old servers).
+.uncloud/

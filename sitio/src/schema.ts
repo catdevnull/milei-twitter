@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -88,6 +88,11 @@ export const tweets = pgTable(
   },
   (table) => ({
     capturedAtIdx: index("db_tweets_captured_at_idx").on(table.capturedAt),
+    // The home page filters tweets by this JSON field. Without the index every
+    // request parses the JSON of every tweet (~1-2 s per query).
+    timestampIdx: index("db_tweets_timestamp_idx").on(
+      sql`((${table.twitterScraperJson}->>'timestamp')::numeric)`,
+    ),
   }),
 );
 

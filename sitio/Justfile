@@ -1,8 +1,5 @@
+# Production deploys run from the repository root (see ../Justfile):
+#   DEPLOY_SSH=user@host just deploy milei
+# Apply new SQL migrations from drizzle/ with `just migrate sitio/drizzle/<file>.sql`.
 deploy:
-	if [ -n "$(git status --porcelain)" ]; then echo "Error: There are unstaged changes. Please commit or stash them before deploying."; exit 1; fi
-
-	env $(cat .env.production) pnpm db:migrate
-	# Dokku may advance its branch with generated "Automated commit" commits.
-	# Replace those only when the remote is still at the revision we fetched.
-	git fetch dokku master
-	git push --force-with-lease dokku master
+	cd .. && just deploy milei

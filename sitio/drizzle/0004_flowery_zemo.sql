@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "db_tweets_timestamp_idx" ON "db_tweets" USING btree ((("twitter_scraper_json"->>'timestamp')::numeric));
